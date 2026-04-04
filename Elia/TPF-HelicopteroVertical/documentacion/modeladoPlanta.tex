@@ -1,0 +1,188 @@
+% ============================================================
+\subsection{Variables y convenciones}
+% ============================================================
+
+Se definen a continuación las variables y convenciones empleadas en el modelado del sistema:
+
+\begin{itemize}
+	\item Eje vertical \(z\), definido positivo hacia arriba.
+	
+	\item Masa móvil:
+	\[
+	m = 0.360\ \text{kg}
+	\]
+	
+	\item Aceleración de la gravedad:
+	\[
+	g = 9.81\ \text{m/s}^2
+	\]
+	
+	\item Peso del cuerpo móvil:
+	\[
+	mg = 3.924\ \text{N}
+	\]
+	
+	\item Entrada del sistema: señal PWM tipo servo a \(50\ \text{Hz}\),
+	\[
+	u \in [1000,2000]\ \mu s
+	\]
+	
+	Durante la operación experimental, la señal se restringe intencionalmente al intervalo:
+	
+	\[
+	u \in [1100,1700]\ \mu s
+	\]
+	
+	Esta limitación surge de criterios de seguridad térmica y confiabilidad. En ensayos previos se observaron riesgos térmicos al operar sostenidamente en valores elevados bajo carga.
+	
+	Asimismo, el límite inferior evita regiones cercanas a la detención del motor, donde aparecen comportamientos fuertemente no lineales y pérdida abrupta de sustentación.
+	
+	En consecuencia, el modelo identificado y las estrategias de control desarrolladas se consideran válidos únicamente dentro de este rango operativo seguro.
+	
+	\item Trabajo en coordenadas relativas respecto al punto de hover:
+	\[
+	\Delta u = u - u_0
+	\]
+	donde \(u_0\) es el PWM necesario para generar un empuje equivalente al peso del sistema.
+	
+	\item Salida medida:
+	\[
+	y = z
+	\]
+	correspondiente a la altura medida mediante el sensor TFMini Plus.
+\end{itemize}
+
+% ============================================================
+\paragraph{Consideración sobre las unidades utilizadas}
+% ============================================================
+
+La identificación y el diseño de control se realizaron utilizando directamente las unidades nativas del sistema físico: centímetros para la altura y microsegundos para el PWM.
+
+Si bien el uso de unidades del Sistema Internacional podría facilitar la interpretación física directa de algunos parámetros, se optó por trabajar en las unidades reales de operación debido a que:
+
+\begin{itemize}
+	\item el sensor entrega la medición en centímetros,
+	\item el actuador es comandado mediante pulsos PWM en microsegundos,
+	\item el firmware del PSoC opera naturalmente en dichas magnitudes.
+\end{itemize}
+
+Trabajar en las unidades operativas evitó conversiones intermedias innecesarias, reduciendo complejidad y posibles errores de escala en la implementación embebida.
+
+Desde el punto de vista del modelado lineal, el cambio de unidades sólo afecta la escala de ganancia del sistema, sin modificar polos, ceros ni estructura dinámica.
+
+% ============================================================
+\subsubsection{Modelo físico simplificado}
+% ============================================================
+
+En una primera aproximación ideal, el movimiento vertical puede describirse como:
+
+\[
+\dot z = v
+\]
+
+\[
+m\dot v = T - mg
+\]
+
+lo que conduce a una estructura de doble integración entre empuje y posición.
+
+Incorporando pérdidas mecánicas equivalentes, puede agregarse un término viscoso:
+
+\[
+m\dot v = T - mg - b\,v
+\]
+
+donde \(b\) representa fricción equivalente.
+
+Sin embargo, los ensayos experimentales muestran comportamientos que no pueden ser capturados adecuadamente por un modelo puramente integrador o de segundo orden simple.
+
+% ============================================================
+\subsubsection{Evidencia experimental de comportamiento no mínimo-fase}
+% ============================================================
+
+Durante la identificación experimental se observaron respuestas repetibles en las cuales, ante escalones pequeños alrededor del punto de operación (\(\Delta u \approx 100\ \mu s\) por encima del hover, siendo estas lo suficientemente grandes como para excitar todos los modos del sistema), la altura presenta inicialmente una leve disminución antes de iniciar el ascenso.
+
+Estos ensayos:
+
+\begin{itemize}
+	\item se realizaron lejos de saturación,
+	\item utilizaron amplitudes similares,
+	\item fueron repetidos múltiples veces,
+	\item arrojaron consistentemente el mismo patrón cualitativo.
+\end{itemize}
+
+Esta respuesta inversa es característica de sistemas no mínimo-fase. Los modelos sin cero en el semiplano derecho no lograron reproducir esta inversión inicial ni la curvatura transitoria observada.
+
+Por lo tanto, desde el punto de vista de modelado lineal equivalente alrededor del hover, la inclusión de un cero no mínimo-fase resulta necesaria para capturar la dinámica dominante observada experimentalmente.
+
+% ============================================================
+\subsubsection{Justificación del orden del modelo}
+% ============================================================
+
+Se ensayaron modelos continuos de segundo a quinto orden utilizando herramientas de identificación.
+
+Los modelos de menor orden no lograron reproducir simultáneamente:
+
+\begin{itemize}
+	\item la inversión inicial observada,
+	\item la curvatura transitoria,
+	\item la pendiente dinámica correcta.
+\end{itemize}
+
+El modelo de tercer orden fue el mínimo orden capaz de capturar estas características sin introducir complejidad innecesaria.
+
+% ============================================================
+\subsubsection{Identificación experimental}
+% ============================================================
+
+El modelo fue obtenido mediante la \textit{System Identification Toolbox} de MATLAB.
+
+Se utilizaron registros experimentales en lazo abierto en coordenadas relativas, eliminando offsets de esfuerzo y altura para linealizar alrededor del punto de operación.
+
+Las excitaciones consistieron en escalones pequeños aplicados sobre el hover, limitando el rango de entrada a regiones aproximadamente lineales.
+
+Se ensayaron distintas estructuras paramétricas, seleccionándose aquella que mejor reprodujo los datos experimentales bajo validación cruzada y análisis de residuales.
+
+% ============================================================
+\subsubsection{Función de transferencia continua equivalente}
+% ============================================================
+
+El modelo continuo identificado puede expresarse como:
+
+\[
+G(s)=
+\frac{-0.12107\,(s-14)(s+10.62)}
+{(s+0.0002797)\,(s^2+5.61s+14.02)}
+\]
+
+El polo en \(s=-0.0002797\) posee una constante de tiempo extremadamente lenta respecto de la duración típica de los experimentos (del orden de segundos).
+
+La eliminación de dicho polo produce diferencias menores que el nivel de ruido del sensor y no altera de manera apreciable la dinámica relevante para el diseño de control.
+
+En consecuencia, se adopta la forma simplificada:
+
+\[
+G(s)=
+\frac{-0.12107\,(s-14)(s+10.62)}
+{s\,(s^2+5.61s+14.02)}
+\]
+
+En esta representación:
+
+\begin{itemize}
+	\item El polo en el origen representa el carácter integrador dominante de la posición vertical.
+	\item El término de segundo orden modela la dinámica agregada del actuador y la estructura.
+	\item El cero en el semiplano derecho es consistente con la respuesta inversa observada experimentalmente.
+\end{itemize}
+
+% ============================================================
+\subsubsection{Validez del modelo}
+% ============================================================
+
+El modelo adoptado constituye una aproximación coherente con la física del sistema y adecuada para el diseño de control dentro del rango operativo:
+
+\[
+u \in [1100,1700]\ \mu s
+\]
+
+Fuera de dicho intervalo, el sistema presenta no linealidades aerodinámicas, fricción no lineal, saturaciones y posibles limitaciones térmicas que no son capturadas por el modelo lineal simplificado.

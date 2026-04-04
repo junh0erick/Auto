@@ -1,0 +1,432 @@
+function S = tfmini_plus_calibrate_models(xlsx_path, sheet)
+%TFMINI_PLUS_CALIBRATE_MODELS  Calibra modelos de calibración TFmini Plus desde Excel.
+%
+% Uso:
+%   S = tfmini_plus_calibrate_models("D:\auto\TPF-HelicopteroVertical\DatosLeidos.xlsx")
+%   S = tfmini_plus_calibrate_models()  % abre selector
+%
+% Espera columnas (headers originales en Excel):
+%   - Freq_prom
+%   - dis_sensor
+%   - dist_real
+%   - Temperatura
+%   - Intensidad de Luz
+%
+% Devuelve:
+%   S: struct con:
+%     - xlsx_path, sheet
+%     - T_raw, T (normalizada)
+%     - results (tabla con métricas por modelo)
+%     - models (cell con modelos)
+%     - best (mejor modelo + métricas)
+
+% ----------------- Selector de archivo -----------------
+if nargin < 1 || isempty(xlsx_path)
+    [file, path] = uigetfile({'*.xlsx;*.xls','Excel files (*.xlsx, *.xls)'}, ...
+                             'Seleccioná el Excel de mediciones');
+    if isequal(file,0)
+        disp('Cancelado por el usuario.');
+        S = struct();
+        return;
+    end
+    xlsx_path = fullfile(path, file);
+end
+
+if nargin < 2 || isempty(sheet)
+    sheet = 1;
+end
+
+% ----------------- Leer Excel (preservar headers) -----------------
+Traw = readtable(xlsx_path, 'Sheet', sheet, 'VariableNamingRule','preserve');
+
+% ----------------- Normalizar columnas a nombres estándar -----------------
+T = normalize_varnames(Traw);
+
+% ----------------- Validaciones mínimas -----------------
+need = {'Dist_cm','Dist_real'};
+missing = setdiff(need, T.Properties.VariableNames);
+if ~isempty(missing)
+    error("Faltan columnas mínimas: %s. Revisá headers o el mapeo en normalize_varnames().", strjoin(missing, ', '));
+end
+
+% ----------------- Convertir a numérico si vino como texto -----------------
+T = force_numeric(T, {'Dist_cm','Dist_real','Freq_prom','Temp_C','Lux'});
+
+% ----------------- Limpiar filas inválidas (solo columnas base) -----------------
+vars_check = intersect({'Dist_cm','Dist_real','Freq_prom','Temp_C','Lux'}, T.Properties.VariableNames);
+mask_ok = true(height(T),1);
+for i = 1:numel(vars_check)
+    v = T.(vars_check{i});
+    mask_ok = mask_ok & isfinite(v);
+end
+T = T(mask_ok,:);
+
+if height(T) < 10
+    warning("Muy pocas filas válidas (%d). Revisá NaNs/Inf o columnas vacías.", height(T));
+end
+
+% ----------------- Features derivadas para PSoC (log precalculado) -----------------
+% Lux_log  = log(Lux)        (requiere Lux>0)
+% Lux_log1p= log(1+Lux)      (tolera Lux=0)
+if ismember('Lux', T.Properties.VariableNames)
+    T.Lux = max(T.Lux, 0);
+
+    T.Lux_log = nan(height(T),1);
+    mpos = T.Lux > 0;
+    T.Lux_log(mpos) = log(T.Lux(mpos));
+
+    T.Lux_log1p = log1p(T.Lux);
+end
+
+% ----------------- Features cuadráticas explícitas (EVITA I(...), que a veces falla en fitlm) -----------------
+T.Dist_cm2 = T.Dist_cm.^2;
+if ismember('Freq_prom',T.Properties.VariableNames), T.Freq_prom2  = T.Freq_prom.^2; end
+if ismember('Temp_C',T.Properties.VariableNames),    T.Temp_C2     = T.Temp_C.^2;    end
+if ismember('Lux',T.Properties.VariableNames),       T.Lux2        = T.Lux.^2;       end
+if ismember('Lux_log',T.Properties.VariableNames),   T.Lux_log2    = T.Lux_log.^2;   end
+if ismember('Lux_log1p',T.Properties.VariableNames), T.Lux_log1p2  = T.Lux_log1p.^2; end
+
+% ----------------- Construcción de modelos -----------------
+y = T.Dist_real;
+
+have_freq     = ismember('Freq_prom',   T.Properties.VariableNames);
+have_temp     = ismember('Temp_C',      T.Properties.VariableNames);
+have_lux      = ismember('Lux',         T.Properties.VariableNames);
+have_luxlog   = ismember('Lux_log',     T.Properties.VariableNames);
+have_luxlog1p = ismember('Lux_log1p',   T.Properties.VariableNames);
+
+forms = {};
+names = {};
+comp  = [];
+
+% M0: solo sensor
+names{end+1} = 'M0: real ~ sensor';
+forms{end+1} = 'Dist_real ~ Dist_cm';
+comp(end+1)  = 1;
+
+% M1: + freq
+if have_freq
+    names{end+1} = 'M1: + freq';
+    forms{end+1} = 'Dist_real ~ Dist_cm + Freq_prom';
+    comp(end+1)  = 2;
+end
+
+% M2: + temp
+if have_temp
+    names{end+1} = 'M2: + temp';
+    forms{end+1} = 'Dist_real ~ Dist_cm + Temp_C';
+    comp(end+1)  = 2;
+end
+
+% M3: + lux
+if have_lux
+    names{end+1} = 'M3: + lux';
+    forms{end+1} = 'Dist_real ~ Dist_cm + Lux';
+    comp(end+1)  = 2;
+end
+
+% M3b: + log(lux)
+if have_luxlog
+    names{end+1} = 'M3b: + log(lux)';
+    forms{end+1} = 'Dist_real ~ Dist_cm + Lux_log';
+    comp(end+1)  = 2;
+end
+
+% M3c: + log1p(lux)
+if have_luxlog1p
+    names{end+1} = 'M3c: + log1p(lux)';
+    forms{end+1} = 'Dist_real ~ Dist_cm + Lux_log1p';
+    comp(end+1)  = 2;
+end
+
+% M4: sensor + todas (lineal)
+extra_terms = {};
+if have_freq, extra_terms{end+1} = 'Freq_prom'; end
+if have_temp, extra_terms{end+1} = 'Temp_C'; end
+if have_lux,  extra_terms{end+1} = 'Lux'; end
+
+if ~isempty(extra_terms)
+    names{end+1} = 'M4: sensor + todas';
+    forms{end+1} = ['Dist_real ~ Dist_cm + ' strjoin(extra_terms, ' + ')];
+    comp(end+1)  = 1 + numel(extra_terms);
+end
+
+% M4b: sensor + todas (reemplazando Lux por lux log si existe)
+if ~isempty(extra_terms) && (have_luxlog || have_luxlog1p)
+    extra_terms_log = extra_terms;
+    for t = 1:numel(extra_terms_log)
+        if strcmp(extra_terms_log{t}, 'Lux')
+            if have_luxlog1p
+                extra_terms_log{t} = 'Lux_log1p';
+            else
+                extra_terms_log{t} = 'Lux_log';
+            end
+        end
+    end
+    names{end+1} = 'M4b: sensor + todas (lux log)';
+    forms{end+1} = ['Dist_real ~ Dist_cm + ' strjoin(extra_terms_log, ' + ')];
+    comp(end+1)  = 1 + numel(extra_terms_log);
+end
+
+% M5: cuadrados (usando columnas *_2, NO I(...))
+names{end+1} = 'M5: cuadrados';
+poly_terms = {'Dist_cm','Dist_cm2'};
+if have_freq, poly_terms = [poly_terms, {'Freq_prom','Freq_prom2'}]; end
+if have_temp, poly_terms = [poly_terms, {'Temp_C','Temp_C2'}]; end
+if have_lux,  poly_terms = [poly_terms, {'Lux','Lux2'}]; end
+forms{end+1} = ['Dist_real ~ ' strjoin(poly_terms, ' + ')];
+comp(end+1)  = numel(poly_terms);
+
+% M5b: cuadrados con lux log (usando Lux_log1p2 / Lux_log2)
+if have_luxlog1p || have_luxlog
+    names{end+1} = 'M5b: cuadrados (lux log)';
+    poly_terms2 = {'Dist_cm','Dist_cm2'};
+    if have_freq, poly_terms2 = [poly_terms2, {'Freq_prom','Freq_prom2'}]; end
+    if have_temp, poly_terms2 = [poly_terms2, {'Temp_C','Temp_C2'}]; end
+    if have_luxlog1p
+        poly_terms2 = [poly_terms2, {'Lux_log1p','Lux_log1p2'}];
+    else
+        poly_terms2 = [poly_terms2, {'Lux_log','Lux_log2'}];
+    end
+    forms{end+1} = ['Dist_real ~ ' strjoin(poly_terms2, ' + ')];
+    comp(end+1)  = numel(poly_terms2);
+end
+
+% M6: interacciones moderadas (solo si hay extras)
+if ~isempty(extra_terms)
+    names{end+1} = 'M6: interacciones';
+    int_terms = {'Dist_cm'};
+    if have_freq, int_terms = [int_terms, {'Freq_prom','Dist_cm:Freq_prom'}]; end
+    if have_temp, int_terms = [int_terms, {'Temp_C','Dist_cm:Temp_C'}]; end
+    if have_lux,  int_terms = [int_terms, {'Lux','Dist_cm:Lux'}]; end
+    forms{end+1} = ['Dist_real ~ ' strjoin(int_terms, ' + ')];
+    comp(end+1)  = numel(int_terms);
+end
+
+% M6b: interacciones con lux log
+if ~isempty(extra_terms) && (have_luxlog1p || have_luxlog)
+    names{end+1} = 'M6b: interacciones (lux log)';
+    int_terms2 = {'Dist_cm'};
+    if have_freq, int_terms2 = [int_terms2, {'Freq_prom','Dist_cm:Freq_prom'}]; end
+    if have_temp, int_terms2 = [int_terms2, {'Temp_C','Dist_cm:Temp_C'}]; end
+    if have_luxlog1p
+        int_terms2 = [int_terms2, {'Lux_log1p','Dist_cm:Lux_log1p'}];
+    else
+        int_terms2 = [int_terms2, {'Lux_log','Dist_cm:Lux_log'}];
+    end
+    forms{end+1} = ['Dist_real ~ ' strjoin(int_terms2, ' + ')];
+    comp(end+1)  = numel(int_terms2);
+end
+
+% ----------------- Fit + métricas -----------------
+nM = numel(forms);
+models = cell(nM,1);
+
+ModelName  = strings(nM,1);
+Formula    = strings(nM,1);
+N          = zeros(nM,1);
+NumCoeffs  = zeros(nM,1);
+RMSE       = nan(nM,1);
+MAE        = nan(nM,1);
+Rsq        = nan(nM,1);
+AIC        = nan(nM,1);
+BIC        = nan(nM,1);
+Complexity = comp(:);
+
+for i = 1:nM
+    ModelName(i) = string(names{i});
+    Formula(i)   = string(forms{i});
+
+    try
+        mdl = fitlm(T, forms{i});
+        models{i} = mdl;
+
+        yhat = predict(mdl, T);
+        e = y - yhat;
+
+        N(i) = mdl.NumObservations;
+        NumCoeffs(i) = mdl.NumCoefficients;
+
+        RMSE(i) = sqrt(mean(e.^2));
+        MAE(i)  = mean(abs(e));
+        Rsq(i)  = mdl.Rsquared.Ordinary;
+
+        AIC(i)  = mdl.ModelCriterion.AIC;
+        BIC(i)  = mdl.ModelCriterion.BIC;
+
+    catch ME
+        warning("Modelo %d falló (%s): %s", i, names{i}, ME.message);
+        models{i} = [];
+        N(i) = height(T);
+        NumCoeffs(i) = NaN;
+    end
+end
+
+results = table(ModelName, Formula, N, NumCoeffs, Complexity, RMSE, MAE, Rsq, AIC, BIC);
+
+% ----------------- Score (tradeoff) -----------------
+rmse_norm = normalize01(RMSE);
+comp_norm = normalize01(double(Complexity));
+results.Score = rmse_norm + 0.15*comp_norm;
+
+valid = isfinite(results.RMSE) & isfinite(results.Score);
+if any(valid)
+    idxs = find(valid);
+    [~, k] = min(results.Score(valid));
+    ib = idxs(k);
+else
+    ib = NaN;
+end
+
+% ----------------- Empaquetar salida -----------------
+S = struct();
+S.xlsx_path = xlsx_path;
+S.sheet     = sheet;
+
+S.T_raw = Traw;
+S.T     = T;
+
+S.results = results;
+S.models  = models;
+
+if ~isnan(ib)
+    S.best.index   = ib;
+    S.best.name    = results.ModelName(ib);
+    S.best.formula = results.Formula(ib);
+    S.best.metrics = results(ib,:);
+    S.best.model   = models{ib};
+
+    fprintf('\n=== Mejor modelo ===\n');
+    disp(S.best.metrics);
+    disp(S.best.model);
+else
+    S.best = struct();
+    warning("No se pudo seleccionar mejor modelo (todos fallaron).");
+end
+
+end % main
+
+
+% =====================================================================
+% Normalizar/renombrar columnas a nombres estándar
+% =====================================================================
+function T = normalize_varnames(Traw)
+
+vn = Traw.Properties.VariableNames;
+if isstring(vn), vn = cellstr(vn); end
+
+T = Traw;
+
+for k = 1:numel(vn)
+    orig = vn{k};
+    key  = canon_key(orig);
+
+    if strcmp(key, canon_key('dis_sensor')) || strcmp(key, canon_key('dissensor'))
+        T.Properties.VariableNames{k} = 'Dist_cm';
+
+    elseif strcmp(key, canon_key('dist_real')) || strcmp(key, canon_key('distreal'))
+        T.Properties.VariableNames{k} = 'Dist_real';
+
+    elseif strcmp(key, canon_key('temperatura')) || strcmp(key, canon_key('temp')) || strcmp(key, canon_key('temp_c'))
+        T.Properties.VariableNames{k} = 'Temp_C';
+
+    elseif strcmp(key, canon_key('intensidaddeluz')) || strcmp(key, canon_key('intensidad_de_luz')) || strcmp(key, canon_key('lux'))
+        T.Properties.VariableNames{k} = 'Lux';
+
+    elseif strcmp(key, canon_key('freq_prom')) || strcmp(key, canon_key('freqprom')) || strcmp(key, canon_key('frecuencia'))
+        T.Properties.VariableNames{k} = 'Freq_prom';
+    end
+end
+
+T = dedupe_varnames(T);
+
+end
+
+
+% =====================================================================
+% Canon key
+% =====================================================================
+function key = canon_key(s)
+if isempty(s)
+    key = '';
+    return;
+end
+if isstring(s), s = char(s); end
+s = lower(strtrim(s));
+s = regexprep(s, '[^a-z0-9]', '');
+key = s;
+end
+
+
+% =====================================================================
+% Dedupe varnames
+% =====================================================================
+function T = dedupe_varnames(T)
+vn = T.Properties.VariableNames;
+if isstring(vn), vn = cellstr(vn); end
+
+[uniq, ~, ic] = unique(vn, 'stable');
+counts = accumarray(ic, 1);
+
+if any(counts > 1)
+    for u = 1:numel(uniq)
+        if counts(u) > 1
+            idxs = find(strcmp(vn, uniq{u}));
+            for k = 2:numel(idxs)
+                vn{idxs(k)} = sprintf('%s_%d', uniq{u}, k);
+            end
+        end
+    end
+    T.Properties.VariableNames = vn;
+end
+end
+
+
+% =====================================================================
+% Convertir columnas a numérico si vinieron como texto/celda
+% =====================================================================
+function T = force_numeric(T, vars)
+for i = 1:numel(vars)
+    v = vars{i};
+    if ~ismember(v, T.Properties.VariableNames), continue; end
+
+    x = T.(v);
+
+    if isnumeric(x)
+        continue;
+    end
+
+    try
+        if iscell(x)
+            x = string(x);
+        end
+        if isstring(x)
+            x = replace(x, ",", ".");
+            xn = str2double(x);
+            T.(v) = xn;
+        end
+    catch
+        % dejar como está
+    end
+end
+end
+
+
+% =====================================================================
+% Normalización 0-1 con manejo de NaNs
+% =====================================================================
+function z = normalize01(x)
+x = double(x);
+mask = isfinite(x);
+z = nan(size(x));
+if ~any(mask)
+    return;
+end
+xmin = min(x(mask));
+xmax = max(x(mask));
+if xmax == xmin
+    z(mask) = 0;
+else
+    z(mask) = (x(mask) - xmin) ./ (xmax - xmin);
+end
+end

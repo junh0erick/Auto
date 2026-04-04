@@ -1,0 +1,158 @@
+
+Los métodos modernos implementados (ubicación arbitraria de polos,
+LQR, observadores por ubicación de polos y filtro de Kalman,
+con y sin acción integral) demostraron en general
+un desempeño satisfactorio y consistente sobre la planta real.
+
+Sin embargo, la combinación de:
+
+\begin{itemize}
+	\item Regulador óptimo LQR,
+	\item Observador basado en Filtro de Kalman,
+	\item Acción integral (LQI),
+\end{itemize}
+
+representa una mejora sustancial respecto a las variantes
+sin optimización explícita o sin estimación estocástica.
+
+\paragraph{Ubicación arbitraria vs. LQR}
+
+Desde el punto de vista computacional e implementativo,
+no existe diferencia entre utilizar una ganancia
+obtenida por \texttt{place()} o por \texttt{dlqr()}.
+Ambos producen una matriz $K$ que se implementa exactamente
+de la misma forma en firmware y no implican mayor carga
+de cálculo en tiempo real ni similares.
+
+La diferencia radica exclusivamente en el criterio de diseño:
+
+\begin{itemize}
+	\item En ubicación arbitraria, los polos se eligen manualmente.
+	\item En LQR, los polos resultan de minimizar un funcional
+	cuadrático que pondera explícitamente estados y esfuerzo.
+\end{itemize}
+
+Si bien la definición adecuada de las matrices $Q$ y $R$
+requiere mayor reflexión y criterio ingenieril,
+el resultado es un compromiso óptimo entre desempeño
+y esfuerzo de control.
+
+En sistemas donde los estados poseen interpretación física clara,
+el LQR permite penalizar selectivamente variables,
+algo que no puede hacerse directamente con
+ubicación arbitraria de polos.
+
+% ------------------------------------------------------------
+\paragraph{Observador predictor vs. observador actual}
+% ------------------------------------------------------------
+
+Dentro de los esquemas de estimación determinística
+(ubicación de polos), se evaluaron las variantes
+\textit{predictor} y \textit{actual}.
+
+El observador predictor corrige utilizando la medición $y_k$,
+lo que implica una estructura ligeramente más simple
+a nivel algorítmico.
+
+El observador actual, en cambio, corrige con $y_{k+1}$,
+incorporando implícitamente la dinámica de la planta
+entre la predicción y la corrección.
+
+En la práctica se observó que:
+
+\begin{itemize}
+	\item El predictor tiende a amplificar más el ruido de medición.
+	\item El actual presenta un esfuerzo de control más limpio.
+	\item La diferencia se vuelve más evidente cuando la señal medida
+	presenta ruido significativo.
+\end{itemize}
+
+El costo computacional adicional del observador actual
+es despreciable frente al período de muestreo utilizado
+en este trabajo. Por lo tanto, siempre que el tiempo de cálculo
+sea pequeño en comparación con $T_s$, el \textbf{observador actual}
+resulta preferible debido a su efecto de filtrado natural
+y mejor comportamiento práctico.
+\paragraph{Observador por polos vs. Filtro de Kalman}
+
+En cuanto a estimación de estados,
+el Filtro de Kalman mostró una ventaja clara respecto
+a la simple ubicación arbitraria de polos del observador.
+
+Mientras que en el diseño por polos la selección
+de ganancias es esencialmente heurística,
+en Kalman las ganancias resultan de una optimización
+basada en la relación estadística entre ruido de proceso ($Q$)
+y ruido de medición ($R$).
+
+En la práctica, esto se tradujo en:
+
+\begin{itemize}
+	\item Menor amplificación del ruido en el esfuerzo de control.
+	\item Respuestas más limpias.
+	\item Menor presencia de picos erráticos.
+\end{itemize}
+
+El principal inconveniente del Filtro de Kalman
+es la necesidad de estimar adecuadamente las covarianzas
+$Q$ y $R$, lo cual demanda experimentación adicional.
+No obstante, una vez ajustadas,
+el desempeño mejora de manera significativa.
+
+\paragraph{Acción integral vs. Prefiltro $N_{\mathrm{bar}}$}
+
+La incorporación del integrador constituye,
+probablemente, el cambio más relevante
+desde el punto de vista práctico.
+
+El prefiltro $N_{\mathrm{bar}}$ garantiza seguimiento perfecto
+únicamente bajo el modelo ideal.
+En presencia de:
+
+\begin{itemize}
+	\item Derivas paramétricas,
+	\item Descarga de batería,
+	\item No linealidades del empuje,
+	\item Envejecimiento del sistema,
+\end{itemize}
+
+la salida puede desviarse progresivamente de la referencia.
+
+La acción integral, en cambio,
+corrige sistemáticamente el error estacionario,
+independientemente de pequeñas discrepancias del modelo,
+siempre que el lazo permanezca estable y no exista saturación prolongada.
+
+Aunque el integrador incrementa el orden del sistema
+y agrega un estado adicional,
+su impacto en recursos computacionales es despreciable
+frente al beneficio obtenido en robustez de seguimiento.
+
+% ------------------------------------------------------------
+\paragraph{Conclusión comparativa}
+% ------------------------------------------------------------
+
+Todos los métodos modernos evaluados son funcionales
+y técnicamente correctos.
+Sin embargo, la combinación:
+
+\[
+\text{LQR} + \text{Kalman} + \text{Integrador}
+\]
+
+representa un salto cualitativo significativo.
+
+\begin{itemize}
+	\item LQR aporta un criterio óptimo explícito.
+	\item Kalman reduce la contaminación del esfuerzo por ruido.
+	\item El integrador elimina derivas en régimen permanente.
+	\item El observador actual mejora la calidad del esfuerzo
+	sin penalización práctica en recursos.
+\end{itemize}
+
+En conjunto, esta arquitectura ofrece
+el mejor equilibrio entre desempeño dinámico,
+robustez frente a incertidumbre
+y calidad del esfuerzo de control,
+constituyendo la solución más sólida
+entre las implementadas en este trabajo.

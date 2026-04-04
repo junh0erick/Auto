@@ -1,0 +1,207 @@
+% !TeX program = pdflatex
+\documentclass[conference]{IEEEtran}
+
+% ======= Idioma y codificación =======
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish, es-nodecimaldot]{babel}
+\usepackage{microtype}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{balance}
+
+
+\lstdefinestyle{cfirmware}{
+	language=C,
+	basicstyle=\ttfamily\small,
+	keywordstyle=\color{blue},
+	commentstyle=\color{gray},
+	stringstyle=\color{red},
+	numbers=left,
+	numberstyle=\tiny,
+	stepnumber=1,
+	numbersep=8pt,
+	frame=single,
+	breaklines=true,
+	tabsize=4,
+	showstringspaces=false
+}
+
+% ======= Matemática =======
+\usepackage{amsmath, amssymb, amsfonts}
+
+% ======= Colores y gráficos =======
+\usepackage{xcolor}
+\usepackage{graphicx}
+% \usepackage{subcaption}
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage{float}
+\usepackage{booktabs}
+
+% ======= Números y unidades =======
+\usepackage{siunitx}
+\sisetup{
+	output-decimal-marker = {,},
+	group-separator = {.},
+	group-minimum-digits = 4,
+	per-mode = symbol,
+	round-mode = places,
+	round-precision = 3,
+	table-number-alignment = center
+}
+
+% ======= Maquetación =======
+
+% ======= Listas =======
+\usepackage{enumitem}
+\setlist{leftmargin=*, itemsep=2pt, topsep=4pt}
+
+% ======= Bibliografía =======
+\usepackage[numbers]{natbib}
+\bibliographystyle{IEEEtranN}
+
+% ======= Listados =======
+\usepackage{listings}
+\usepackage{listingsutf8}
+
+% Config listings
+\lstset{
+	inputencoding=utf8/latin1,
+	extendedchars=true,
+	upquote=true,
+	breaklines=true,
+	columns=fullflexible,
+	keepspaces=true,
+	frame=single,
+	numbers=left, numberstyle=\tiny, numbersep=6pt,
+	xleftmargin=1em,
+	captionpos=b,
+	literate=
+	{á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'\i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+	{Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+	{ñ}{{\~n}}1 {Ñ}{{\~N}}1
+	{ü}{{\"u}}1 {Ü}{{\"U}}1
+	{¿}{{\textquestiondown}}1 {¡}{{\textexclamdown}}1
+	{º}{{$^\circ$}}1
+	{“}{{``}}1 {”}{{''}}1 {‘}{{`}}1 {’}{{'}}1
+	{—}{{---}}1 {–}{{--}}1
+	{→}{{\textrightarrow}}1
+	{≈}{{$\approx$}}1
+	{µ}{{\textmu}}1
+}
+
+% Lenguaje Matlab
+\lstdefinelanguage{Matlab}{
+	morekeywords={break,case,catch,continue,else,elseif,end,for,function,global,if,otherwise,persistent,return,switch,try,while,classdef,properties,methods},
+	sensitive=true,
+	morecomment=[l]\%,
+	morecomment=[s]{\%\{} {\%},
+	morestring=[m]'
+}
+
+\lstdefinestyle{matlabstyle}{
+	language=Matlab,
+	basicstyle=\ttfamily\small,
+	keywordstyle=\bfseries\color{blue!70!black},
+	commentstyle=\itshape\color{green!40!black},
+	stringstyle=\color{red!60!black},
+	numbers=left, numberstyle=\tiny, numbersep=6pt,
+	frame=single,
+	breaklines=true,
+	columns=fullflexible,
+	keepspaces=true,
+	captionpos=b,
+	linewidth=\columnwidth,
+	xleftmargin=1em
+}
+
+% ======= Macros =======
+\newcommand{\zetaD}{\zeta}
+\newcommand{\wn}{\omega_n}
+\newcommand{\Ts}{T_s}
+\newcommand{\ESS}{\mathrm{ESS}}
+\newcommand{\Gz}{G(z)}
+\newcommand{\Gs}{G(s)}
+\newcommand{\Nbar}{N_{\mathrm{bar}}}
+\newcommand{\Ki}{K_i}
+\newcommand{\Aaug}{A_{\mathrm{aug}}}
+\newcommand{\Baug}{B_{\mathrm{aug}}}
+\newcommand{\Caug}{C_{\mathrm{aug}}}
+
+% ======= Macros figuras =======
+\newcommand{\insertarfigura}[4]{%
+	\begin{figure}[!h]
+		\centering
+		\includegraphics[width=#4\linewidth]{#1}
+		\caption{#2}
+		\label{#3}
+	\end{figure}
+}
+
+% ======= Hyperref =======
+
+
+% ======= Metadatos LAB 9 =======
+\title{Trabajo Práctico: Helicóptero vertical de un solo eje.}
+
+\author{
+	\IEEEauthorblockN{Elías Álvarez}
+	\IEEEauthorblockA{Carrera de Ing. Electrónica\\Universidad Católica Nuestra Señora de la Asunción\\Asunción, Paraguay\\Email: elias.alvarez@universidadcatolica.edu.py}
+	\and
+	\IEEEauthorblockN{Tania Romero}
+	\IEEEauthorblockA{Carrera de Ing. Electrónica\\Universidad Católica Nuestra Señora de la Asunción\\Asunción, Paraguay\\Email: tania.romero@universidadcatolica.edu.py}
+}
+
+\begin{document}
+	\maketitle
+	
+	\begin{abstract}
+		En este trabajo práctico se estudia el control de altura de una planta experimental basada en un sistema de propulsión vertical mediante un motor brushless controlado electrónicamente. La planta consiste en un cuerpo móvil guiado mecánicamente en el eje vertical, cuya posición es medida mediante un sensor de distancia láser y regulada a través de una señal PWM aplicada a un controlador electrónico de velocidad (ESC). 
+		
+		%A partir del modelado físico y matemático del sistema, se desarrollan e implementan distintas estrategias de control vistas a lo largo de la materia Automatizaciones. Se analizan controladores clásicos, tales como el PID y métodos de diseño basados en el lugar de las raíces, diagramas de Bode, síntesis directa y ubicación arbitraria de polos. Asimismo, se aborda el control en el espacio de estados, incorporando control integral para sistemas de seguimiento y el uso de estimadores de estado tanto de predicción como de actualización.
+		
+		%Finalmente, se diseñan y evalúan controladores óptimos que incluyen integrador y estimadores basados en el filtro de Kalman, culminando en la implementación de un regulador LQG. Los distintos enfoques de control son comparados en términos de desempeño dinámico, estabilidad y robustez frente a perturbaciones y variaciones paramétricas, utilizando resultados obtenidos mediante ensayos experimentales sobre la planta real.
+	\end{abstract}
+	
+	\begin{IEEEkeywords}
+		control de altura, sistemas dinámicos, identificación de sistemas, control PID, Lugar de raices, Diagrama de Bode, control en espacio de estados, LQG, PSoC, TFMini, ESC, PWM
+	\end{IEEEkeywords}
+	
+	
+	\input{intro.tex}
+	
+	\input{PlantProb.tex}
+	
+	\input{Objetivos.tex}
+	
+	
+	\section{Caracterización física de la planta}
+	\input{caracPlanta.tex}
+	
+	\input{diagramaSist.tex}
+	
+	
+	\section{Modelado físico del sistema}
+	\input{modeladoPlanta.tex}
+	
+	% ============================================================
+	\section{Métodos Clásicos de Control}
+	% ============================================================
+	\input{control0.1.tex}
+	
+	% ============================================================
+	\section{Métodos Modernos de Control}
+	% ============================================================
+	
+	\input{control0.2.tex}
+	\balance
+	\clearpage
+	
+	\section{Conclusiones}
+	 \input{conclusiones.tex}
+	
+	\bibliographystyle{IEEEtran}
+	\bibliography{refs}
+%	\input{appendices.tex}
+\end{document}

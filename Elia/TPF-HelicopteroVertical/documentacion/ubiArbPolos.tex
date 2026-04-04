@@ -1,0 +1,274 @@
+A partir del modelo discreto identificado (orden $n=3$) y operando en
+coordenadas relativas al punto de hover, se adopta la representación:
+
+\[
+x_{k+1}=Ax_k+Bu_k,
+\qquad
+y_k=Cx_k
+\]
+
+donde la única salida medida es la altura $y_k$.
+
+El objetivo del diseño por realimentación de estados consiste en
+definir una ganancia $K$ tal que la dinámica en lazo cerrado:
+
+\[
+x_{k+1}=(A-BK)\,x_k
+\]
+
+presente polos ubicados en posiciones deseadas $p_i$ dentro del círculo unitario:
+
+\[
+\lambda(A-BK)=\{p_1,p_2,\dots,p_n\},
+\qquad |p_i|<1.
+\]
+
+La ganancia $K$ se obtuvo mediante la función \texttt{place()} de MATLAB,
+aprovechando que el sistema es completamente controlable.
+
+Para la práctica presentada se utilizó:
+
+\[
+T_s = 0.02~\text{s},
+\qquad
+F_s=50~\text{Hz},
+\qquad
+n=3
+\]
+
+con polos deseados del lazo cerrado:
+
+\[
+p_{\text{ctrl}}=\{0.95\pm j\,0.15,\;0.95\}
+\]
+
+obteniéndose:
+
+\[
+K=
+\begin{bmatrix}
+	0.6169 & -0.4194 & 0.2418
+\end{bmatrix}.
+\]
+
+\insertarfigura{img/SS/SS_pzmap.png}
+{Mapa de polos y ceros en el plano-$z$: polos de la planta discreta, polos del lazo cerrado $(A-BK)$ y polos de los observadores.}
+{fig:ss_pzmap}{1}
+
+La Fig.~\ref{fig:ss_pzmap} permite verificar que todos los polos del lazo
+cerrado se ubican estrictamente dentro del círculo unitario, garantizando
+estabilidad interna discreta.
+
+% ============================================================
+\subsubsection{Seguimiento de referencia}
+% ============================================================
+
+Como el objetivo del sistema es seguir una referencia de altura (y no
+regular a cero), se incorporó un precompensador discreto
+$N_{\text{bar}}$ para asegurar ganancia unitaria en régimen permanente
+bajo el modelo lineal:
+
+\[
+u_k = N_{\text{bar}}\,r_k - K\hat{x}_k.
+\]
+
+Para el caso de estudio se obtuvo:
+
+\[
+N_{\text{bar}} = 9.1835.
+\]
+
+% ============================================================
+\subsubsection{Estimación de estados}
+% ============================================================
+
+Dado que únicamente se mide la altura, el resto de estados debe estimarse.
+Se implementó un observador de orden completo en dos variantes.
+
+% ------------------------------------------------------------
+\paragraph{1) Observador predictor}
+% ------------------------------------------------------------
+
+\[
+\hat{x}_{k+1}
+=
+A\hat{x}_k + Bu_k + L_{\text{pred}}\big(y_k-\hat{y}_k\big),
+\qquad
+\hat{y}_k=C\hat{x}_k.
+\]
+
+La dinámica del error queda gobernada por:
+
+\[
+e_{k+1}=(A-L_{\text{pred}}C)e_k,
+\]
+
+por lo que los polos del estimador se fijan mediante:
+
+\[
+\lambda(A-L_{\text{pred}}C)=p_{\text{obs}}.
+\]
+
+% ------------------------------------------------------------
+\paragraph{2) Observador actual}
+% ------------------------------------------------------------
+
+\[
+z_{k+1}=A\hat{x}_k+Bu_k,
+\qquad
+\hat{y}_{k+1}^- = C z_{k+1},
+\]
+
+\[
+\hat{x}_{k+1}=z_{k+1}+L_{\text{act}}\big(y_{k+1}-\hat{y}_{k+1}^-\big).
+\]
+
+En este caso la dinámica del error resulta:
+
+\[
+e_{k+1}=(A-L_{\text{act}}CA)e_k,
+\]
+
+por lo que explícitamente:
+
+\[
+\lambda(A-L_{\text{act}}CA)=p_{\text{obs}}.
+\]
+
+% ------------------------------------------------------------
+\paragraph{Polos seleccionados y criterio numérico}
+% ------------------------------------------------------------
+
+En ambos casos se utilizaron:
+
+\[
+p_{\text{obs}}=\{0.8\pm j\,0.25,\;0.9\}.
+\]
+
+Las ganancias obtenidas fueron:
+
+\[
+L_{\text{pred}}=
+\begin{bmatrix}
+	167.3535\\
+	253.6822\\
+	86.0310
+\end{bmatrix},
+\qquad
+L_{\text{act}}=
+\begin{bmatrix}
+	126.8411\\
+	172.0621\\
+	45.1301
+\end{bmatrix}.
+\]
+
+La selección de $p_{\text{ctrl}}$ y $p_{\text{obs}}$ no fue arbitraria.
+Se buscó que la función \texttt{place()} reportara precisiones numéricas
+superiores a 10 dígitos significativos en su segundo argumento
+(indicador de condición numérica). En la práctica, elecciones con menor
+precisión comportaminetos imprevistos por la simulación.
+
+Asimismo, la elección de polos excesivamente rápidos generaba
+ganancias de magnitud muy elevada, resultando en esfuerzos de control
+desmedidos y físicamente no implementables en la planta real.
+
+% ============================================================
+\subsubsection{Principio de Separación}
+% ============================================================
+
+El principio de separación establece que la dinámica del controlador
+$(A-BK)$ y la del observador son estructuralmente ortogonales.
+Esto significa que el diseño del control y el diseño del estimador
+pueden realizarse de manera independiente, ya que la matriz del sistema
+aumentado es triangular por bloques.
+
+En consecuencia, los autovalores del sistema completo resultan de la unión:
+
+\[
+\lambda_{\text{total}}
+=
+\lambda(A-BK)
+\cup
+\begin{cases}
+	\lambda(A-L_{\text{pred}}C), & \text{(predictor)} \\
+	\lambda(A-L_{\text{act}}CA), & \text{(actual)}.
+\end{cases}
+\]
+
+Esto permitió ajustar separadamente la rapidez del lazo de control
+y la convergencia del observador.
+
+% ============================================================
+\subsubsection{Resultados en simulación}
+% ============================================================
+
+\insertarfigura{img/SS/SS_step_noSat.png}{Respuesta temporal sin saturación.}{fig:ss_sinSat}{1}
+
+\insertarfigura{img/SS/SS_step_Sat.png}{Respuesta temporal con saturación.}{fig:ss_Sat}{1}
+
+\insertarfigura{img/SS/SS_esfuerzo_Sat.png}{Esfuerzo de control con saturación.}{fig:ss_EsfSat}{1}
+
+\insertarfigura{img/SS/SS_todoJunto.png}{Resumen: respuesta, esfuerzo y círculo unitario.}{fig:ss_TJSat}{1}
+
+En simulación, bajo el modelo lineal ideal, la respuesta resulta
+suavemente oscilatoria y con esfuerzo acotado. No se observa
+sobreimpulso significativo en el modelo nominal.
+
+% ============================================================
+\subsubsection{Resultados experimentales}
+% ============================================================
+
+\insertarfigura{img/SS/SS_practico_predictor.png}{Implementación práctica con observador predictor.}{fig:ss_pred_pract}{1}
+
+\insertarfigura{img/SS/SS_actual_practico.png}{Implementación práctica con observador actual.}{fig:ss_act_pract}{1}
+
+Para el observador predictor se obtuvo:
+
+\[
+t_r \approx 520~\text{ms},
+\qquad
+\%OS \approx 13.79\%.
+\]
+
+En un segundo levantamiento:
+
+\[
+\%OS \approx 11.864\%.
+\]
+
+La variación entre ensayos se atribuye principalmente a descarga
+de batería y a dinámicas no modeladas.
+
+En la práctica, el predictor mostró un esfuerzo más errático que
+en simulación. Esto se interpreta como amplificación del ruido de
+medición por parte del observador, generando un comportamiento
+aparentemente derivativo y picos cercanos a saturación.
+
+En el caso del observador actual, la respuesta en altura fue similar,
+pero los picos de esfuerzo fueron menos frecuentes. La corrección con
+$y_{k+1}$ introduce un efecto de filtrado natural debido a la dinámica
+de la planta entre $u_k$ y la medición siguiente.
+
+% ============================================================
+\subsubsection{Conclusión}
+% ============================================================
+
+El control por realimentación de estados permitió seguimiento estable
+y rápido de la referencia.
+
+No obstante, este enfoque mostró una dependencia mucho mayor del modelo
+que los métodos clásicos. Pequeñas discrepancias entre planta real e
+identificada se reflejan directamente en el transitorio.
+
+Comparativamente:
+
+\begin{itemize}
+	\item El predictor es más simple computacionalmente, pero más sensible al ruido.
+	\item El observador actual mostró mejor comportamiento práctico al filtrar parcialmente el ruido.
+\end{itemize}
+
+Siempre que el tiempo de cálculo sea despreciable frente al período
+de muestreo, el observador actual resulta preferible para esta planta.
+
+

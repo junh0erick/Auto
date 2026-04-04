@@ -1,0 +1,183 @@
+% ============================================================
+\subsubsection{Síntesis directa (Truxal--Ragazzini) y evaluación intramuestra}
+% ============================================================
+
+El método de Síntesis Directa (Truxal--Ragazzini) se basa en el análisis
+analítico del modelo identificado de la planta para obtener explícitamente
+el compensador que produzca una respuesta deseada frente a una entrada
+particular.
+
+A diferencia de los métodos geométricos (Lugar de Raíces) o frecuenciales
+(Bode), aquí se impone algebraicamente la dinámica deseada en lazo cerrado
+a partir del modelo \(G_{ZAS}(z)\). El controlador surge de resolver
+directamente la ecuación:
+
+\[
+G_{cl}(z)
+=
+\frac{C(z)G_{ZAS}(z)}{1 + C(z)G_{ZAS}(z)}.
+\]
+
+Este enfoque es extremadamente dependiente del modelo,
+ya que implica esencialmente su inversión parcial o total.
+
+% ============================================================
+\paragraph{Frecuencia de muestreo}
+% ============================================================
+
+Se parte del modelo continuo previamente identificado,
+cuyos polos dominantes son:
+
+\[
+p_{1,2} = -2.805 \pm j\,2.4804,
+\qquad
+p_3 = -0.0003.
+\]
+
+Para el par complejo dominante:
+
+\[
+\omega_n
+=
+\sqrt{(-2.805)^2 + (2.4804)^2}
+\approx 3.745 \,\text{rad/s},
+\]
+
+\[
+f_n
+=
+\frac{\omega_n}{2\pi}
+\approx 0.596 \,\text{Hz}.
+\]
+
+Siguiendo el criterio de Nyquist, la frecuencia mínima de muestreo
+debería ser superior a \(2f_n \approx 1.19\,\text{Hz}\).
+
+Sin embargo, experimentalmente se observó que al aumentar
+la frecuencia de muestreo el esfuerzo de control crece
+de manera extremadamente elevada, producto de la inversión
+explícita del modelo y la agresividad dinámica que introduce
+el diseño.
+
+Por esta razón se adoptó:
+
+\[
+F_s = 2\,\text{Hz}
+\qquad
+(T_s = 0.5\,\text{s}),
+\]
+
+como compromiso entre rapidez y esfuerzo físicamente realizable.
+
+El procedimiento completo se detalla en el
+Apéndice~\ref{ap:codigo_TR}.
+
+% ============================================================
+\subsubsection{Controlador con oscilaciones intramuestra}
+% ============================================================
+
+Si se resuelve directamente:
+
+\[
+G_{cl}(z)
+=
+\frac{C(z)G_{ZAS}(z)}{1+C(z)G_{ZAS}(z)}
+=
+\frac{Y(z)}{R(z)}
+\]
+
+para una referencia escalón con salida deseada retardada,
+sin imponer condiciones estructurales adicionales,
+se obtiene:
+
+{\tiny
+	\[
+	C_2(z)=
+	\frac{z^3 - 1.16z^2 + 0.2202z - 0.0605}
+	{0.1917z^5 + 0.3612z^4 + 0.02515z^3
+		- 0.1917z^2 - 0.3612z - 0.02515}.
+	\]
+}
+
+\insertarfigura{img/Sintesis/Step_salidaConOscilaciones.png}
+{Respuesta al escalón con oscilaciones intramuestra.}
+{fig:conSalida}{1}
+
+\insertarfigura{img/Sintesis/Step_esfuerzoConOscilaciones.png}
+{Esfuerzo de control asociado a \(C_2(z)\).}
+{fig:conEsfuerzo}{1}
+
+En este caso se observan claramente
+\textbf{oscilaciones intramuestra}, es decir,
+variaciones significativas entre instantes de muestreo.
+
+El esfuerzo de control resulta además de amplitud elevada,
+mostrando alta sensibilidad frente a pequeñas variaciones
+del modelo.
+
+% ============================================================
+\subsubsection{Sin oscilaciones intramuestra (Ripple-Free)}
+% ============================================================
+
+Sea la función de lazo:
+
+\[
+L(z) = C(z)G_{ZAS}(z) = \frac{N_L(z)}{D_L(z)}.
+\]
+
+Para eliminar oscilaciones intramuestra
+(\textit{ripple-free response}) deben cumplirse simultáneamente:
+
+\begin{enumerate}
+	\item \(N_L(z) + D_L(z) = z^l,\quad l \ge n\).
+	\item \(D_L(z)\) debe poseer una raíz en \(z=1\) (sistema tipo 1).
+	\item No deben existir cancelaciones inestables.
+\end{enumerate}
+
+Resolviendo el sistema polinómico correspondiente se obtiene:
+
+\[
+C_1(z)=
+\frac{1.73z^2 - 0.2763z + 0.1047}
+{z^2 + 0.6683z + 0.04352}.
+\]
+
+\insertarfigura{img/Sintesis/Step_salidaSinOscilaciones.png}
+{Respuesta al escalón sin oscilaciones intramuestra.}
+{fig:sinSalida}{1}
+
+\insertarfigura{img/Sintesis/Step_esfuerzoSinOscilaciones.png}
+{Esfuerzo de control asociado a \(C_1(z)\).}
+{fig:sinEsfuerzo}{1}
+
+En este caso las oscilaciones intramuestra desaparecen,
+pero el esfuerzo de control continúa siendo
+considerablemente elevado.
+
+% ============================================================
+\subsubsection{Discusión y decisión experimental}
+% ============================================================
+
+Ambos controladores presentan una dinámica extremadamente agresiva.
+
+El método, si bien matemáticamente elegante,
+resulta excesivamente dependiente del modelo.
+La inversión explícita amplifica errores de identificación,
+no linealidades y saturaciones del actuador.
+
+Si se reduce el tiempo de muestreo
+el problema se mitiga parcialmente,
+pero el esfuerzo tiende rápidamente a volverse
+físicamente irrealizable.
+
+Por esta razón, ninguno de los dos controladores
+fue implementado experimentalmente.
+
+Estos diseños deben considerarse
+controladores teóricos de alta sensibilidad,
+útiles desde el punto de vista académico,
+pero no apropiados para la planta real.
+
+Paradójicamente, el método que parece más “óptimo”
+desde el punto de vista algebraico
+resulta ser el menos robusto en la práctica.

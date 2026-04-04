@@ -1,0 +1,82 @@
+#ifndef CONTROL_APP_H
+#define CONTROL_APP_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/* =======================
+   Saturaciones / offsets
+   ======================= */
+#ifndef CONTROL_SAT_MIN
+    #define CONTROL_SAT_MIN (0.0f)
+#endif
+#ifndef CONTROL_SAT_MAX
+    #define CONTROL_SAT_MAX (4.08f)
+#endif
+#ifndef CONTROL_U_OFFSET
+    #define CONTROL_U_OFFSET (0.0f)
+#endif
+
+#ifndef CONTROL_STOP_TARGET
+    #define CONTROL_STOP_TARGET (0.0f)
+#endif
+#ifndef CONTROL_STOP_STEP
+    #define CONTROL_STOP_STEP (0.01f)
+#endif
+
+/* =======================
+   Callbacks IO
+   ======================= */
+typedef void (*control_write_u_fn_t)(float u_phy);
+
+/* Corre DENTRO del ISR de muestreo.
+   Debe ser ultraliviano y terminar llamando:
+     control_sample_isr_push(y);
+*/
+typedef void (*control_sample_isr_fn_t)(void);
+
+/* =======================
+   Variables ISR -> main
+   ======================= */
+extern volatile float   control_last_y;
+extern volatile uint8_t control_sample_pending;
+extern volatile float   control_ref_v;
+
+/* =======================
+   API base
+   ======================= */
+void control_register_io(control_sample_isr_fn_t sample_isr,
+                         control_write_u_fn_t    write_u);
+
+void control_on_sample_isr(void);
+void control_sample_isr_push(float y);
+
+void  control_set_reference(float r);
+float control_get_reference(void);
+
+void  control_set_sample_time(float Ts);
+float control_get_sample_time(void);
+
+void  control_start(float ref0);
+bool  control_stop_suave_step(void);
+
+void  control_apply_tf(const float* c, uint16_t n);
+void  control_apply_ss(const float* c, uint16_t n);
+
+void  control_step(void);
+
+/* =======================
+   Telemetría ligera (sin log)
+   ======================= */
+uint8_t control_telem_ready(void);
+/* Pop de snapshot estable (u,y). Devuelve true si había dato. */
+bool    control_telem_pop(float* u_out, float* y_out);
+
+/* =======================
+   Cambio de periodo (lo aplica main)
+   ======================= */
+uint8_t  control_period_update_pending(void);
+uint16_t control_period_get_pending_ticks(void);
+void     control_period_clear_pending(void);
+
+#endif /* CONTROL_APP_H */

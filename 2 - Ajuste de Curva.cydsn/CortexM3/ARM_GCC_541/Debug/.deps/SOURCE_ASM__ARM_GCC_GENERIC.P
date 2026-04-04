@@ -1,0 +1,10 @@
+D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/CortexM3/ARM_GCC_541/Debug/CyBootAsmGnu.o : D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/CyBootAsmGnu.s D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cydevicegnu.inc D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cydevicegnu_trm.inc D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cyfittergnu.inc 
+
+D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/CyBootAsmGnu.s : 
+
+D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cydevicegnu.inc : 
+
+D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cydevicegnu_trm.inc : 
+
+D:/PSoc/Auto/TPF/TPF_PenduloInvertido/Ajuste\ de\ Curva.cydsn/Generated_Source/PSoC5/cyfittergnu.inc : 
+

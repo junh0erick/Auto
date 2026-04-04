@@ -1,0 +1,2418 @@
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.global	__aeabi_i2f
+  20              		.global	__aeabi_fmul
+  21              		.global	__aeabi_fdiv
+  22              		.section	.text.Motor_Speed_ISR,"ax",%progbits
+  23              		.align	2
+  24              		.global	Motor_Speed_ISR
+  25              		.thumb
+  26              		.thumb_func
+  27              		.type	Motor_Speed_ISR, %function
+  28              	Motor_Speed_ISR:
+  29              	.LFB64:
+  30              		.file 1 "main.c"
+   1:main.c        **** #include "project.h"
+   2:main.c        **** #include <stdlib.h>
+   3:main.c        **** #include <stdio.h>
+   4:main.c        **** #include <math.h>
+   5:main.c        **** 
+   6:main.c        **** /*******************************************************************************
+   7:main.c        **** * DEFINICIONES
+   8:main.c        **** *******************************************************************************/
+   9:main.c        **** 
+  10:main.c        **** // Configuración del PWM
+  11:main.c        **** #define PWM_PERIOD          1264
+  12:main.c        **** 
+  13:main.c        **** // Límites de velocidad
+  14:main.c        **** #define MOTOR_MAX           PWM_PERIOD
+  15:main.c        **** #define MOTOR_MIN           -PWM_PERIOD
+  16:main.c        **** 
+  17:main.c        **** // Encoder del motor: cuentas por revolución mecánica
+  18:main.c        **** // QuadDec usa modo x4 → si el encoder tiene N PPR, CPR = 4*N
+  19:main.c        **** // Ajustar según el encoder físico utilizado
+  20:main.c        **** #define ENCODER_CPR         1040u
+  21:main.c        **** 
+  22:main.c        **** // Tiempo de muestreo en segundos.
+  23:main.c        **** // clk_Timer = 24 MHz, period = 240000 cuentas
+  24:main.c        **** //   T = 240000 / 24000000 = 0.01 s  (10 ms)
+  25:main.c        **** #define SAMPLE_TIME_S       0.01f
+  26:main.c        **** 
+  27:main.c        **** /*******************************************************************************
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 2
+
+
+  28:main.c        **** * VARIABLES GLOBALES — VELOCIDAD DEL MOTOR
+  29:main.c        **** *******************************************************************************/
+  30:main.c        **** 
+  31:main.c        **** volatile int32 encoder_prev_count = 0;
+  32:main.c        **** volatile float motor_speed_rpm    = 0.0f;   // Positivo = adelante, negativo = atrás
+  33:main.c        **** 
+  34:main.c        **** /*******************************************************************************
+  35:main.c        **** * ISR DEL TIMER_1 — Cálculo periódico de velocidad del motor
+  36:main.c        **** *
+  37:main.c        **** * Se ejecuta cada SAMPLE_TIME_S segundos al llegar el Timer_1 a terminal count.
+  38:main.c        **** * Fórmula: RPM = (delta_cuentas * 60) / (ENCODER_CPR * SAMPLE_TIME_S)
+  39:main.c        **** *******************************************************************************/
+  40:main.c        **** 
+  41:main.c        **** CY_ISR(Motor_Speed_ISR)
+  42:main.c        **** {
+  31              		.loc 1 42 0
+  32              		.cfi_startproc
+  33              		@ args = 0, pretend = 0, frame = 0
+  34              		@ frame_needed = 0, uses_anonymous_args = 0
+  35 0000 10B5     		push	{r4, lr}
+  36              		.cfi_def_cfa_offset 8
+  37              		.cfi_offset 4, -8
+  38              		.cfi_offset 14, -4
+  43:main.c        ****     int32 current_count;
+  44:main.c        ****     int32 delta_counts;
+  45:main.c        **** 
+  46:main.c        ****     // Leer posición actual del encoder
+  47:main.c        ****     current_count = QuadDec_1_GetCounter();
+  39              		.loc 1 47 0
+  40 0002 FFF7FEFF 		bl	QuadDec_1_GetCounter
+  41              	.LVL0:
+  48:main.c        **** 
+  49:main.c        ****     // Delta con signo (positivo = adelante, negativo = atrás)
+  50:main.c        ****     delta_counts = current_count - encoder_prev_count;
+  42              		.loc 1 50 0
+  43 0006 084C     		ldr	r4, .L3
+  44 0008 2368     		ldr	r3, [r4]
+  45              	.LVL1:
+  51:main.c        ****     encoder_prev_count = current_count;
+  46              		.loc 1 51 0
+  47 000a 2060     		str	r0, [r4]
+  52:main.c        **** 
+  53:main.c        ****     // Calcular RPM
+  54:main.c        ****     motor_speed_rpm = ((float)delta_counts * 60.0f) /
+  48              		.loc 1 54 0
+  49 000c C01A     		subs	r0, r0, r3
+  50              	.LVL2:
+  51 000e FFF7FEFF 		bl	__aeabi_i2f
+  52              	.LVL3:
+  53 0012 0649     		ldr	r1, .L3+4
+  54 0014 FFF7FEFF 		bl	__aeabi_fmul
+  55              	.LVL4:
+  56 0018 0549     		ldr	r1, .L3+8
+  57 001a FFF7FEFF 		bl	__aeabi_fdiv
+  58              	.LVL5:
+  59 001e 6060     		str	r0, [r4, #4]	@ float
+  55:main.c        ****                       ((float)ENCODER_CPR * SAMPLE_TIME_S);
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 3
+
+
+  56:main.c        **** 
+  57:main.c        ****     // Limpiar flag de interrupción del Timer_1
+  58:main.c        ****     Timer_1_ReadStatusRegister();
+  60              		.loc 1 58 0
+  61 0020 FFF7FEFF 		bl	Timer_1_ReadStatusRegister
+  62              	.LVL6:
+  63 0024 10BD     		pop	{r4, pc}
+  64              	.L4:
+  65 0026 00BF     		.align	2
+  66              	.L3:
+  67 0028 00000000 		.word	.LANCHOR0
+  68 002c 00007042 		.word	1114636288
+  69 0030 66662641 		.word	1093035622
+  70              		.cfi_endproc
+  71              	.LFE64:
+  72              		.size	Motor_Speed_ISR, .-Motor_Speed_ISR
+  73              		.section	.text.Motor_Control,"ax",%progbits
+  74              		.align	2
+  75              		.global	Motor_Control
+  76              		.thumb
+  77              		.thumb_func
+  78              		.type	Motor_Control, %function
+  79              	Motor_Control:
+  80              	.LFB65:
+  59:main.c        **** }
+  60:main.c        **** 
+  61:main.c        **** /*******************************************************************************
+  62:main.c        **** * FUNCIONES DE CONTROL DEL MOTOR
+  63:main.c        **** *******************************************************************************/
+  64:main.c        **** 
+  65:main.c        **** /**
+  66:main.c        ****  * @brief Controla el motor DC con el L298N
+  67:main.c        ****  * @param velocidad: -2524 (máx. atrás) a +2524 (máx. adelante)
+  68:main.c        ****  * 
+  69:main.c        ****  * Pines utilizados:
+  70:main.c        ****  *   - Pin_ENA (P2[7]): PWM para velocidad
+  71:main.c        ****  *   - Pin_IN1 (P2[6]): Control de dirección 1
+  72:main.c        ****  *   - Pin_IN2 (P2[5]): Control de dirección 2
+  73:main.c        ****  */
+  74:main.c        **** void Motor_Control(int16 velocidad) {
+  81              		.loc 1 74 0
+  82              		.cfi_startproc
+  83              		@ args = 0, pretend = 0, frame = 0
+  84              		@ frame_needed = 0, uses_anonymous_args = 0
+  85              	.LVL7:
+  86 0000 10B5     		push	{r4, lr}
+  87              		.cfi_def_cfa_offset 8
+  88              		.cfi_offset 4, -8
+  89              		.cfi_offset 14, -4
+  90 0002 0446     		mov	r4, r0
+  75:main.c        ****     
+  76:main.c        ****     // Saturación de velocidad
+  77:main.c        ****     if (velocidad > MOTOR_MAX) velocidad = MOTOR_MAX;
+  91              		.loc 1 77 0
+  92 0004 B0F59E6F 		cmp	r0, #1264
+  93 0008 01DD     		ble	.L6
+  94 000a 4FF49E64 		mov	r4, #1264
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 4
+
+
+  95              	.L6:
+  96              	.LVL8:
+  78:main.c        ****     if (velocidad < MOTOR_MIN) velocidad = MOTOR_MIN;
+  97              		.loc 1 78 0
+  98 000e 14F59E6F 		cmn	r4, #1264
+  99 0012 00DA     		bge	.L7
+ 100 0014 114C     		ldr	r4, .L14
+ 101              	.LVL9:
+ 102              	.L7:
+  79:main.c        ****     
+  80:main.c        ****     if (velocidad > 0) {
+ 103              		.loc 1 80 0
+ 104 0016 002C     		cmp	r4, #0
+ 105 0018 09DD     		ble	.L8
+  81:main.c        ****         // Motor ADELANTE
+  82:main.c        ****         Pin_IN1_Write(1);
+ 106              		.loc 1 82 0
+ 107 001a 0120     		movs	r0, #1
+ 108 001c FFF7FEFF 		bl	Pin_IN1_Write
+ 109              	.LVL10:
+  83:main.c        ****         Pin_IN2_Write(0);
+ 110              		.loc 1 83 0
+ 111 0020 0020     		movs	r0, #0
+ 112 0022 FFF7FEFF 		bl	Pin_IN2_Write
+ 113              	.LVL11:
+  84:main.c        ****         PWM_Motor_WriteCompare((uint16)velocidad);
+ 114              		.loc 1 84 0
+ 115 0026 A0B2     		uxth	r0, r4
+ 116 0028 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 117              	.LVL12:
+ 118 002c 10BD     		pop	{r4, pc}
+ 119              	.LVL13:
+ 120              	.L8:
+  85:main.c        ****     }
+  86:main.c        ****     else if (velocidad < 0) {
+ 121              		.loc 1 86 0
+ 122 002e 002C     		cmp	r4, #0
+ 123 0030 0ADA     		bge	.L10
+  87:main.c        ****         // Motor ATRÁS
+  88:main.c        ****         Pin_IN1_Write(0);
+ 124              		.loc 1 88 0
+ 125 0032 0020     		movs	r0, #0
+ 126 0034 FFF7FEFF 		bl	Pin_IN1_Write
+ 127              	.LVL14:
+  89:main.c        ****         Pin_IN2_Write(1);
+ 128              		.loc 1 89 0
+ 129 0038 0120     		movs	r0, #1
+ 130 003a FFF7FEFF 		bl	Pin_IN2_Write
+ 131              	.LVL15:
+  90:main.c        ****         PWM_Motor_WriteCompare((uint16)(-velocidad));
+ 132              		.loc 1 90 0
+ 133 003e 6042     		negs	r0, r4
+ 134 0040 80B2     		uxth	r0, r0
+ 135 0042 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 136              	.LVL16:
+ 137 0046 10BD     		pop	{r4, pc}
+ 138              	.LVL17:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 5
+
+
+ 139              	.L10:
+  91:main.c        ****     }
+  92:main.c        ****     else {
+  93:main.c        ****         // DETENER (freno activo - cortocircuito)
+  94:main.c        ****         Pin_IN1_Write(0);
+ 140              		.loc 1 94 0
+ 141 0048 0020     		movs	r0, #0
+ 142 004a FFF7FEFF 		bl	Pin_IN1_Write
+ 143              	.LVL18:
+  95:main.c        ****         Pin_IN2_Write(0);
+ 144              		.loc 1 95 0
+ 145 004e 0020     		movs	r0, #0
+ 146 0050 FFF7FEFF 		bl	Pin_IN2_Write
+ 147              	.LVL19:
+  96:main.c        ****         PWM_Motor_WriteCompare(0);
+ 148              		.loc 1 96 0
+ 149 0054 0020     		movs	r0, #0
+ 150 0056 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 151              	.LVL20:
+ 152 005a 10BD     		pop	{r4, pc}
+ 153              	.LVL21:
+ 154              	.L15:
+ 155              		.align	2
+ 156              	.L14:
+ 157 005c 10FBFFFF 		.word	-1264
+ 158              		.cfi_endproc
+ 159              	.LFE65:
+ 160              		.size	Motor_Control, .-Motor_Control
+ 161              		.section	.text.Motor_Control_Percent,"ax",%progbits
+ 162              		.align	2
+ 163              		.global	Motor_Control_Percent
+ 164              		.thumb
+ 165              		.thumb_func
+ 166              		.type	Motor_Control_Percent, %function
+ 167              	Motor_Control_Percent:
+ 168              	.LFB66:
+  97:main.c        ****     }
+  98:main.c        **** }
+  99:main.c        **** 
+ 100:main.c        **** /**
+ 101:main.c        ****  * @brief Controla el motor con porcentaje
+ 102:main.c        ****  * @param percent: -100 (máx. atrás) a +100 (máx. adelante)
+ 103:main.c        ****  */
+ 104:main.c        **** void Motor_Control_Percent(int8 percent) {
+ 169              		.loc 1 104 0
+ 170              		.cfi_startproc
+ 171              		@ args = 0, pretend = 0, frame = 0
+ 172              		@ frame_needed = 0, uses_anonymous_args = 0
+ 173              	.LVL22:
+ 174 0000 10B5     		push	{r4, lr}
+ 175              		.cfi_def_cfa_offset 8
+ 176              		.cfi_offset 4, -8
+ 177              		.cfi_offset 14, -4
+ 105:main.c        ****     
+ 106:main.c        ****     int16 pwm_value;
+ 107:main.c        ****     
+ 108:main.c        ****     // Saturación
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 6
+
+
+ 109:main.c        ****     if (percent > 100) percent = 100;
+ 178              		.loc 1 109 0
+ 179 0002 6428     		cmp	r0, #100
+ 180 0004 00DD     		ble	.L17
+ 181 0006 6420     		movs	r0, #100
+ 182              	.LVL23:
+ 183              	.L17:
+ 110:main.c        ****     if (percent < -100) percent = -100;
+ 184              		.loc 1 110 0
+ 185 0008 10F1640F 		cmn	r0, #100
+ 186 000c 01DA     		bge	.L18
+ 187 000e 6FF06300 		mvn	r0, #99
+ 188              	.LVL24:
+ 189              	.L18:
+ 111:main.c        ****     
+ 112:main.c        ****     // Convertir porcentaje a valor PWM
+ 113:main.c        ****     pwm_value = (abs(percent) * PWM_PERIOD) / 100;
+ 190              		.loc 1 113 0
+ 191 0012 80EAE072 		eor	r2, r0, r0, asr #31
+ 192 0016 A2EBE072 		sub	r2, r2, r0, asr #31
+ 193 001a 4FF49E63 		mov	r3, #1264
+ 194 001e 03FB02F3 		mul	r3, r3, r2
+ 195 0022 144C     		ldr	r4, .L25
+ 196 0024 84FB0324 		smull	r2, r4, r4, r3
+ 197 0028 DB17     		asrs	r3, r3, #31
+ 198 002a C3EB6414 		rsb	r4, r3, r4, asr #5
+ 199              	.LVL25:
+ 114:main.c        ****     
+ 115:main.c        ****     if (percent > 0) {
+ 200              		.loc 1 115 0
+ 201 002e 0028     		cmp	r0, #0
+ 202 0030 09DD     		ble	.L19
+ 116:main.c        ****         // Adelante
+ 117:main.c        ****         Pin_IN1_Write(1);
+ 203              		.loc 1 117 0
+ 204 0032 0120     		movs	r0, #1
+ 205              	.LVL26:
+ 206 0034 FFF7FEFF 		bl	Pin_IN1_Write
+ 207              	.LVL27:
+ 118:main.c        ****         Pin_IN2_Write(0);
+ 208              		.loc 1 118 0
+ 209 0038 0020     		movs	r0, #0
+ 210 003a FFF7FEFF 		bl	Pin_IN2_Write
+ 211              	.LVL28:
+ 119:main.c        ****         PWM_Motor_WriteCompare((uint16)pwm_value);
+ 212              		.loc 1 119 0
+ 213 003e A0B2     		uxth	r0, r4
+ 214 0040 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 215              	.LVL29:
+ 216 0044 10BD     		pop	{r4, pc}
+ 217              	.LVL30:
+ 218              	.L19:
+ 120:main.c        ****     }
+ 121:main.c        ****     else if (percent < 0) {
+ 219              		.loc 1 121 0
+ 220 0046 0028     		cmp	r0, #0
+ 221 0048 09DA     		bge	.L21
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 7
+
+
+ 122:main.c        ****         // Atrás
+ 123:main.c        ****         Pin_IN1_Write(0);
+ 222              		.loc 1 123 0
+ 223 004a 0020     		movs	r0, #0
+ 224              	.LVL31:
+ 225 004c FFF7FEFF 		bl	Pin_IN1_Write
+ 226              	.LVL32:
+ 124:main.c        ****         Pin_IN2_Write(1);
+ 227              		.loc 1 124 0
+ 228 0050 0120     		movs	r0, #1
+ 229 0052 FFF7FEFF 		bl	Pin_IN2_Write
+ 230              	.LVL33:
+ 125:main.c        ****         PWM_Motor_WriteCompare((uint16)pwm_value);
+ 231              		.loc 1 125 0
+ 232 0056 A0B2     		uxth	r0, r4
+ 233 0058 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 234              	.LVL34:
+ 235 005c 10BD     		pop	{r4, pc}
+ 236              	.LVL35:
+ 237              	.L21:
+ 126:main.c        ****     }
+ 127:main.c        ****     else {
+ 128:main.c        ****         // Detener
+ 129:main.c        ****         Pin_IN1_Write(0);
+ 238              		.loc 1 129 0
+ 239 005e 0020     		movs	r0, #0
+ 240              	.LVL36:
+ 241 0060 FFF7FEFF 		bl	Pin_IN1_Write
+ 242              	.LVL37:
+ 130:main.c        ****         Pin_IN2_Write(0);
+ 243              		.loc 1 130 0
+ 244 0064 0020     		movs	r0, #0
+ 245 0066 FFF7FEFF 		bl	Pin_IN2_Write
+ 246              	.LVL38:
+ 131:main.c        ****         PWM_Motor_WriteCompare(0);
+ 247              		.loc 1 131 0
+ 248 006a 0020     		movs	r0, #0
+ 249 006c FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 250              	.LVL39:
+ 251 0070 10BD     		pop	{r4, pc}
+ 252              	.LVL40:
+ 253              	.L26:
+ 254 0072 00BF     		.align	2
+ 255              	.L25:
+ 256 0074 1F85EB51 		.word	1374389535
+ 257              		.cfi_endproc
+ 258              	.LFE66:
+ 259              		.size	Motor_Control_Percent, .-Motor_Control_Percent
+ 260              		.section	.text.Motor_Brake,"ax",%progbits
+ 261              		.align	2
+ 262              		.global	Motor_Brake
+ 263              		.thumb
+ 264              		.thumb_func
+ 265              		.type	Motor_Brake, %function
+ 266              	Motor_Brake:
+ 267              	.LFB67:
+ 132:main.c        ****     }
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 8
+
+
+ 133:main.c        **** }
+ 134:main.c        **** 
+ 135:main.c        **** /**
+ 136:main.c        ****  * @brief Frena el motor activamente (cortocircuito)
+ 137:main.c        ****  */
+ 138:main.c        **** void Motor_Brake(void) {
+ 268              		.loc 1 138 0
+ 269              		.cfi_startproc
+ 270              		@ args = 0, pretend = 0, frame = 0
+ 271              		@ frame_needed = 0, uses_anonymous_args = 0
+ 272 0000 08B5     		push	{r3, lr}
+ 273              		.cfi_def_cfa_offset 8
+ 274              		.cfi_offset 3, -8
+ 275              		.cfi_offset 14, -4
+ 139:main.c        ****     Pin_IN1_Write(0);
+ 276              		.loc 1 139 0
+ 277 0002 0020     		movs	r0, #0
+ 278 0004 FFF7FEFF 		bl	Pin_IN1_Write
+ 279              	.LVL41:
+ 140:main.c        ****     Pin_IN2_Write(0);
+ 280              		.loc 1 140 0
+ 281 0008 0020     		movs	r0, #0
+ 282 000a FFF7FEFF 		bl	Pin_IN2_Write
+ 283              	.LVL42:
+ 141:main.c        ****     PWM_Motor_WriteCompare(PWM_PERIOD);  // PWM al 100%
+ 284              		.loc 1 141 0
+ 285 000e 4FF49E60 		mov	r0, #1264
+ 286 0012 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 287              	.LVL43:
+ 288 0016 08BD     		pop	{r3, pc}
+ 289              		.cfi_endproc
+ 290              	.LFE67:
+ 291              		.size	Motor_Brake, .-Motor_Brake
+ 292              		.section	.text.Motor_Free,"ax",%progbits
+ 293              		.align	2
+ 294              		.global	Motor_Free
+ 295              		.thumb
+ 296              		.thumb_func
+ 297              		.type	Motor_Free, %function
+ 298              	Motor_Free:
+ 299              	.LFB68:
+ 142:main.c        **** }
+ 143:main.c        **** 
+ 144:main.c        **** /**
+ 145:main.c        ****  * @brief Deja el motor libre (sin freno)
+ 146:main.c        ****  */
+ 147:main.c        **** void Motor_Free(void) {
+ 300              		.loc 1 147 0
+ 301              		.cfi_startproc
+ 302              		@ args = 0, pretend = 0, frame = 0
+ 303              		@ frame_needed = 0, uses_anonymous_args = 0
+ 304 0000 08B5     		push	{r3, lr}
+ 305              		.cfi_def_cfa_offset 8
+ 306              		.cfi_offset 3, -8
+ 307              		.cfi_offset 14, -4
+ 148:main.c        ****     Pin_IN1_Write(0);
+ 308              		.loc 1 148 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 9
+
+
+ 309 0002 0020     		movs	r0, #0
+ 310 0004 FFF7FEFF 		bl	Pin_IN1_Write
+ 311              	.LVL44:
+ 149:main.c        ****     Pin_IN2_Write(0);
+ 312              		.loc 1 149 0
+ 313 0008 0020     		movs	r0, #0
+ 314 000a FFF7FEFF 		bl	Pin_IN2_Write
+ 315              	.LVL45:
+ 150:main.c        ****     PWM_Motor_WriteCompare(0);  // PWM apagado
+ 316              		.loc 1 150 0
+ 317 000e 0020     		movs	r0, #0
+ 318 0010 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 319              	.LVL46:
+ 320 0014 08BD     		pop	{r3, pc}
+ 321              		.cfi_endproc
+ 322              	.LFE68:
+ 323              		.size	Motor_Free, .-Motor_Free
+ 324              		.global	__aeabi_f2iz
+ 325 0016 00BF     		.section	.text.main,"ax",%progbits
+ 326              		.align	2
+ 327              		.global	main
+ 328              		.thumb
+ 329              		.thumb_func
+ 330              		.type	main, %function
+ 331              	main:
+ 332              	.LFB69:
+ 151:main.c        **** }
+ 152:main.c        **** 
+ 153:main.c        **** /*******************************************************************************
+ 154:main.c        **** * FUNCIÓN PRINCIPAL
+ 155:main.c        **** *******************************************************************************/
+ 156:main.c        **** 
+ 157:main.c        **** int main(void)
+ 158:main.c        **** {
+ 333              		.loc 1 158 0
+ 334              		.cfi_startproc
+ 335              		@ args = 0, pretend = 0, frame = 48
+ 336              		@ frame_needed = 0, uses_anonymous_args = 0
+ 337 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 338              		.cfi_def_cfa_offset 20
+ 339              		.cfi_offset 4, -20
+ 340              		.cfi_offset 5, -16
+ 341              		.cfi_offset 6, -12
+ 342              		.cfi_offset 7, -8
+ 343              		.cfi_offset 14, -4
+ 344 0002 8DB0     		sub	sp, sp, #52
+ 345              		.cfi_def_cfa_offset 72
+ 346              	.LVL47:
+ 159:main.c        ****     char  rx_buf[8];
+ 160:main.c        ****     uint8 rx_idx  = 0u;
+ 161:main.c        ****     uint8 rx_char;
+ 162:main.c        ****     int16 current_pwm = 0;
+ 163:main.c        ****     char  tx_buf[40];
+ 164:main.c        ****     uint16 print_cnt = 0u;
+ 165:main.c        **** 
+ 166:main.c        ****     CyGlobalIntEnable;
+ 347              		.loc 1 166 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 10
+
+
+ 348              		.syntax unified
+ 349              	@ 166 "main.c" 1
+ 350 0004 62B6     		CPSIE   i
+ 351              	@ 0 "" 2
+ 167:main.c        **** 
+ 168:main.c        ****     // Inicializar componentes
+ 169:main.c        ****     PWM_Motor_Start();
+ 352              		.loc 1 169 0
+ 353              		.thumb
+ 354              		.syntax unified
+ 355 0006 FFF7FEFF 		bl	PWM_Motor_Start
+ 356              	.LVL48:
+ 170:main.c        ****     QuadDec_1_Start();
+ 357              		.loc 1 170 0
+ 358 000a FFF7FEFF 		bl	QuadDec_1_Start
+ 359              	.LVL49:
+ 171:main.c        ****     UART_1_Start();
+ 360              		.loc 1 171 0
+ 361 000e FFF7FEFF 		bl	UART_1_Start
+ 362              	.LVL50:
+ 172:main.c        **** 
+ 173:main.c        ****     // Timer_1 para medición de velocidad (ISR cada 10 ms)
+ 174:main.c        ****     Timer_1_Start();
+ 363              		.loc 1 174 0
+ 364 0012 FFF7FEFF 		bl	Timer_1_Start
+ 365              	.LVL51:
+ 175:main.c        ****     isr_1_StartEx(Motor_Speed_ISR);
+ 366              		.loc 1 175 0
+ 367 0016 2448     		ldr	r0, .L38
+ 368 0018 FFF7FEFF 		bl	isr_1_StartEx
+ 369              	.LVL52:
+ 176:main.c        **** 
+ 177:main.c        ****     UART_1_PutString("=== Motor Control ===\r\n");
+ 370              		.loc 1 177 0
+ 371 001c 2348     		ldr	r0, .L38+4
+ 372 001e FFF7FEFF 		bl	UART_1_PutString
+ 373              	.LVL53:
+ 178:main.c        ****     UART_1_PutString("Ingrese PWM (-2524 a 2524) + Enter\r\n");
+ 374              		.loc 1 178 0
+ 375 0022 2348     		ldr	r0, .L38+8
+ 376 0024 FFF7FEFF 		bl	UART_1_PutString
+ 377              	.LVL54:
+ 179:main.c        ****     UART_1_PutString("PWM:     0 | RPM:     0.0\r\n");
+ 378              		.loc 1 179 0
+ 379 0028 2248     		ldr	r0, .L38+12
+ 380 002a FFF7FEFF 		bl	UART_1_PutString
+ 381              	.LVL55:
+ 164:main.c        **** 
+ 382              		.loc 1 164 0
+ 383 002e 0024     		movs	r4, #0
+ 162:main.c        ****     char  tx_buf[40];
+ 384              		.loc 1 162 0
+ 385 0030 2746     		mov	r7, r4
+ 160:main.c        ****     uint8 rx_char;
+ 386              		.loc 1 160 0
+ 387 0032 2646     		mov	r6, r4
+ 388              	.LVL56:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 11
+
+
+ 389              	.L36:
+ 180:main.c        **** 
+ 181:main.c        ****     for(;;)
+ 182:main.c        ****     {
+ 183:main.c        ****         /*----------------------------------------------------------------------
+ 184:main.c        ****         * Recepción de PWM por UART
+ 185:main.c        ****         * Escribir el número en PuTTY y presionar Enter para aplicarlo.
+ 186:main.c        ****         * Soporta negativos (ej: -1200 + Enter)
+ 187:main.c        ****         *---------------------------------------------------------------------*/
+ 188:main.c        ****         rx_char = UART_1_GetChar();
+ 390              		.loc 1 188 0
+ 391 0034 FFF7FEFF 		bl	UART_1_GetChar
+ 392              	.LVL57:
+ 189:main.c        ****         if (rx_char != 0u)
+ 393              		.loc 1 189 0
+ 394 0038 0546     		mov	r5, r0
+ 395 003a F0B1     		cbz	r0, .L32
+ 190:main.c        ****         {
+ 191:main.c        ****             if (rx_char == '\r' || rx_char == '\n')
+ 396              		.loc 1 191 0
+ 397 003c 0D28     		cmp	r0, #13
+ 398 003e 01D0     		beq	.L33
+ 399              		.loc 1 191 0 is_stmt 0 discriminator 1
+ 400 0040 0A28     		cmp	r0, #10
+ 401 0042 10D1     		bne	.L34
+ 402              	.L33:
+ 192:main.c        ****             {
+ 193:main.c        ****                 if (rx_idx > 0u)
+ 403              		.loc 1 193 0 is_stmt 1
+ 404 0044 CEB1     		cbz	r6, .L32
+ 194:main.c        ****                 {
+ 195:main.c        ****                     rx_buf[rx_idx] = '\0';
+ 405              		.loc 1 195 0
+ 406 0046 0CAB     		add	r3, sp, #48
+ 407 0048 3344     		add	r3, r3, r6
+ 408 004a 0026     		movs	r6, #0
+ 409              	.LVL58:
+ 410 004c 03F8086C 		strb	r6, [r3, #-8]
+ 196:main.c        ****                     current_pwm = (int16)atoi(rx_buf);
+ 411              		.loc 1 196 0
+ 412 0050 0AA8     		add	r0, sp, #40
+ 413              	.LVL59:
+ 414 0052 FFF7FEFF 		bl	atoi
+ 415              	.LVL60:
+ 416 0056 07B2     		sxth	r7, r0
+ 417              	.LVL61:
+ 197:main.c        ****                     Motor_Control(current_pwm);
+ 418              		.loc 1 197 0
+ 419 0058 3846     		mov	r0, r7
+ 420 005a FFF7FEFF 		bl	Motor_Control
+ 421              	.LVL62:
+ 198:main.c        ****                     rx_idx = 0u;
+ 199:main.c        ****                     UART_1_PutString("\r\n");
+ 422              		.loc 1 199 0
+ 423 005e 1648     		ldr	r0, .L38+16
+ 424 0060 FFF7FEFF 		bl	UART_1_PutString
+ 425              	.LVL63:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 12
+
+
+ 426 0064 09E0     		b	.L32
+ 427              	.LVL64:
+ 428              	.L34:
+ 200:main.c        ****                 }
+ 201:main.c        ****             }
+ 202:main.c        ****             else if (rx_idx < (sizeof(rx_buf) - 1u))
+ 429              		.loc 1 202 0
+ 430 0066 062E     		cmp	r6, #6
+ 431 0068 07D8     		bhi	.L32
+ 203:main.c        ****             {
+ 204:main.c        ****                 UART_1_PutChar(rx_char);    // eco: ver lo que se escribe
+ 432              		.loc 1 204 0
+ 433 006a FFF7FEFF 		bl	UART_1_PutChar
+ 434              	.LVL65:
+ 205:main.c        ****                 rx_buf[rx_idx++] = (char)rx_char;
+ 435              		.loc 1 205 0
+ 436 006e 731C     		adds	r3, r6, #1
+ 437              	.LVL66:
+ 438 0070 0CAA     		add	r2, sp, #48
+ 439 0072 1644     		add	r6, r6, r2
+ 440 0074 06F8085C 		strb	r5, [r6, #-8]
+ 441 0078 DEB2     		uxtb	r6, r3
+ 442              	.LVL67:
+ 443              	.L32:
+ 206:main.c        ****             }
+ 207:main.c        ****         }
+ 208:main.c        **** 
+ 209:main.c        ****         /*----------------------------------------------------------------------
+ 210:main.c        ****         * Imprimir PWM y velocidad cada 500 ms
+ 211:main.c        ****         *---------------------------------------------------------------------*/
+ 212:main.c        ****         print_cnt++;
+ 444              		.loc 1 212 0
+ 445 007a 0134     		adds	r4, r4, #1
+ 446              	.LVL68:
+ 447 007c A4B2     		uxth	r4, r4
+ 448              	.LVL69:
+ 213:main.c        ****         if (print_cnt >= 50u)
+ 449              		.loc 1 213 0
+ 450 007e 312C     		cmp	r4, #49
+ 451 0080 0DD9     		bls	.L35
+ 452              	.LVL70:
+ 214:main.c        ****         {
+ 215:main.c        ****             print_cnt = 0u;
+ 216:main.c        ****             sprintf(tx_buf, "PWM: %5d | RPM: %5d\r\n",
+ 453              		.loc 1 216 0
+ 454 0082 0E4B     		ldr	r3, .L38+20
+ 455 0084 5868     		ldr	r0, [r3, #4]	@ float
+ 456 0086 FFF7FEFF 		bl	__aeabi_f2iz
+ 457              	.LVL71:
+ 458 008a 0346     		mov	r3, r0
+ 459 008c 3A46     		mov	r2, r7
+ 460 008e 0C49     		ldr	r1, .L38+24
+ 461 0090 6846     		mov	r0, sp
+ 462 0092 FFF7FEFF 		bl	sprintf
+ 463              	.LVL72:
+ 217:main.c        ****                     (int)current_pwm, (int)motor_speed_rpm);
+ 218:main.c        ****             UART_1_PutString(tx_buf);
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 13
+
+
+ 464              		.loc 1 218 0
+ 465 0096 6846     		mov	r0, sp
+ 466 0098 FFF7FEFF 		bl	UART_1_PutString
+ 467              	.LVL73:
+ 215:main.c        ****             sprintf(tx_buf, "PWM: %5d | RPM: %5d\r\n",
+ 468              		.loc 1 215 0
+ 469 009c 0024     		movs	r4, #0
+ 470              	.LVL74:
+ 471              	.L35:
+ 219:main.c        ****         }
+ 220:main.c        **** 
+ 221:main.c        ****         CyDelay(10);    // 10 ms por iteración → 50 iter = 500 ms
+ 472              		.loc 1 221 0
+ 473 009e 0A20     		movs	r0, #10
+ 474 00a0 FFF7FEFF 		bl	CyDelay
+ 475              	.LVL75:
+ 222:main.c        ****     }
+ 476              		.loc 1 222 0
+ 477 00a4 C6E7     		b	.L36
+ 478              	.L39:
+ 479 00a6 00BF     		.align	2
+ 480              	.L38:
+ 481 00a8 00000000 		.word	Motor_Speed_ISR
+ 482 00ac 00000000 		.word	.LC0
+ 483 00b0 18000000 		.word	.LC1
+ 484 00b4 40000000 		.word	.LC2
+ 485 00b8 5C000000 		.word	.LC3
+ 486 00bc 00000000 		.word	.LANCHOR0
+ 487 00c0 60000000 		.word	.LC4
+ 488              		.cfi_endproc
+ 489              	.LFE69:
+ 490              		.size	main, .-main
+ 491              		.global	motor_speed_rpm
+ 492              		.global	encoder_prev_count
+ 493              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 494              		.align	2
+ 495              	.LC0:
+ 496 0000 3D3D3D20 		.ascii	"=== Motor Control ===\015\012\000"
+ 496      4D6F746F 
+ 496      7220436F 
+ 496      6E74726F 
+ 496      6C203D3D 
+ 497              	.LC1:
+ 498 0018 496E6772 		.ascii	"Ingrese PWM (-2524 a 2524) + Enter\015\012\000"
+ 498      65736520 
+ 498      50574D20 
+ 498      282D3235 
+ 498      32342061 
+ 499 003d 000000   		.space	3
+ 500              	.LC2:
+ 501 0040 50574D3A 		.ascii	"PWM:     0 | RPM:     0.0\015\012\000"
+ 501      20202020 
+ 501      2030207C 
+ 501      2052504D 
+ 501      3A202020 
+ 502              	.LC3:
+ 503 005c 0D0A00   		.ascii	"\015\012\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 14
+
+
+ 504 005f 00       		.space	1
+ 505              	.LC4:
+ 506 0060 50574D3A 		.ascii	"PWM: %5d | RPM: %5d\015\012\000"
+ 506      20253564 
+ 506      207C2052 
+ 506      504D3A20 
+ 506      2535640D 
+ 507              		.bss
+ 508              		.align	2
+ 509              		.set	.LANCHOR0,. + 0
+ 510              		.type	encoder_prev_count, %object
+ 511              		.size	encoder_prev_count, 4
+ 512              	encoder_prev_count:
+ 513 0000 00000000 		.space	4
+ 514              		.type	motor_speed_rpm, %object
+ 515              		.size	motor_speed_rpm, 4
+ 516              	motor_speed_rpm:
+ 517 0004 00000000 		.space	4
+ 518              		.text
+ 519              	.Letext0:
+ 520              		.file 2 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\includ
+ 521              		.file 3 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\includ
+ 522              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 523              		.file 5 "Generated_Source\\PSoC5/core_cm3.h"
+ 524              		.file 6 "Generated_Source\\PSoC5/QuadDec_1.h"
+ 525              		.file 7 "Generated_Source\\PSoC5/Timer_1.h"
+ 526              		.file 8 "Generated_Source\\PSoC5/Pin_IN1.h"
+ 527              		.file 9 "Generated_Source\\PSoC5/Pin_IN2.h"
+ 528              		.file 10 "Generated_Source\\PSoC5/PWM_Motor.h"
+ 529              		.file 11 "Generated_Source\\PSoC5/UART_1.h"
+ 530              		.file 12 "Generated_Source\\PSoC5/isr_1.h"
+ 531              		.file 13 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inclu
+ 532              		.file 14 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inclu
+ 533              		.file 15 "Generated_Source\\PSoC5/CyLib.h"
+ 534              		.section	.debug_info,"",%progbits
+ 535              	.Ldebug_info0:
+ 536 0000 FE050000 		.4byte	0x5fe
+ 537 0004 0400     		.2byte	0x4
+ 538 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 539 000a 04       		.byte	0x4
+ 540 000b 01       		.uleb128 0x1
+ 541 000c 09010000 		.4byte	.LASF56
+ 542 0010 0C       		.byte	0xc
+ 543 0011 B5020000 		.4byte	.LASF57
+ 544 0015 27000000 		.4byte	.LASF58
+ 545 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 546 001d 00000000 		.4byte	0
+ 547 0021 00000000 		.4byte	.Ldebug_line0
+ 548 0025 02       		.uleb128 0x2
+ 549 0026 01       		.byte	0x1
+ 550 0027 06       		.byte	0x6
+ 551 0028 34030000 		.4byte	.LASF0
+ 552 002c 02       		.uleb128 0x2
+ 553 002d 01       		.byte	0x1
+ 554 002e 08       		.byte	0x8
+ 555 002f FB000000 		.4byte	.LASF1
+ 556 0033 02       		.uleb128 0x2
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 15
+
+
+ 557 0034 02       		.byte	0x2
+ 558 0035 05       		.byte	0x5
+ 559 0036 CF020000 		.4byte	.LASF2
+ 560 003a 02       		.uleb128 0x2
+ 561 003b 02       		.byte	0x2
+ 562 003c 07       		.byte	0x7
+ 563 003d 91000000 		.4byte	.LASF3
+ 564 0041 03       		.uleb128 0x3
+ 565 0042 87000000 		.4byte	.LASF9
+ 566 0046 02       		.byte	0x2
+ 567 0047 3F       		.byte	0x3f
+ 568 0048 4C000000 		.4byte	0x4c
+ 569 004c 02       		.uleb128 0x2
+ 570 004d 04       		.byte	0x4
+ 571 004e 05       		.byte	0x5
+ 572 004f 1A030000 		.4byte	.LASF4
+ 573 0053 02       		.uleb128 0x2
+ 574 0054 04       		.byte	0x4
+ 575 0055 07       		.byte	0x7
+ 576 0056 AB010000 		.4byte	.LASF5
+ 577 005a 02       		.uleb128 0x2
+ 578 005b 08       		.byte	0x8
+ 579 005c 05       		.byte	0x5
+ 580 005d A7020000 		.4byte	.LASF6
+ 581 0061 02       		.uleb128 0x2
+ 582 0062 08       		.byte	0x8
+ 583 0063 07       		.byte	0x7
+ 584 0064 4B020000 		.4byte	.LASF7
+ 585 0068 04       		.uleb128 0x4
+ 586 0069 04       		.byte	0x4
+ 587 006a 05       		.byte	0x5
+ 588 006b 696E7400 		.ascii	"int\000"
+ 589 006f 02       		.uleb128 0x2
+ 590 0070 04       		.byte	0x4
+ 591 0071 07       		.byte	0x7
+ 592 0072 3E020000 		.4byte	.LASF8
+ 593 0076 03       		.uleb128 0x3
+ 594 0077 8E020000 		.4byte	.LASF10
+ 595 007b 03       		.byte	0x3
+ 596 007c 2C       		.byte	0x2c
+ 597 007d 41000000 		.4byte	0x41
+ 598 0081 05       		.uleb128 0x5
+ 599 0082 D9020000 		.4byte	.LASF11
+ 600 0086 04       		.byte	0x4
+ 601 0087 E901     		.2byte	0x1e9
+ 602 0089 2C000000 		.4byte	0x2c
+ 603 008d 05       		.uleb128 0x5
+ 604 008e 0D020000 		.4byte	.LASF12
+ 605 0092 04       		.byte	0x4
+ 606 0093 EA01     		.2byte	0x1ea
+ 607 0095 3A000000 		.4byte	0x3a
+ 608 0099 05       		.uleb128 0x5
+ 609 009a 14020000 		.4byte	.LASF13
+ 610 009e 04       		.byte	0x4
+ 611 009f EC01     		.2byte	0x1ec
+ 612 00a1 25000000 		.4byte	0x25
+ 613 00a5 05       		.uleb128 0x5
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 16
+
+
+ 614 00a6 A5010000 		.4byte	.LASF14
+ 615 00aa 04       		.byte	0x4
+ 616 00ab ED01     		.2byte	0x1ed
+ 617 00ad 33000000 		.4byte	0x33
+ 618 00b1 05       		.uleb128 0x5
+ 619 00b2 C9010000 		.4byte	.LASF15
+ 620 00b6 04       		.byte	0x4
+ 621 00b7 EE01     		.2byte	0x1ee
+ 622 00b9 4C000000 		.4byte	0x4c
+ 623 00bd 02       		.uleb128 0x2
+ 624 00be 04       		.byte	0x4
+ 625 00bf 04       		.byte	0x4
+ 626 00c0 E7000000 		.4byte	.LASF16
+ 627 00c4 02       		.uleb128 0x2
+ 628 00c5 08       		.byte	0x8
+ 629 00c6 04       		.byte	0x4
+ 630 00c7 01020000 		.4byte	.LASF17
+ 631 00cb 02       		.uleb128 0x2
+ 632 00cc 01       		.byte	0x1
+ 633 00cd 08       		.byte	0x8
+ 634 00ce 23030000 		.4byte	.LASF18
+ 635 00d2 02       		.uleb128 0x2
+ 636 00d3 08       		.byte	0x8
+ 637 00d4 04       		.byte	0x4
+ 638 00d5 28030000 		.4byte	.LASF19
+ 639 00d9 02       		.uleb128 0x2
+ 640 00da 04       		.byte	0x4
+ 641 00db 07       		.byte	0x7
+ 642 00dc 96020000 		.4byte	.LASF20
+ 643 00e0 06       		.uleb128 0x6
+ 644 00e1 CB000000 		.4byte	0xcb
+ 645 00e5 F0000000 		.4byte	0xf0
+ 646 00e9 07       		.uleb128 0x7
+ 647 00ea D9000000 		.4byte	0xd9
+ 648 00ee 07       		.byte	0x7
+ 649 00ef 00       		.byte	0
+ 650 00f0 08       		.uleb128 0x8
+ 651 00f1 5F000000 		.4byte	.LASF23
+ 652 00f5 01       		.byte	0x1
+ 653 00f6 29       		.byte	0x29
+ 654 00f7 00000000 		.4byte	.LFB64
+ 655 00fb 34000000 		.4byte	.LFE64-.LFB64
+ 656 00ff 01       		.uleb128 0x1
+ 657 0100 9C       		.byte	0x9c
+ 658 0101 36010000 		.4byte	0x136
+ 659 0105 09       		.uleb128 0x9
+ 660 0106 E6010000 		.4byte	.LASF21
+ 661 010a 01       		.byte	0x1
+ 662 010b 2B       		.byte	0x2b
+ 663 010c B1000000 		.4byte	0xb1
+ 664 0110 00000000 		.4byte	.LLST0
+ 665 0114 09       		.uleb128 0x9
+ 666 0115 0D030000 		.4byte	.LASF22
+ 667 0119 01       		.byte	0x1
+ 668 011a 2C       		.byte	0x2c
+ 669 011b B1000000 		.4byte	0xb1
+ 670 011f 22000000 		.4byte	.LLST1
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 17
+
+
+ 671 0123 0A       		.uleb128 0xa
+ 672 0124 06000000 		.4byte	.LVL0
+ 673 0128 51050000 		.4byte	0x551
+ 674 012c 0A       		.uleb128 0xa
+ 675 012d 24000000 		.4byte	.LVL6
+ 676 0131 5C050000 		.4byte	0x55c
+ 677 0135 00       		.byte	0
+ 678 0136 0B       		.uleb128 0xb
+ 679 0137 97010000 		.4byte	.LASF24
+ 680 013b 01       		.byte	0x1
+ 681 013c 4A       		.byte	0x4a
+ 682 013d 00000000 		.4byte	.LFB65
+ 683 0141 60000000 		.4byte	.LFE65-.LFB65
+ 684 0145 01       		.uleb128 0x1
+ 685 0146 9C       		.byte	0x9c
+ 686 0147 05020000 		.4byte	0x205
+ 687 014b 0C       		.uleb128 0xc
+ 688 014c 1D000000 		.4byte	.LASF26
+ 689 0150 01       		.byte	0x1
+ 690 0151 4A       		.byte	0x4a
+ 691 0152 A5000000 		.4byte	0xa5
+ 692 0156 45000000 		.4byte	.LLST2
+ 693 015a 0D       		.uleb128 0xd
+ 694 015b 20000000 		.4byte	.LVL10
+ 695 015f 67050000 		.4byte	0x567
+ 696 0163 6D010000 		.4byte	0x16d
+ 697 0167 0E       		.uleb128 0xe
+ 698 0168 01       		.uleb128 0x1
+ 699 0169 50       		.byte	0x50
+ 700 016a 01       		.uleb128 0x1
+ 701 016b 31       		.byte	0x31
+ 702 016c 00       		.byte	0
+ 703 016d 0D       		.uleb128 0xd
+ 704 016e 26000000 		.4byte	.LVL11
+ 705 0172 72050000 		.4byte	0x572
+ 706 0176 80010000 		.4byte	0x180
+ 707 017a 0E       		.uleb128 0xe
+ 708 017b 01       		.uleb128 0x1
+ 709 017c 50       		.byte	0x50
+ 710 017d 01       		.uleb128 0x1
+ 711 017e 30       		.byte	0x30
+ 712 017f 00       		.byte	0
+ 713 0180 0D       		.uleb128 0xd
+ 714 0181 2C000000 		.4byte	.LVL12
+ 715 0185 7D050000 		.4byte	0x57d
+ 716 0189 94010000 		.4byte	0x194
+ 717 018d 0E       		.uleb128 0xe
+ 718 018e 01       		.uleb128 0x1
+ 719 018f 50       		.byte	0x50
+ 720 0190 02       		.uleb128 0x2
+ 721 0191 74       		.byte	0x74
+ 722 0192 00       		.sleb128 0
+ 723 0193 00       		.byte	0
+ 724 0194 0D       		.uleb128 0xd
+ 725 0195 38000000 		.4byte	.LVL14
+ 726 0199 67050000 		.4byte	0x567
+ 727 019d A7010000 		.4byte	0x1a7
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 18
+
+
+ 728 01a1 0E       		.uleb128 0xe
+ 729 01a2 01       		.uleb128 0x1
+ 730 01a3 50       		.byte	0x50
+ 731 01a4 01       		.uleb128 0x1
+ 732 01a5 30       		.byte	0x30
+ 733 01a6 00       		.byte	0
+ 734 01a7 0D       		.uleb128 0xd
+ 735 01a8 3E000000 		.4byte	.LVL15
+ 736 01ac 72050000 		.4byte	0x572
+ 737 01b0 BA010000 		.4byte	0x1ba
+ 738 01b4 0E       		.uleb128 0xe
+ 739 01b5 01       		.uleb128 0x1
+ 740 01b6 50       		.byte	0x50
+ 741 01b7 01       		.uleb128 0x1
+ 742 01b8 31       		.byte	0x31
+ 743 01b9 00       		.byte	0
+ 744 01ba 0D       		.uleb128 0xd
+ 745 01bb 46000000 		.4byte	.LVL16
+ 746 01bf 7D050000 		.4byte	0x57d
+ 747 01c3 CF010000 		.4byte	0x1cf
+ 748 01c7 0E       		.uleb128 0xe
+ 749 01c8 01       		.uleb128 0x1
+ 750 01c9 50       		.byte	0x50
+ 751 01ca 03       		.uleb128 0x3
+ 752 01cb 74       		.byte	0x74
+ 753 01cc 00       		.sleb128 0
+ 754 01cd 1F       		.byte	0x1f
+ 755 01ce 00       		.byte	0
+ 756 01cf 0D       		.uleb128 0xd
+ 757 01d0 4E000000 		.4byte	.LVL18
+ 758 01d4 67050000 		.4byte	0x567
+ 759 01d8 E2010000 		.4byte	0x1e2
+ 760 01dc 0E       		.uleb128 0xe
+ 761 01dd 01       		.uleb128 0x1
+ 762 01de 50       		.byte	0x50
+ 763 01df 01       		.uleb128 0x1
+ 764 01e0 30       		.byte	0x30
+ 765 01e1 00       		.byte	0
+ 766 01e2 0D       		.uleb128 0xd
+ 767 01e3 54000000 		.4byte	.LVL19
+ 768 01e7 72050000 		.4byte	0x572
+ 769 01eb F5010000 		.4byte	0x1f5
+ 770 01ef 0E       		.uleb128 0xe
+ 771 01f0 01       		.uleb128 0x1
+ 772 01f1 50       		.byte	0x50
+ 773 01f2 01       		.uleb128 0x1
+ 774 01f3 30       		.byte	0x30
+ 775 01f4 00       		.byte	0
+ 776 01f5 0F       		.uleb128 0xf
+ 777 01f6 5A000000 		.4byte	.LVL20
+ 778 01fa 7D050000 		.4byte	0x57d
+ 779 01fe 0E       		.uleb128 0xe
+ 780 01ff 01       		.uleb128 0x1
+ 781 0200 50       		.byte	0x50
+ 782 0201 01       		.uleb128 0x1
+ 783 0202 30       		.byte	0x30
+ 784 0203 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 19
+
+
+ 785 0204 00       		.byte	0
+ 786 0205 0B       		.uleb128 0xb
+ 787 0206 19020000 		.4byte	.LASF25
+ 788 020a 01       		.byte	0x1
+ 789 020b 68       		.byte	0x68
+ 790 020c 00000000 		.4byte	.LFB66
+ 791 0210 78000000 		.4byte	.LFE66-.LFB66
+ 792 0214 01       		.uleb128 0x1
+ 793 0215 9C       		.byte	0x9c
+ 794 0216 E2020000 		.4byte	0x2e2
+ 795 021a 0C       		.uleb128 0xc
+ 796 021b 9F020000 		.4byte	.LASF27
+ 797 021f 01       		.byte	0x1
+ 798 0220 68       		.byte	0x68
+ 799 0221 99000000 		.4byte	0x99
+ 800 0225 63000000 		.4byte	.LLST3
+ 801 0229 09       		.uleb128 0x9
+ 802 022a 84020000 		.4byte	.LASF28
+ 803 022e 01       		.byte	0x1
+ 804 022f 6A       		.byte	0x6a
+ 805 0230 A5000000 		.4byte	0xa5
+ 806 0234 97000000 		.4byte	.LLST4
+ 807 0238 0D       		.uleb128 0xd
+ 808 0239 38000000 		.4byte	.LVL27
+ 809 023d 67050000 		.4byte	0x567
+ 810 0241 4B020000 		.4byte	0x24b
+ 811 0245 0E       		.uleb128 0xe
+ 812 0246 01       		.uleb128 0x1
+ 813 0247 50       		.byte	0x50
+ 814 0248 01       		.uleb128 0x1
+ 815 0249 31       		.byte	0x31
+ 816 024a 00       		.byte	0
+ 817 024b 0D       		.uleb128 0xd
+ 818 024c 3E000000 		.4byte	.LVL28
+ 819 0250 72050000 		.4byte	0x572
+ 820 0254 5E020000 		.4byte	0x25e
+ 821 0258 0E       		.uleb128 0xe
+ 822 0259 01       		.uleb128 0x1
+ 823 025a 50       		.byte	0x50
+ 824 025b 01       		.uleb128 0x1
+ 825 025c 30       		.byte	0x30
+ 826 025d 00       		.byte	0
+ 827 025e 0D       		.uleb128 0xd
+ 828 025f 44000000 		.4byte	.LVL29
+ 829 0263 7D050000 		.4byte	0x57d
+ 830 0267 72020000 		.4byte	0x272
+ 831 026b 0E       		.uleb128 0xe
+ 832 026c 01       		.uleb128 0x1
+ 833 026d 50       		.byte	0x50
+ 834 026e 02       		.uleb128 0x2
+ 835 026f 74       		.byte	0x74
+ 836 0270 00       		.sleb128 0
+ 837 0271 00       		.byte	0
+ 838 0272 0D       		.uleb128 0xd
+ 839 0273 50000000 		.4byte	.LVL32
+ 840 0277 67050000 		.4byte	0x567
+ 841 027b 85020000 		.4byte	0x285
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 20
+
+
+ 842 027f 0E       		.uleb128 0xe
+ 843 0280 01       		.uleb128 0x1
+ 844 0281 50       		.byte	0x50
+ 845 0282 01       		.uleb128 0x1
+ 846 0283 30       		.byte	0x30
+ 847 0284 00       		.byte	0
+ 848 0285 0D       		.uleb128 0xd
+ 849 0286 56000000 		.4byte	.LVL33
+ 850 028a 72050000 		.4byte	0x572
+ 851 028e 98020000 		.4byte	0x298
+ 852 0292 0E       		.uleb128 0xe
+ 853 0293 01       		.uleb128 0x1
+ 854 0294 50       		.byte	0x50
+ 855 0295 01       		.uleb128 0x1
+ 856 0296 31       		.byte	0x31
+ 857 0297 00       		.byte	0
+ 858 0298 0D       		.uleb128 0xd
+ 859 0299 5C000000 		.4byte	.LVL34
+ 860 029d 7D050000 		.4byte	0x57d
+ 861 02a1 AC020000 		.4byte	0x2ac
+ 862 02a5 0E       		.uleb128 0xe
+ 863 02a6 01       		.uleb128 0x1
+ 864 02a7 50       		.byte	0x50
+ 865 02a8 02       		.uleb128 0x2
+ 866 02a9 74       		.byte	0x74
+ 867 02aa 00       		.sleb128 0
+ 868 02ab 00       		.byte	0
+ 869 02ac 0D       		.uleb128 0xd
+ 870 02ad 64000000 		.4byte	.LVL37
+ 871 02b1 67050000 		.4byte	0x567
+ 872 02b5 BF020000 		.4byte	0x2bf
+ 873 02b9 0E       		.uleb128 0xe
+ 874 02ba 01       		.uleb128 0x1
+ 875 02bb 50       		.byte	0x50
+ 876 02bc 01       		.uleb128 0x1
+ 877 02bd 30       		.byte	0x30
+ 878 02be 00       		.byte	0
+ 879 02bf 0D       		.uleb128 0xd
+ 880 02c0 6A000000 		.4byte	.LVL38
+ 881 02c4 72050000 		.4byte	0x572
+ 882 02c8 D2020000 		.4byte	0x2d2
+ 883 02cc 0E       		.uleb128 0xe
+ 884 02cd 01       		.uleb128 0x1
+ 885 02ce 50       		.byte	0x50
+ 886 02cf 01       		.uleb128 0x1
+ 887 02d0 30       		.byte	0x30
+ 888 02d1 00       		.byte	0
+ 889 02d2 0F       		.uleb128 0xf
+ 890 02d3 70000000 		.4byte	.LVL39
+ 891 02d7 7D050000 		.4byte	0x57d
+ 892 02db 0E       		.uleb128 0xe
+ 893 02dc 01       		.uleb128 0x1
+ 894 02dd 50       		.byte	0x50
+ 895 02de 01       		.uleb128 0x1
+ 896 02df 30       		.byte	0x30
+ 897 02e0 00       		.byte	0
+ 898 02e1 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 21
+
+
+ 899 02e2 0B       		.uleb128 0xb
+ 900 02e3 BD010000 		.4byte	.LASF29
+ 901 02e7 01       		.byte	0x1
+ 902 02e8 8A       		.byte	0x8a
+ 903 02e9 00000000 		.4byte	.LFB67
+ 904 02ed 18000000 		.4byte	.LFE67-.LFB67
+ 905 02f1 01       		.uleb128 0x1
+ 906 02f2 9C       		.byte	0x9c
+ 907 02f3 2F030000 		.4byte	0x32f
+ 908 02f7 0D       		.uleb128 0xd
+ 909 02f8 08000000 		.4byte	.LVL41
+ 910 02fc 67050000 		.4byte	0x567
+ 911 0300 0A030000 		.4byte	0x30a
+ 912 0304 0E       		.uleb128 0xe
+ 913 0305 01       		.uleb128 0x1
+ 914 0306 50       		.byte	0x50
+ 915 0307 01       		.uleb128 0x1
+ 916 0308 30       		.byte	0x30
+ 917 0309 00       		.byte	0
+ 918 030a 0D       		.uleb128 0xd
+ 919 030b 0E000000 		.4byte	.LVL42
+ 920 030f 72050000 		.4byte	0x572
+ 921 0313 1D030000 		.4byte	0x31d
+ 922 0317 0E       		.uleb128 0xe
+ 923 0318 01       		.uleb128 0x1
+ 924 0319 50       		.byte	0x50
+ 925 031a 01       		.uleb128 0x1
+ 926 031b 30       		.byte	0x30
+ 927 031c 00       		.byte	0
+ 928 031d 0F       		.uleb128 0xf
+ 929 031e 16000000 		.4byte	.LVL43
+ 930 0322 7D050000 		.4byte	0x57d
+ 931 0326 0E       		.uleb128 0xe
+ 932 0327 01       		.uleb128 0x1
+ 933 0328 50       		.byte	0x50
+ 934 0329 03       		.uleb128 0x3
+ 935 032a 0A       		.byte	0xa
+ 936 032b F004     		.2byte	0x4f0
+ 937 032d 00       		.byte	0
+ 938 032e 00       		.byte	0
+ 939 032f 0B       		.uleb128 0xb
+ 940 0330 4E030000 		.4byte	.LASF30
+ 941 0334 01       		.byte	0x1
+ 942 0335 93       		.byte	0x93
+ 943 0336 00000000 		.4byte	.LFB68
+ 944 033a 16000000 		.4byte	.LFE68-.LFB68
+ 945 033e 01       		.uleb128 0x1
+ 946 033f 9C       		.byte	0x9c
+ 947 0340 7A030000 		.4byte	0x37a
+ 948 0344 0D       		.uleb128 0xd
+ 949 0345 08000000 		.4byte	.LVL44
+ 950 0349 67050000 		.4byte	0x567
+ 951 034d 57030000 		.4byte	0x357
+ 952 0351 0E       		.uleb128 0xe
+ 953 0352 01       		.uleb128 0x1
+ 954 0353 50       		.byte	0x50
+ 955 0354 01       		.uleb128 0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 22
+
+
+ 956 0355 30       		.byte	0x30
+ 957 0356 00       		.byte	0
+ 958 0357 0D       		.uleb128 0xd
+ 959 0358 0E000000 		.4byte	.LVL45
+ 960 035c 72050000 		.4byte	0x572
+ 961 0360 6A030000 		.4byte	0x36a
+ 962 0364 0E       		.uleb128 0xe
+ 963 0365 01       		.uleb128 0x1
+ 964 0366 50       		.byte	0x50
+ 965 0367 01       		.uleb128 0x1
+ 966 0368 30       		.byte	0x30
+ 967 0369 00       		.byte	0
+ 968 036a 0F       		.uleb128 0xf
+ 969 036b 14000000 		.4byte	.LVL46
+ 970 036f 7D050000 		.4byte	0x57d
+ 971 0373 0E       		.uleb128 0xe
+ 972 0374 01       		.uleb128 0x1
+ 973 0375 50       		.byte	0x50
+ 974 0376 01       		.uleb128 0x1
+ 975 0377 30       		.byte	0x30
+ 976 0378 00       		.byte	0
+ 977 0379 00       		.byte	0
+ 978 037a 10       		.uleb128 0x10
+ 979 037b 08020000 		.4byte	.LASF59
+ 980 037f 01       		.byte	0x1
+ 981 0380 9D       		.byte	0x9d
+ 982 0381 68000000 		.4byte	0x68
+ 983 0385 00000000 		.4byte	.LFB69
+ 984 0389 C4000000 		.4byte	.LFE69-.LFB69
+ 985 038d 01       		.uleb128 0x1
+ 986 038e 9C       		.byte	0x9c
+ 987 038f 04050000 		.4byte	0x504
+ 988 0393 11       		.uleb128 0x11
+ 989 0394 6F000000 		.4byte	.LASF31
+ 990 0398 01       		.byte	0x1
+ 991 0399 9F       		.byte	0x9f
+ 992 039a E0000000 		.4byte	0xe0
+ 993 039e 02       		.uleb128 0x2
+ 994 039f 91       		.byte	0x91
+ 995 03a0 60       		.sleb128 -32
+ 996 03a1 09       		.uleb128 0x9
+ 997 03a2 6F020000 		.4byte	.LASF32
+ 998 03a6 01       		.byte	0x1
+ 999 03a7 A0       		.byte	0xa0
+ 1000 03a8 81000000 		.4byte	0x81
+ 1001 03ac AA000000 		.4byte	.LLST5
+ 1002 03b0 09       		.uleb128 0x9
+ 1003 03b1 62020000 		.4byte	.LASF33
+ 1004 03b5 01       		.byte	0x1
+ 1005 03b6 A1       		.byte	0xa1
+ 1006 03b7 81000000 		.4byte	0x81
+ 1007 03bb F6000000 		.4byte	.LLST6
+ 1008 03bf 09       		.uleb128 0x9
+ 1009 03c0 BC020000 		.4byte	.LASF34
+ 1010 03c4 01       		.byte	0x1
+ 1011 03c5 A2       		.byte	0xa2
+ 1012 03c6 A5000000 		.4byte	0xa5
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 23
+
+
+ 1013 03ca 14010000 		.4byte	.LLST7
+ 1014 03ce 11       		.uleb128 0x11
+ 1015 03cf C8020000 		.4byte	.LASF35
+ 1016 03d3 01       		.byte	0x1
+ 1017 03d4 A3       		.byte	0xa3
+ 1018 03d5 04050000 		.4byte	0x504
+ 1019 03d9 03       		.uleb128 0x3
+ 1020 03da 91       		.byte	0x91
+ 1021 03db B87F     		.sleb128 -72
+ 1022 03dd 09       		.uleb128 0x9
+ 1023 03de 78030000 		.4byte	.LASF36
+ 1024 03e2 01       		.byte	0x1
+ 1025 03e3 A4       		.byte	0xa4
+ 1026 03e4 8D000000 		.4byte	0x8d
+ 1027 03e8 33010000 		.4byte	.LLST8
+ 1028 03ec 0A       		.uleb128 0xa
+ 1029 03ed 0A000000 		.4byte	.LVL48
+ 1030 03f1 88050000 		.4byte	0x588
+ 1031 03f5 0A       		.uleb128 0xa
+ 1032 03f6 0E000000 		.4byte	.LVL49
+ 1033 03fa 93050000 		.4byte	0x593
+ 1034 03fe 0A       		.uleb128 0xa
+ 1035 03ff 12000000 		.4byte	.LVL50
+ 1036 0403 9E050000 		.4byte	0x59e
+ 1037 0407 0A       		.uleb128 0xa
+ 1038 0408 16000000 		.4byte	.LVL51
+ 1039 040c A9050000 		.4byte	0x5a9
+ 1040 0410 0D       		.uleb128 0xd
+ 1041 0411 1C000000 		.4byte	.LVL52
+ 1042 0415 B4050000 		.4byte	0x5b4
+ 1043 0419 27040000 		.4byte	0x427
+ 1044 041d 0E       		.uleb128 0xe
+ 1045 041e 01       		.uleb128 0x1
+ 1046 041f 50       		.byte	0x50
+ 1047 0420 05       		.uleb128 0x5
+ 1048 0421 03       		.byte	0x3
+ 1049 0422 00000000 		.4byte	Motor_Speed_ISR
+ 1050 0426 00       		.byte	0
+ 1051 0427 0D       		.uleb128 0xd
+ 1052 0428 22000000 		.4byte	.LVL53
+ 1053 042c BF050000 		.4byte	0x5bf
+ 1054 0430 3E040000 		.4byte	0x43e
+ 1055 0434 0E       		.uleb128 0xe
+ 1056 0435 01       		.uleb128 0x1
+ 1057 0436 50       		.byte	0x50
+ 1058 0437 05       		.uleb128 0x5
+ 1059 0438 03       		.byte	0x3
+ 1060 0439 00000000 		.4byte	.LC0
+ 1061 043d 00       		.byte	0
+ 1062 043e 0D       		.uleb128 0xd
+ 1063 043f 28000000 		.4byte	.LVL54
+ 1064 0443 BF050000 		.4byte	0x5bf
+ 1065 0447 55040000 		.4byte	0x455
+ 1066 044b 0E       		.uleb128 0xe
+ 1067 044c 01       		.uleb128 0x1
+ 1068 044d 50       		.byte	0x50
+ 1069 044e 05       		.uleb128 0x5
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 24
+
+
+ 1070 044f 03       		.byte	0x3
+ 1071 0450 18000000 		.4byte	.LC1
+ 1072 0454 00       		.byte	0
+ 1073 0455 0D       		.uleb128 0xd
+ 1074 0456 2E000000 		.4byte	.LVL55
+ 1075 045a BF050000 		.4byte	0x5bf
+ 1076 045e 6C040000 		.4byte	0x46c
+ 1077 0462 0E       		.uleb128 0xe
+ 1078 0463 01       		.uleb128 0x1
+ 1079 0464 50       		.byte	0x50
+ 1080 0465 05       		.uleb128 0x5
+ 1081 0466 03       		.byte	0x3
+ 1082 0467 40000000 		.4byte	.LC2
+ 1083 046b 00       		.byte	0
+ 1084 046c 0A       		.uleb128 0xa
+ 1085 046d 38000000 		.4byte	.LVL57
+ 1086 0471 CA050000 		.4byte	0x5ca
+ 1087 0475 0D       		.uleb128 0xd
+ 1088 0476 56000000 		.4byte	.LVL60
+ 1089 047a D5050000 		.4byte	0x5d5
+ 1090 047e 89040000 		.4byte	0x489
+ 1091 0482 0E       		.uleb128 0xe
+ 1092 0483 01       		.uleb128 0x1
+ 1093 0484 50       		.byte	0x50
+ 1094 0485 02       		.uleb128 0x2
+ 1095 0486 91       		.byte	0x91
+ 1096 0487 60       		.sleb128 -32
+ 1097 0488 00       		.byte	0
+ 1098 0489 0D       		.uleb128 0xd
+ 1099 048a 5E000000 		.4byte	.LVL62
+ 1100 048e 36010000 		.4byte	0x136
+ 1101 0492 9D040000 		.4byte	0x49d
+ 1102 0496 0E       		.uleb128 0xe
+ 1103 0497 01       		.uleb128 0x1
+ 1104 0498 50       		.byte	0x50
+ 1105 0499 02       		.uleb128 0x2
+ 1106 049a 77       		.byte	0x77
+ 1107 049b 00       		.sleb128 0
+ 1108 049c 00       		.byte	0
+ 1109 049d 0D       		.uleb128 0xd
+ 1110 049e 64000000 		.4byte	.LVL63
+ 1111 04a2 BF050000 		.4byte	0x5bf
+ 1112 04a6 B4040000 		.4byte	0x4b4
+ 1113 04aa 0E       		.uleb128 0xe
+ 1114 04ab 01       		.uleb128 0x1
+ 1115 04ac 50       		.byte	0x50
+ 1116 04ad 05       		.uleb128 0x5
+ 1117 04ae 03       		.byte	0x3
+ 1118 04af 5C000000 		.4byte	.LC3
+ 1119 04b3 00       		.byte	0
+ 1120 04b4 0A       		.uleb128 0xa
+ 1121 04b5 6E000000 		.4byte	.LVL65
+ 1122 04b9 E0050000 		.4byte	0x5e0
+ 1123 04bd 0D       		.uleb128 0xd
+ 1124 04be 96000000 		.4byte	.LVL72
+ 1125 04c2 EB050000 		.4byte	0x5eb
+ 1126 04c6 E0040000 		.4byte	0x4e0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 25
+
+
+ 1127 04ca 0E       		.uleb128 0xe
+ 1128 04cb 01       		.uleb128 0x1
+ 1129 04cc 50       		.byte	0x50
+ 1130 04cd 02       		.uleb128 0x2
+ 1131 04ce 7D       		.byte	0x7d
+ 1132 04cf 00       		.sleb128 0
+ 1133 04d0 0E       		.uleb128 0xe
+ 1134 04d1 01       		.uleb128 0x1
+ 1135 04d2 51       		.byte	0x51
+ 1136 04d3 05       		.uleb128 0x5
+ 1137 04d4 03       		.byte	0x3
+ 1138 04d5 60000000 		.4byte	.LC4
+ 1139 04d9 0E       		.uleb128 0xe
+ 1140 04da 01       		.uleb128 0x1
+ 1141 04db 52       		.byte	0x52
+ 1142 04dc 02       		.uleb128 0x2
+ 1143 04dd 77       		.byte	0x77
+ 1144 04de 00       		.sleb128 0
+ 1145 04df 00       		.byte	0
+ 1146 04e0 0D       		.uleb128 0xd
+ 1147 04e1 9C000000 		.4byte	.LVL73
+ 1148 04e5 BF050000 		.4byte	0x5bf
+ 1149 04e9 F4040000 		.4byte	0x4f4
+ 1150 04ed 0E       		.uleb128 0xe
+ 1151 04ee 01       		.uleb128 0x1
+ 1152 04ef 50       		.byte	0x50
+ 1153 04f0 02       		.uleb128 0x2
+ 1154 04f1 7D       		.byte	0x7d
+ 1155 04f2 00       		.sleb128 0
+ 1156 04f3 00       		.byte	0
+ 1157 04f4 0F       		.uleb128 0xf
+ 1158 04f5 A4000000 		.4byte	.LVL75
+ 1159 04f9 F6050000 		.4byte	0x5f6
+ 1160 04fd 0E       		.uleb128 0xe
+ 1161 04fe 01       		.uleb128 0x1
+ 1162 04ff 50       		.byte	0x50
+ 1163 0500 01       		.uleb128 0x1
+ 1164 0501 3A       		.byte	0x3a
+ 1165 0502 00       		.byte	0
+ 1166 0503 00       		.byte	0
+ 1167 0504 06       		.uleb128 0x6
+ 1168 0505 CB000000 		.4byte	0xcb
+ 1169 0509 14050000 		.4byte	0x514
+ 1170 050d 07       		.uleb128 0x7
+ 1171 050e D9000000 		.4byte	0xd9
+ 1172 0512 27       		.byte	0x27
+ 1173 0513 00       		.byte	0
+ 1174 0514 12       		.uleb128 0x12
+ 1175 0515 F4010000 		.4byte	.LASF37
+ 1176 0519 05       		.byte	0x5
+ 1177 051a 1207     		.2byte	0x712
+ 1178 051c 20050000 		.4byte	0x520
+ 1179 0520 13       		.uleb128 0x13
+ 1180 0521 76000000 		.4byte	0x76
+ 1181 0525 14       		.uleb128 0x14
+ 1182 0526 FA020000 		.4byte	.LASF38
+ 1183 052a 01       		.byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 26
+
+
+ 1184 052b 1F       		.byte	0x1f
+ 1185 052c 36050000 		.4byte	0x536
+ 1186 0530 05       		.uleb128 0x5
+ 1187 0531 03       		.byte	0x3
+ 1188 0532 00000000 		.4byte	encoder_prev_count
+ 1189 0536 13       		.uleb128 0x13
+ 1190 0537 B1000000 		.4byte	0xb1
+ 1191 053b 14       		.uleb128 0x14
+ 1192 053c D7000000 		.4byte	.LASF39
+ 1193 0540 01       		.byte	0x1
+ 1194 0541 20       		.byte	0x20
+ 1195 0542 4C050000 		.4byte	0x54c
+ 1196 0546 05       		.uleb128 0x5
+ 1197 0547 03       		.byte	0x3
+ 1198 0548 00000000 		.4byte	motor_speed_rpm
+ 1199 054c 13       		.uleb128 0x13
+ 1200 054d BD000000 		.4byte	0xbd
+ 1201 0551 15       		.uleb128 0x15
+ 1202 0552 C2000000 		.4byte	.LASF40
+ 1203 0556 C2000000 		.4byte	.LASF40
+ 1204 055a 06       		.byte	0x6
+ 1205 055b 4E       		.byte	0x4e
+ 1206 055c 15       		.uleb128 0x15
+ 1207 055d DF020000 		.4byte	.LASF41
+ 1208 0561 DF020000 		.4byte	.LASF41
+ 1209 0565 07       		.byte	0x7
+ 1210 0566 5E       		.byte	0x5e
+ 1211 0567 15       		.uleb128 0x15
+ 1212 0568 76020000 		.4byte	.LASF42
+ 1213 056c 76020000 		.4byte	.LASF42
+ 1214 0570 08       		.byte	0x8
+ 1215 0571 26       		.byte	0x26
+ 1216 0572 15       		.uleb128 0x15
+ 1217 0573 A4000000 		.4byte	.LASF43
+ 1218 0577 A4000000 		.4byte	.LASF43
+ 1219 057b 09       		.byte	0x9
+ 1220 057c 26       		.byte	0x26
+ 1221 057d 15       		.uleb128 0x15
+ 1222 057e CF010000 		.4byte	.LASF44
+ 1223 0582 CF010000 		.4byte	.LASF44
+ 1224 0586 0A       		.byte	0xa
+ 1225 0587 C3       		.byte	0xc3
+ 1226 0588 15       		.uleb128 0x15
+ 1227 0589 B2000000 		.4byte	.LASF45
+ 1228 058d B2000000 		.4byte	.LASF45
+ 1229 0591 0A       		.byte	0xa
+ 1230 0592 92       		.byte	0x92
+ 1231 0593 15       		.uleb128 0x15
+ 1232 0594 00000000 		.4byte	.LASF46
+ 1233 0598 00000000 		.4byte	.LASF46
+ 1234 059c 06       		.byte	0x6
+ 1235 059d 48       		.byte	0x48
+ 1236 059e 15       		.uleb128 0x15
+ 1237 059f 10000000 		.4byte	.LASF47
+ 1238 05a3 10000000 		.4byte	.LASF47
+ 1239 05a7 0B       		.byte	0xb
+ 1240 05a8 54       		.byte	0x54
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 27
+
+
+ 1241 05a9 15       		.uleb128 0x15
+ 1242 05aa ED000000 		.4byte	.LASF48
+ 1243 05ae ED000000 		.4byte	.LASF48
+ 1244 05b2 07       		.byte	0x7
+ 1245 05b3 5A       		.byte	0x5a
+ 1246 05b4 15       		.uleb128 0x15
+ 1247 05b5 40030000 		.4byte	.LASF49
+ 1248 05b9 40030000 		.4byte	.LASF49
+ 1249 05bd 0C       		.byte	0xc
+ 1250 05be 18       		.byte	0x18
+ 1251 05bf 15       		.uleb128 0x15
+ 1252 05c0 76000000 		.4byte	.LASF50
+ 1253 05c4 76000000 		.4byte	.LASF50
+ 1254 05c8 0B       		.byte	0xb
+ 1255 05c9 8B       		.byte	0x8b
+ 1256 05ca 15       		.uleb128 0x15
+ 1257 05cb 69030000 		.4byte	.LASF51
+ 1258 05cf 69030000 		.4byte	.LASF51
+ 1259 05d3 0B       		.byte	0xb
+ 1260 05d4 71       		.byte	0x71
+ 1261 05d5 15       		.uleb128 0x15
+ 1262 05d6 6A020000 		.4byte	.LASF52
+ 1263 05da 6A020000 		.4byte	.LASF52
+ 1264 05de 0D       		.byte	0xd
+ 1265 05df 4D       		.byte	0x4d
+ 1266 05e0 15       		.uleb128 0x15
+ 1267 05e1 2F020000 		.4byte	.LASF53
+ 1268 05e5 2F020000 		.4byte	.LASF53
+ 1269 05e9 0B       		.byte	0xb
+ 1270 05ea 8A       		.byte	0x8a
+ 1271 05eb 15       		.uleb128 0x15
+ 1272 05ec 59030000 		.4byte	.LASF54
+ 1273 05f0 59030000 		.4byte	.LASF54
+ 1274 05f4 0E       		.byte	0xe
+ 1275 05f5 E7       		.byte	0xe7
+ 1276 05f6 15       		.uleb128 0x15
+ 1277 05f7 61030000 		.4byte	.LASF55
+ 1278 05fb 61030000 		.4byte	.LASF55
+ 1279 05ff 0F       		.byte	0xf
+ 1280 0600 76       		.byte	0x76
+ 1281 0601 00       		.byte	0
+ 1282              		.section	.debug_abbrev,"",%progbits
+ 1283              	.Ldebug_abbrev0:
+ 1284 0000 01       		.uleb128 0x1
+ 1285 0001 11       		.uleb128 0x11
+ 1286 0002 01       		.byte	0x1
+ 1287 0003 25       		.uleb128 0x25
+ 1288 0004 0E       		.uleb128 0xe
+ 1289 0005 13       		.uleb128 0x13
+ 1290 0006 0B       		.uleb128 0xb
+ 1291 0007 03       		.uleb128 0x3
+ 1292 0008 0E       		.uleb128 0xe
+ 1293 0009 1B       		.uleb128 0x1b
+ 1294 000a 0E       		.uleb128 0xe
+ 1295 000b 55       		.uleb128 0x55
+ 1296 000c 17       		.uleb128 0x17
+ 1297 000d 11       		.uleb128 0x11
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 28
+
+
+ 1298 000e 01       		.uleb128 0x1
+ 1299 000f 10       		.uleb128 0x10
+ 1300 0010 17       		.uleb128 0x17
+ 1301 0011 00       		.byte	0
+ 1302 0012 00       		.byte	0
+ 1303 0013 02       		.uleb128 0x2
+ 1304 0014 24       		.uleb128 0x24
+ 1305 0015 00       		.byte	0
+ 1306 0016 0B       		.uleb128 0xb
+ 1307 0017 0B       		.uleb128 0xb
+ 1308 0018 3E       		.uleb128 0x3e
+ 1309 0019 0B       		.uleb128 0xb
+ 1310 001a 03       		.uleb128 0x3
+ 1311 001b 0E       		.uleb128 0xe
+ 1312 001c 00       		.byte	0
+ 1313 001d 00       		.byte	0
+ 1314 001e 03       		.uleb128 0x3
+ 1315 001f 16       		.uleb128 0x16
+ 1316 0020 00       		.byte	0
+ 1317 0021 03       		.uleb128 0x3
+ 1318 0022 0E       		.uleb128 0xe
+ 1319 0023 3A       		.uleb128 0x3a
+ 1320 0024 0B       		.uleb128 0xb
+ 1321 0025 3B       		.uleb128 0x3b
+ 1322 0026 0B       		.uleb128 0xb
+ 1323 0027 49       		.uleb128 0x49
+ 1324 0028 13       		.uleb128 0x13
+ 1325 0029 00       		.byte	0
+ 1326 002a 00       		.byte	0
+ 1327 002b 04       		.uleb128 0x4
+ 1328 002c 24       		.uleb128 0x24
+ 1329 002d 00       		.byte	0
+ 1330 002e 0B       		.uleb128 0xb
+ 1331 002f 0B       		.uleb128 0xb
+ 1332 0030 3E       		.uleb128 0x3e
+ 1333 0031 0B       		.uleb128 0xb
+ 1334 0032 03       		.uleb128 0x3
+ 1335 0033 08       		.uleb128 0x8
+ 1336 0034 00       		.byte	0
+ 1337 0035 00       		.byte	0
+ 1338 0036 05       		.uleb128 0x5
+ 1339 0037 16       		.uleb128 0x16
+ 1340 0038 00       		.byte	0
+ 1341 0039 03       		.uleb128 0x3
+ 1342 003a 0E       		.uleb128 0xe
+ 1343 003b 3A       		.uleb128 0x3a
+ 1344 003c 0B       		.uleb128 0xb
+ 1345 003d 3B       		.uleb128 0x3b
+ 1346 003e 05       		.uleb128 0x5
+ 1347 003f 49       		.uleb128 0x49
+ 1348 0040 13       		.uleb128 0x13
+ 1349 0041 00       		.byte	0
+ 1350 0042 00       		.byte	0
+ 1351 0043 06       		.uleb128 0x6
+ 1352 0044 01       		.uleb128 0x1
+ 1353 0045 01       		.byte	0x1
+ 1354 0046 49       		.uleb128 0x49
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 29
+
+
+ 1355 0047 13       		.uleb128 0x13
+ 1356 0048 01       		.uleb128 0x1
+ 1357 0049 13       		.uleb128 0x13
+ 1358 004a 00       		.byte	0
+ 1359 004b 00       		.byte	0
+ 1360 004c 07       		.uleb128 0x7
+ 1361 004d 21       		.uleb128 0x21
+ 1362 004e 00       		.byte	0
+ 1363 004f 49       		.uleb128 0x49
+ 1364 0050 13       		.uleb128 0x13
+ 1365 0051 2F       		.uleb128 0x2f
+ 1366 0052 0B       		.uleb128 0xb
+ 1367 0053 00       		.byte	0
+ 1368 0054 00       		.byte	0
+ 1369 0055 08       		.uleb128 0x8
+ 1370 0056 2E       		.uleb128 0x2e
+ 1371 0057 01       		.byte	0x1
+ 1372 0058 3F       		.uleb128 0x3f
+ 1373 0059 19       		.uleb128 0x19
+ 1374 005a 03       		.uleb128 0x3
+ 1375 005b 0E       		.uleb128 0xe
+ 1376 005c 3A       		.uleb128 0x3a
+ 1377 005d 0B       		.uleb128 0xb
+ 1378 005e 3B       		.uleb128 0x3b
+ 1379 005f 0B       		.uleb128 0xb
+ 1380 0060 27       		.uleb128 0x27
+ 1381 0061 19       		.uleb128 0x19
+ 1382 0062 11       		.uleb128 0x11
+ 1383 0063 01       		.uleb128 0x1
+ 1384 0064 12       		.uleb128 0x12
+ 1385 0065 06       		.uleb128 0x6
+ 1386 0066 40       		.uleb128 0x40
+ 1387 0067 18       		.uleb128 0x18
+ 1388 0068 9642     		.uleb128 0x2116
+ 1389 006a 19       		.uleb128 0x19
+ 1390 006b 01       		.uleb128 0x1
+ 1391 006c 13       		.uleb128 0x13
+ 1392 006d 00       		.byte	0
+ 1393 006e 00       		.byte	0
+ 1394 006f 09       		.uleb128 0x9
+ 1395 0070 34       		.uleb128 0x34
+ 1396 0071 00       		.byte	0
+ 1397 0072 03       		.uleb128 0x3
+ 1398 0073 0E       		.uleb128 0xe
+ 1399 0074 3A       		.uleb128 0x3a
+ 1400 0075 0B       		.uleb128 0xb
+ 1401 0076 3B       		.uleb128 0x3b
+ 1402 0077 0B       		.uleb128 0xb
+ 1403 0078 49       		.uleb128 0x49
+ 1404 0079 13       		.uleb128 0x13
+ 1405 007a 02       		.uleb128 0x2
+ 1406 007b 17       		.uleb128 0x17
+ 1407 007c 00       		.byte	0
+ 1408 007d 00       		.byte	0
+ 1409 007e 0A       		.uleb128 0xa
+ 1410 007f 898201   		.uleb128 0x4109
+ 1411 0082 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 30
+
+
+ 1412 0083 11       		.uleb128 0x11
+ 1413 0084 01       		.uleb128 0x1
+ 1414 0085 31       		.uleb128 0x31
+ 1415 0086 13       		.uleb128 0x13
+ 1416 0087 00       		.byte	0
+ 1417 0088 00       		.byte	0
+ 1418 0089 0B       		.uleb128 0xb
+ 1419 008a 2E       		.uleb128 0x2e
+ 1420 008b 01       		.byte	0x1
+ 1421 008c 3F       		.uleb128 0x3f
+ 1422 008d 19       		.uleb128 0x19
+ 1423 008e 03       		.uleb128 0x3
+ 1424 008f 0E       		.uleb128 0xe
+ 1425 0090 3A       		.uleb128 0x3a
+ 1426 0091 0B       		.uleb128 0xb
+ 1427 0092 3B       		.uleb128 0x3b
+ 1428 0093 0B       		.uleb128 0xb
+ 1429 0094 27       		.uleb128 0x27
+ 1430 0095 19       		.uleb128 0x19
+ 1431 0096 11       		.uleb128 0x11
+ 1432 0097 01       		.uleb128 0x1
+ 1433 0098 12       		.uleb128 0x12
+ 1434 0099 06       		.uleb128 0x6
+ 1435 009a 40       		.uleb128 0x40
+ 1436 009b 18       		.uleb128 0x18
+ 1437 009c 9742     		.uleb128 0x2117
+ 1438 009e 19       		.uleb128 0x19
+ 1439 009f 01       		.uleb128 0x1
+ 1440 00a0 13       		.uleb128 0x13
+ 1441 00a1 00       		.byte	0
+ 1442 00a2 00       		.byte	0
+ 1443 00a3 0C       		.uleb128 0xc
+ 1444 00a4 05       		.uleb128 0x5
+ 1445 00a5 00       		.byte	0
+ 1446 00a6 03       		.uleb128 0x3
+ 1447 00a7 0E       		.uleb128 0xe
+ 1448 00a8 3A       		.uleb128 0x3a
+ 1449 00a9 0B       		.uleb128 0xb
+ 1450 00aa 3B       		.uleb128 0x3b
+ 1451 00ab 0B       		.uleb128 0xb
+ 1452 00ac 49       		.uleb128 0x49
+ 1453 00ad 13       		.uleb128 0x13
+ 1454 00ae 02       		.uleb128 0x2
+ 1455 00af 17       		.uleb128 0x17
+ 1456 00b0 00       		.byte	0
+ 1457 00b1 00       		.byte	0
+ 1458 00b2 0D       		.uleb128 0xd
+ 1459 00b3 898201   		.uleb128 0x4109
+ 1460 00b6 01       		.byte	0x1
+ 1461 00b7 11       		.uleb128 0x11
+ 1462 00b8 01       		.uleb128 0x1
+ 1463 00b9 31       		.uleb128 0x31
+ 1464 00ba 13       		.uleb128 0x13
+ 1465 00bb 01       		.uleb128 0x1
+ 1466 00bc 13       		.uleb128 0x13
+ 1467 00bd 00       		.byte	0
+ 1468 00be 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 31
+
+
+ 1469 00bf 0E       		.uleb128 0xe
+ 1470 00c0 8A8201   		.uleb128 0x410a
+ 1471 00c3 00       		.byte	0
+ 1472 00c4 02       		.uleb128 0x2
+ 1473 00c5 18       		.uleb128 0x18
+ 1474 00c6 9142     		.uleb128 0x2111
+ 1475 00c8 18       		.uleb128 0x18
+ 1476 00c9 00       		.byte	0
+ 1477 00ca 00       		.byte	0
+ 1478 00cb 0F       		.uleb128 0xf
+ 1479 00cc 898201   		.uleb128 0x4109
+ 1480 00cf 01       		.byte	0x1
+ 1481 00d0 11       		.uleb128 0x11
+ 1482 00d1 01       		.uleb128 0x1
+ 1483 00d2 31       		.uleb128 0x31
+ 1484 00d3 13       		.uleb128 0x13
+ 1485 00d4 00       		.byte	0
+ 1486 00d5 00       		.byte	0
+ 1487 00d6 10       		.uleb128 0x10
+ 1488 00d7 2E       		.uleb128 0x2e
+ 1489 00d8 01       		.byte	0x1
+ 1490 00d9 3F       		.uleb128 0x3f
+ 1491 00da 19       		.uleb128 0x19
+ 1492 00db 03       		.uleb128 0x3
+ 1493 00dc 0E       		.uleb128 0xe
+ 1494 00dd 3A       		.uleb128 0x3a
+ 1495 00de 0B       		.uleb128 0xb
+ 1496 00df 3B       		.uleb128 0x3b
+ 1497 00e0 0B       		.uleb128 0xb
+ 1498 00e1 27       		.uleb128 0x27
+ 1499 00e2 19       		.uleb128 0x19
+ 1500 00e3 49       		.uleb128 0x49
+ 1501 00e4 13       		.uleb128 0x13
+ 1502 00e5 8701     		.uleb128 0x87
+ 1503 00e7 19       		.uleb128 0x19
+ 1504 00e8 11       		.uleb128 0x11
+ 1505 00e9 01       		.uleb128 0x1
+ 1506 00ea 12       		.uleb128 0x12
+ 1507 00eb 06       		.uleb128 0x6
+ 1508 00ec 40       		.uleb128 0x40
+ 1509 00ed 18       		.uleb128 0x18
+ 1510 00ee 9642     		.uleb128 0x2116
+ 1511 00f0 19       		.uleb128 0x19
+ 1512 00f1 01       		.uleb128 0x1
+ 1513 00f2 13       		.uleb128 0x13
+ 1514 00f3 00       		.byte	0
+ 1515 00f4 00       		.byte	0
+ 1516 00f5 11       		.uleb128 0x11
+ 1517 00f6 34       		.uleb128 0x34
+ 1518 00f7 00       		.byte	0
+ 1519 00f8 03       		.uleb128 0x3
+ 1520 00f9 0E       		.uleb128 0xe
+ 1521 00fa 3A       		.uleb128 0x3a
+ 1522 00fb 0B       		.uleb128 0xb
+ 1523 00fc 3B       		.uleb128 0x3b
+ 1524 00fd 0B       		.uleb128 0xb
+ 1525 00fe 49       		.uleb128 0x49
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 32
+
+
+ 1526 00ff 13       		.uleb128 0x13
+ 1527 0100 02       		.uleb128 0x2
+ 1528 0101 18       		.uleb128 0x18
+ 1529 0102 00       		.byte	0
+ 1530 0103 00       		.byte	0
+ 1531 0104 12       		.uleb128 0x12
+ 1532 0105 34       		.uleb128 0x34
+ 1533 0106 00       		.byte	0
+ 1534 0107 03       		.uleb128 0x3
+ 1535 0108 0E       		.uleb128 0xe
+ 1536 0109 3A       		.uleb128 0x3a
+ 1537 010a 0B       		.uleb128 0xb
+ 1538 010b 3B       		.uleb128 0x3b
+ 1539 010c 05       		.uleb128 0x5
+ 1540 010d 49       		.uleb128 0x49
+ 1541 010e 13       		.uleb128 0x13
+ 1542 010f 3F       		.uleb128 0x3f
+ 1543 0110 19       		.uleb128 0x19
+ 1544 0111 3C       		.uleb128 0x3c
+ 1545 0112 19       		.uleb128 0x19
+ 1546 0113 00       		.byte	0
+ 1547 0114 00       		.byte	0
+ 1548 0115 13       		.uleb128 0x13
+ 1549 0116 35       		.uleb128 0x35
+ 1550 0117 00       		.byte	0
+ 1551 0118 49       		.uleb128 0x49
+ 1552 0119 13       		.uleb128 0x13
+ 1553 011a 00       		.byte	0
+ 1554 011b 00       		.byte	0
+ 1555 011c 14       		.uleb128 0x14
+ 1556 011d 34       		.uleb128 0x34
+ 1557 011e 00       		.byte	0
+ 1558 011f 03       		.uleb128 0x3
+ 1559 0120 0E       		.uleb128 0xe
+ 1560 0121 3A       		.uleb128 0x3a
+ 1561 0122 0B       		.uleb128 0xb
+ 1562 0123 3B       		.uleb128 0x3b
+ 1563 0124 0B       		.uleb128 0xb
+ 1564 0125 49       		.uleb128 0x49
+ 1565 0126 13       		.uleb128 0x13
+ 1566 0127 3F       		.uleb128 0x3f
+ 1567 0128 19       		.uleb128 0x19
+ 1568 0129 02       		.uleb128 0x2
+ 1569 012a 18       		.uleb128 0x18
+ 1570 012b 00       		.byte	0
+ 1571 012c 00       		.byte	0
+ 1572 012d 15       		.uleb128 0x15
+ 1573 012e 2E       		.uleb128 0x2e
+ 1574 012f 00       		.byte	0
+ 1575 0130 3F       		.uleb128 0x3f
+ 1576 0131 19       		.uleb128 0x19
+ 1577 0132 3C       		.uleb128 0x3c
+ 1578 0133 19       		.uleb128 0x19
+ 1579 0134 6E       		.uleb128 0x6e
+ 1580 0135 0E       		.uleb128 0xe
+ 1581 0136 03       		.uleb128 0x3
+ 1582 0137 0E       		.uleb128 0xe
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 33
+
+
+ 1583 0138 3A       		.uleb128 0x3a
+ 1584 0139 0B       		.uleb128 0xb
+ 1585 013a 3B       		.uleb128 0x3b
+ 1586 013b 0B       		.uleb128 0xb
+ 1587 013c 00       		.byte	0
+ 1588 013d 00       		.byte	0
+ 1589 013e 00       		.byte	0
+ 1590              		.section	.debug_loc,"",%progbits
+ 1591              	.Ldebug_loc0:
+ 1592              	.LLST0:
+ 1593 0000 06000000 		.4byte	.LVL0
+ 1594 0004 0E000000 		.4byte	.LVL2
+ 1595 0008 0100     		.2byte	0x1
+ 1596 000a 50       		.byte	0x50
+ 1597 000b 0E000000 		.4byte	.LVL2
+ 1598 000f 11000000 		.4byte	.LVL3-1
+ 1599 0013 0500     		.2byte	0x5
+ 1600 0015 03       		.byte	0x3
+ 1601 0016 00000000 		.4byte	encoder_prev_count
+ 1602 001a 00000000 		.4byte	0
+ 1603 001e 00000000 		.4byte	0
+ 1604              	.LLST1:
+ 1605 0022 0A000000 		.4byte	.LVL1
+ 1606 0026 0E000000 		.4byte	.LVL2
+ 1607 002a 0600     		.2byte	0x6
+ 1608 002c 70       		.byte	0x70
+ 1609 002d 00       		.sleb128 0
+ 1610 002e 73       		.byte	0x73
+ 1611 002f 00       		.sleb128 0
+ 1612 0030 1C       		.byte	0x1c
+ 1613 0031 9F       		.byte	0x9f
+ 1614 0032 0E000000 		.4byte	.LVL2
+ 1615 0036 11000000 		.4byte	.LVL3-1
+ 1616 003a 0100     		.2byte	0x1
+ 1617 003c 50       		.byte	0x50
+ 1618 003d 00000000 		.4byte	0
+ 1619 0041 00000000 		.4byte	0
+ 1620              	.LLST2:
+ 1621 0045 00000000 		.4byte	.LVL7
+ 1622 0049 0E000000 		.4byte	.LVL8
+ 1623 004d 0100     		.2byte	0x1
+ 1624 004f 50       		.byte	0x50
+ 1625 0050 0E000000 		.4byte	.LVL8
+ 1626 0054 5C000000 		.4byte	.LVL21
+ 1627 0058 0100     		.2byte	0x1
+ 1628 005a 54       		.byte	0x54
+ 1629 005b 00000000 		.4byte	0
+ 1630 005f 00000000 		.4byte	0
+ 1631              	.LLST3:
+ 1632 0063 00000000 		.4byte	.LVL22
+ 1633 0067 08000000 		.4byte	.LVL23
+ 1634 006b 0100     		.2byte	0x1
+ 1635 006d 50       		.byte	0x50
+ 1636 006e 08000000 		.4byte	.LVL23
+ 1637 0072 34000000 		.4byte	.LVL26
+ 1638 0076 0100     		.2byte	0x1
+ 1639 0078 50       		.byte	0x50
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 34
+
+
+ 1640 0079 46000000 		.4byte	.LVL30
+ 1641 007d 4C000000 		.4byte	.LVL31
+ 1642 0081 0100     		.2byte	0x1
+ 1643 0083 50       		.byte	0x50
+ 1644 0084 5E000000 		.4byte	.LVL35
+ 1645 0088 60000000 		.4byte	.LVL36
+ 1646 008c 0100     		.2byte	0x1
+ 1647 008e 50       		.byte	0x50
+ 1648 008f 00000000 		.4byte	0
+ 1649 0093 00000000 		.4byte	0
+ 1650              	.LLST4:
+ 1651 0097 2E000000 		.4byte	.LVL25
+ 1652 009b 72000000 		.4byte	.LVL40
+ 1653 009f 0100     		.2byte	0x1
+ 1654 00a1 54       		.byte	0x54
+ 1655 00a2 00000000 		.4byte	0
+ 1656 00a6 00000000 		.4byte	0
+ 1657              	.LLST5:
+ 1658 00aa 04000000 		.4byte	.LVL47
+ 1659 00ae 34000000 		.4byte	.LVL56
+ 1660 00b2 0200     		.2byte	0x2
+ 1661 00b4 30       		.byte	0x30
+ 1662 00b5 9F       		.byte	0x9f
+ 1663 00b6 34000000 		.4byte	.LVL56
+ 1664 00ba 4C000000 		.4byte	.LVL58
+ 1665 00be 0100     		.2byte	0x1
+ 1666 00c0 56       		.byte	0x56
+ 1667 00c1 5E000000 		.4byte	.LVL62
+ 1668 00c5 66000000 		.4byte	.LVL64
+ 1669 00c9 0200     		.2byte	0x2
+ 1670 00cb 30       		.byte	0x30
+ 1671 00cc 9F       		.byte	0x9f
+ 1672 00cd 66000000 		.4byte	.LVL64
+ 1673 00d1 70000000 		.4byte	.LVL66
+ 1674 00d5 0100     		.2byte	0x1
+ 1675 00d7 56       		.byte	0x56
+ 1676 00d8 70000000 		.4byte	.LVL66
+ 1677 00dc 7A000000 		.4byte	.LVL67
+ 1678 00e0 0100     		.2byte	0x1
+ 1679 00e2 53       		.byte	0x53
+ 1680 00e3 7A000000 		.4byte	.LVL67
+ 1681 00e7 C4000000 		.4byte	.LFE69
+ 1682 00eb 0100     		.2byte	0x1
+ 1683 00ed 56       		.byte	0x56
+ 1684 00ee 00000000 		.4byte	0
+ 1685 00f2 00000000 		.4byte	0
+ 1686              	.LLST6:
+ 1687 00f6 38000000 		.4byte	.LVL57
+ 1688 00fa 52000000 		.4byte	.LVL59
+ 1689 00fe 0100     		.2byte	0x1
+ 1690 0100 50       		.byte	0x50
+ 1691 0101 66000000 		.4byte	.LVL64
+ 1692 0105 6D000000 		.4byte	.LVL65-1
+ 1693 0109 0100     		.2byte	0x1
+ 1694 010b 50       		.byte	0x50
+ 1695 010c 00000000 		.4byte	0
+ 1696 0110 00000000 		.4byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 35
+
+
+ 1697              	.LLST7:
+ 1698 0114 04000000 		.4byte	.LVL47
+ 1699 0118 34000000 		.4byte	.LVL56
+ 1700 011c 0200     		.2byte	0x2
+ 1701 011e 30       		.byte	0x30
+ 1702 011f 9F       		.byte	0x9f
+ 1703 0120 34000000 		.4byte	.LVL56
+ 1704 0124 C4000000 		.4byte	.LFE69
+ 1705 0128 0100     		.2byte	0x1
+ 1706 012a 57       		.byte	0x57
+ 1707 012b 00000000 		.4byte	0
+ 1708 012f 00000000 		.4byte	0
+ 1709              	.LLST8:
+ 1710 0133 04000000 		.4byte	.LVL47
+ 1711 0137 34000000 		.4byte	.LVL56
+ 1712 013b 0200     		.2byte	0x2
+ 1713 013d 30       		.byte	0x30
+ 1714 013e 9F       		.byte	0x9f
+ 1715 013f 34000000 		.4byte	.LVL56
+ 1716 0143 7C000000 		.4byte	.LVL68
+ 1717 0147 0100     		.2byte	0x1
+ 1718 0149 54       		.byte	0x54
+ 1719 014a 7E000000 		.4byte	.LVL69
+ 1720 014e 82000000 		.4byte	.LVL70
+ 1721 0152 0100     		.2byte	0x1
+ 1722 0154 54       		.byte	0x54
+ 1723 0155 82000000 		.4byte	.LVL70
+ 1724 0159 9E000000 		.4byte	.LVL74
+ 1725 015d 0200     		.2byte	0x2
+ 1726 015f 30       		.byte	0x30
+ 1727 0160 9F       		.byte	0x9f
+ 1728 0161 9E000000 		.4byte	.LVL74
+ 1729 0165 C4000000 		.4byte	.LFE69
+ 1730 0169 0100     		.2byte	0x1
+ 1731 016b 54       		.byte	0x54
+ 1732 016c 00000000 		.4byte	0
+ 1733 0170 00000000 		.4byte	0
+ 1734              		.section	.debug_aranges,"",%progbits
+ 1735 0000 44000000 		.4byte	0x44
+ 1736 0004 0200     		.2byte	0x2
+ 1737 0006 00000000 		.4byte	.Ldebug_info0
+ 1738 000a 04       		.byte	0x4
+ 1739 000b 00       		.byte	0
+ 1740 000c 0000     		.2byte	0
+ 1741 000e 0000     		.2byte	0
+ 1742 0010 00000000 		.4byte	.LFB64
+ 1743 0014 34000000 		.4byte	.LFE64-.LFB64
+ 1744 0018 00000000 		.4byte	.LFB65
+ 1745 001c 60000000 		.4byte	.LFE65-.LFB65
+ 1746 0020 00000000 		.4byte	.LFB66
+ 1747 0024 78000000 		.4byte	.LFE66-.LFB66
+ 1748 0028 00000000 		.4byte	.LFB67
+ 1749 002c 18000000 		.4byte	.LFE67-.LFB67
+ 1750 0030 00000000 		.4byte	.LFB68
+ 1751 0034 16000000 		.4byte	.LFE68-.LFB68
+ 1752 0038 00000000 		.4byte	.LFB69
+ 1753 003c C4000000 		.4byte	.LFE69-.LFB69
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 36
+
+
+ 1754 0040 00000000 		.4byte	0
+ 1755 0044 00000000 		.4byte	0
+ 1756              		.section	.debug_ranges,"",%progbits
+ 1757              	.Ldebug_ranges0:
+ 1758 0000 00000000 		.4byte	.LFB64
+ 1759 0004 34000000 		.4byte	.LFE64
+ 1760 0008 00000000 		.4byte	.LFB65
+ 1761 000c 60000000 		.4byte	.LFE65
+ 1762 0010 00000000 		.4byte	.LFB66
+ 1763 0014 78000000 		.4byte	.LFE66
+ 1764 0018 00000000 		.4byte	.LFB67
+ 1765 001c 18000000 		.4byte	.LFE67
+ 1766 0020 00000000 		.4byte	.LFB68
+ 1767 0024 16000000 		.4byte	.LFE68
+ 1768 0028 00000000 		.4byte	.LFB69
+ 1769 002c C4000000 		.4byte	.LFE69
+ 1770 0030 00000000 		.4byte	0
+ 1771 0034 00000000 		.4byte	0
+ 1772              		.section	.debug_line,"",%progbits
+ 1773              	.Ldebug_line0:
+ 1774 0000 A1020000 		.section	.debug_str,"MS",%progbits,1
+ 1774      0200ED01 
+ 1774      00000201 
+ 1774      FB0E0D00 
+ 1774      01010101 
+ 1775              	.LASF46:
+ 1776 0000 51756164 		.ascii	"QuadDec_1_Start\000"
+ 1776      4465635F 
+ 1776      315F5374 
+ 1776      61727400 
+ 1777              	.LASF47:
+ 1778 0010 55415254 		.ascii	"UART_1_Start\000"
+ 1778      5F315F53 
+ 1778      74617274 
+ 1778      00
+ 1779              	.LASF26:
+ 1780 001d 76656C6F 		.ascii	"velocidad\000"
+ 1780      63696461 
+ 1780      6400
+ 1781              	.LASF58:
+ 1782 0027 443A5C50 		.ascii	"D:\\PSoc\\Auto\\TPF\\TPF_PenduloInvertido\\1 - Barr"
+ 1782      536F635C 
+ 1782      4175746F 
+ 1782      5C545046 
+ 1782      5C545046 
+ 1783 0055 69646F2E 		.ascii	"ido.cydsn\000"
+ 1783      63796473 
+ 1783      6E00
+ 1784              	.LASF23:
+ 1785 005f 4D6F746F 		.ascii	"Motor_Speed_ISR\000"
+ 1785      725F5370 
+ 1785      6565645F 
+ 1785      49535200 
+ 1786              	.LASF31:
+ 1787 006f 72785F62 		.ascii	"rx_buf\000"
+ 1787      756600
+ 1788              	.LASF50:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 37
+
+
+ 1789 0076 55415254 		.ascii	"UART_1_PutString\000"
+ 1789      5F315F50 
+ 1789      75745374 
+ 1789      72696E67 
+ 1789      00
+ 1790              	.LASF9:
+ 1791 0087 5F5F696E 		.ascii	"__int32_t\000"
+ 1791      7433325F 
+ 1791      7400
+ 1792              	.LASF3:
+ 1793 0091 73686F72 		.ascii	"short unsigned int\000"
+ 1793      7420756E 
+ 1793      7369676E 
+ 1793      65642069 
+ 1793      6E7400
+ 1794              	.LASF43:
+ 1795 00a4 50696E5F 		.ascii	"Pin_IN2_Write\000"
+ 1795      494E325F 
+ 1795      57726974 
+ 1795      6500
+ 1796              	.LASF45:
+ 1797 00b2 50574D5F 		.ascii	"PWM_Motor_Start\000"
+ 1797      4D6F746F 
+ 1797      725F5374 
+ 1797      61727400 
+ 1798              	.LASF40:
+ 1799 00c2 51756164 		.ascii	"QuadDec_1_GetCounter\000"
+ 1799      4465635F 
+ 1799      315F4765 
+ 1799      74436F75 
+ 1799      6E746572 
+ 1800              	.LASF39:
+ 1801 00d7 6D6F746F 		.ascii	"motor_speed_rpm\000"
+ 1801      725F7370 
+ 1801      6565645F 
+ 1801      72706D00 
+ 1802              	.LASF16:
+ 1803 00e7 666C6F61 		.ascii	"float\000"
+ 1803      7400
+ 1804              	.LASF48:
+ 1805 00ed 54696D65 		.ascii	"Timer_1_Start\000"
+ 1805      725F315F 
+ 1805      53746172 
+ 1805      7400
+ 1806              	.LASF1:
+ 1807 00fb 756E7369 		.ascii	"unsigned char\000"
+ 1807      676E6564 
+ 1807      20636861 
+ 1807      7200
+ 1808              	.LASF56:
+ 1809 0109 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 1809      43313120 
+ 1809      352E342E 
+ 1809      31203230 
+ 1809      31363036 
+ 1810 013c 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 1810      20726576 
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 38
+
+
+ 1810      6973696F 
+ 1810      6E203233 
+ 1810      37373135 
+ 1811 016f 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 1811      66756E63 
+ 1811      74696F6E 
+ 1811      2D736563 
+ 1811      74696F6E 
+ 1812              	.LASF24:
+ 1813 0197 4D6F746F 		.ascii	"Motor_Control\000"
+ 1813      725F436F 
+ 1813      6E74726F 
+ 1813      6C00
+ 1814              	.LASF14:
+ 1815 01a5 696E7431 		.ascii	"int16\000"
+ 1815      3600
+ 1816              	.LASF5:
+ 1817 01ab 6C6F6E67 		.ascii	"long unsigned int\000"
+ 1817      20756E73 
+ 1817      69676E65 
+ 1817      6420696E 
+ 1817      7400
+ 1818              	.LASF29:
+ 1819 01bd 4D6F746F 		.ascii	"Motor_Brake\000"
+ 1819      725F4272 
+ 1819      616B6500 
+ 1820              	.LASF15:
+ 1821 01c9 696E7433 		.ascii	"int32\000"
+ 1821      3200
+ 1822              	.LASF44:
+ 1823 01cf 50574D5F 		.ascii	"PWM_Motor_WriteCompare\000"
+ 1823      4D6F746F 
+ 1823      725F5772 
+ 1823      69746543 
+ 1823      6F6D7061 
+ 1824              	.LASF21:
+ 1825 01e6 63757272 		.ascii	"current_count\000"
+ 1825      656E745F 
+ 1825      636F756E 
+ 1825      7400
+ 1826              	.LASF37:
+ 1827 01f4 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 1827      52784275 
+ 1827      66666572 
+ 1827      00
+ 1828              	.LASF17:
+ 1829 0201 646F7562 		.ascii	"double\000"
+ 1829      6C6500
+ 1830              	.LASF59:
+ 1831 0208 6D61696E 		.ascii	"main\000"
+ 1831      00
+ 1832              	.LASF12:
+ 1833 020d 75696E74 		.ascii	"uint16\000"
+ 1833      313600
+ 1834              	.LASF13:
+ 1835 0214 696E7438 		.ascii	"int8\000"
+ 1835      00
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 39
+
+
+ 1836              	.LASF25:
+ 1837 0219 4D6F746F 		.ascii	"Motor_Control_Percent\000"
+ 1837      725F436F 
+ 1837      6E74726F 
+ 1837      6C5F5065 
+ 1837      7263656E 
+ 1838              	.LASF53:
+ 1839 022f 55415254 		.ascii	"UART_1_PutChar\000"
+ 1839      5F315F50 
+ 1839      75744368 
+ 1839      617200
+ 1840              	.LASF8:
+ 1841 023e 756E7369 		.ascii	"unsigned int\000"
+ 1841      676E6564 
+ 1841      20696E74 
+ 1841      00
+ 1842              	.LASF7:
+ 1843 024b 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 1843      206C6F6E 
+ 1843      6720756E 
+ 1843      7369676E 
+ 1843      65642069 
+ 1844              	.LASF33:
+ 1845 0262 72785F63 		.ascii	"rx_char\000"
+ 1845      68617200 
+ 1846              	.LASF52:
+ 1847 026a 61746F69 		.ascii	"atoi\000"
+ 1847      00
+ 1848              	.LASF32:
+ 1849 026f 72785F69 		.ascii	"rx_idx\000"
+ 1849      647800
+ 1850              	.LASF42:
+ 1851 0276 50696E5F 		.ascii	"Pin_IN1_Write\000"
+ 1851      494E315F 
+ 1851      57726974 
+ 1851      6500
+ 1852              	.LASF28:
+ 1853 0284 70776D5F 		.ascii	"pwm_value\000"
+ 1853      76616C75 
+ 1853      6500
+ 1854              	.LASF10:
+ 1855 028e 696E7433 		.ascii	"int32_t\000"
+ 1855      325F7400 
+ 1856              	.LASF20:
+ 1857 0296 73697A65 		.ascii	"sizetype\000"
+ 1857      74797065 
+ 1857      00
+ 1858              	.LASF27:
+ 1859 029f 70657263 		.ascii	"percent\000"
+ 1859      656E7400 
+ 1860              	.LASF6:
+ 1861 02a7 6C6F6E67 		.ascii	"long long int\000"
+ 1861      206C6F6E 
+ 1861      6720696E 
+ 1861      7400
+ 1862              	.LASF57:
+ 1863 02b5 6D61696E 		.ascii	"main.c\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 40
+
+
+ 1863      2E6300
+ 1864              	.LASF34:
+ 1865 02bc 63757272 		.ascii	"current_pwm\000"
+ 1865      656E745F 
+ 1865      70776D00 
+ 1866              	.LASF35:
+ 1867 02c8 74785F62 		.ascii	"tx_buf\000"
+ 1867      756600
+ 1868              	.LASF2:
+ 1869 02cf 73686F72 		.ascii	"short int\000"
+ 1869      7420696E 
+ 1869      7400
+ 1870              	.LASF11:
+ 1871 02d9 75696E74 		.ascii	"uint8\000"
+ 1871      3800
+ 1872              	.LASF41:
+ 1873 02df 54696D65 		.ascii	"Timer_1_ReadStatusRegister\000"
+ 1873      725F315F 
+ 1873      52656164 
+ 1873      53746174 
+ 1873      75735265 
+ 1874              	.LASF38:
+ 1875 02fa 656E636F 		.ascii	"encoder_prev_count\000"
+ 1875      6465725F 
+ 1875      70726576 
+ 1875      5F636F75 
+ 1875      6E7400
+ 1876              	.LASF22:
+ 1877 030d 64656C74 		.ascii	"delta_counts\000"
+ 1877      615F636F 
+ 1877      756E7473 
+ 1877      00
+ 1878              	.LASF4:
+ 1879 031a 6C6F6E67 		.ascii	"long int\000"
+ 1879      20696E74 
+ 1879      00
+ 1880              	.LASF18:
+ 1881 0323 63686172 		.ascii	"char\000"
+ 1881      00
+ 1882              	.LASF19:
+ 1883 0328 6C6F6E67 		.ascii	"long double\000"
+ 1883      20646F75 
+ 1883      626C6500 
+ 1884              	.LASF0:
+ 1885 0334 7369676E 		.ascii	"signed char\000"
+ 1885      65642063 
+ 1885      68617200 
+ 1886              	.LASF49:
+ 1887 0340 6973725F 		.ascii	"isr_1_StartEx\000"
+ 1887      315F5374 
+ 1887      61727445 
+ 1887      7800
+ 1888              	.LASF30:
+ 1889 034e 4D6F746F 		.ascii	"Motor_Free\000"
+ 1889      725F4672 
+ 1889      656500
+ 1890              	.LASF54:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cctiVylh.s 			page 41
+
+
+ 1891 0359 73707269 		.ascii	"sprintf\000"
+ 1891      6E746600 
+ 1892              	.LASF55:
+ 1893 0361 43794465 		.ascii	"CyDelay\000"
+ 1893      6C617900 
+ 1894              	.LASF51:
+ 1895 0369 55415254 		.ascii	"UART_1_GetChar\000"
+ 1895      5F315F47 
+ 1895      65744368 
+ 1895      617200
+ 1896              	.LASF36:
+ 1897 0378 7072696E 		.ascii	"print_cnt\000"
+ 1897      745F636E 
+ 1897      7400
+ 1898              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

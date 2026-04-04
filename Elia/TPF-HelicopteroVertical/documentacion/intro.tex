@@ -1,0 +1,11 @@
+\section{Introducción}
+
+El control de sistemas propulsados verticalmente constituye un problema clásico dentro de la ingeniería de control, particularmente cuando la dinámica presenta inestabilidad inherente, no linealidades y limitaciones físicas severas. En este trabajo se aborda la regulación y seguimiento de referencia de una planta experimental de tercer orden, caracterizada por un comportamiento inestable en lazo abierto, presencia de polos complejos dominantes, un integrador y ceros que afectan significativamente la respuesta dinámica del sistema.
+
+Más allá del modelo teórico, la planta real introduce múltiples no idealidades: saturaciones estrictas del actuador, fricción variable debida a imperfecciones mecánicas en los rieles de guiado, variación del punto de operación asociada a la descarga progresiva de la batería, dinámica propia del motor y del ESC, y ruido de medición proveniente del sensor láser utilizado. Estas condiciones convierten el problema en un banco de pruebas exigente para evaluar la robustez y aplicabilidad práctica de distintas estrategias de control.
+
+Un aspecto central del trabajo fue la obtención de un modelo lineal representativo del sistema alrededor del punto de operación de hover, incluyendo la identificación experimental del esfuerzo de equilibrio y la caracterización del ruido de medición y proceso. La calidad de este modelo resultó determinante para el desempeño de los métodos de control modernos, particularmente aquellos basados en espacio de estados y estimación óptima.
+
+Sobre esta misma planta se implementaron y compararon distintas filosofías de diseño, desde enfoques clásicos hasta control óptimo con estimación de estados, evaluando su desempeño no sólo en simulación sino también mediante validación experimental directa. Esta comparación permite analizar en condiciones reales las ventajas, limitaciones y requerimientos de modelado de cada metodología.
+
+El objetivo del trabajo no se limita a la obtención de un regulador funcional, sino a estudiar la relación entre complejidad del método, dependencia del modelo y desempeño obtenido en un sistema físico con restricciones reales.

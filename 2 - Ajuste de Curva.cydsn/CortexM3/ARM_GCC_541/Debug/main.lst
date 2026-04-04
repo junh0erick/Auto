@@ -1,0 +1,2956 @@
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.global	__aeabi_i2f
+  20              		.global	__aeabi_fmul
+  21              		.global	__aeabi_fdiv
+  22              		.section	.text.Motor_Speed_ISR,"ax",%progbits
+  23              		.align	2
+  24              		.global	Motor_Speed_ISR
+  25              		.thumb
+  26              		.thumb_func
+  27              		.type	Motor_Speed_ISR, %function
+  28              	Motor_Speed_ISR:
+  29              	.LFB66:
+  30              		.file 1 "main.c"
+   1:main.c        **** #include "project.h"
+   2:main.c        **** #include <stdlib.h>
+   3:main.c        **** #include <stdio.h>
+   4:main.c        **** #include <math.h>
+   5:main.c        **** 
+   6:main.c        **** /*******************************************************************************
+   7:main.c        **** * DEFINICIONES
+   8:main.c        **** *******************************************************************************/
+   9:main.c        **** 
+  10:main.c        **** // Configuración del PWM
+  11:main.c        **** #define PWM_PERIOD          1264
+  12:main.c        **** 
+  13:main.c        **** // Límites de velocidad
+  14:main.c        **** #define MOTOR_MAX           PWM_PERIOD
+  15:main.c        **** #define MOTOR_MIN           -PWM_PERIOD
+  16:main.c        **** 
+  17:main.c        **** // Encoder del motor: cuentas por revolución mecánica
+  18:main.c        **** // QuadDec usa modo x4 → si el encoder tiene N PPR, CPR = 4*N
+  19:main.c        **** // Ajustar según el encoder físico utilizado
+  20:main.c        **** #define ENCODER_CPR         1040u
+  21:main.c        **** 
+  22:main.c        **** // Tiempo de muestreo en segundos.
+  23:main.c        **** // clk_Timer = 24 MHz, period = 240000 cuentas
+  24:main.c        **** //   T = 240000 / 24000000 = 0.01 s  (10 ms)
+  25:main.c        **** #define SAMPLE_TIME_S       0.01f
+  26:main.c        **** 
+  27:main.c        **** // Coeficientes Poly4: RPM = f(PWM)
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 2
+
+
+  28:main.c        **** #define RPM_P1   2.264e-11f
+  29:main.c        **** #define RPM_P2  -6.042e-08f
+  30:main.c        **** #define RPM_P3   4.570e-05f
+  31:main.c        **** #define RPM_P4   1.611e-03f
+  32:main.c        **** #define RPM_P5  -8.532e-01f
+  33:main.c        **** 
+  34:main.c        **** // Coeficientes Poly4: PWM = f(Voltaje)
+  35:main.c        **** #define PWM_P1  -1.101764e-01f
+  36:main.c        **** #define PWM_P2   4.057681e+00f
+  37:main.c        **** #define PWM_P3  -3.073966e+01f
+  38:main.c        **** #define PWM_P4   1.321242e+02f
+  39:main.c        **** #define PWM_P5   1.250859e+02f
+  40:main.c        **** 
+  41:main.c        **** /*******************************************************************************
+  42:main.c        **** * POLINOMIO DE AJUSTE — RPM estimado a partir del PWM
+  43:main.c        **** * Usa el método de Horner para minimizar operaciones
+  44:main.c        **** *******************************************************************************/
+  45:main.c        **** 
+  46:main.c        **** float RPM_Estimado(int16 pwm)
+  47:main.c        **** {
+  48:main.c        ****     float x = (float)pwm;
+  49:main.c        ****     return (((RPM_P1 * x + RPM_P2) * x + RPM_P3) * x + RPM_P4) * x + RPM_P5;
+  50:main.c        **** }
+  51:main.c        **** 
+  52:main.c        **** int16 PWM_Desde_Voltaje(float v)
+  53:main.c        **** {
+  54:main.c        ****     int16 pwm = (int16)((((PWM_P1 * v + PWM_P2) * v + PWM_P3) * v + PWM_P4) * v + PWM_P5);
+  55:main.c        ****     if (pwm > MOTOR_MAX) pwm = MOTOR_MAX;
+  56:main.c        ****     if (pwm < 0)         pwm = 0;
+  57:main.c        ****     return pwm;
+  58:main.c        **** }
+  59:main.c        **** 
+  60:main.c        **** /*******************************************************************************
+  61:main.c        **** * VARIABLES GLOBALES — VELOCIDAD DEL MOTOR
+  62:main.c        **** *******************************************************************************/
+  63:main.c        **** 
+  64:main.c        **** volatile int32 encoder_prev_count = 0;
+  65:main.c        **** volatile float motor_speed_rpm    = 0.0f;   // Positivo = adelante, negativo = atrás
+  66:main.c        **** 
+  67:main.c        **** /*******************************************************************************
+  68:main.c        **** * ISR DEL TIMER_1 — Cálculo periódico de velocidad del motor
+  69:main.c        **** *
+  70:main.c        **** * Se ejecuta cada SAMPLE_TIME_S segundos al llegar el Timer_1 a terminal count.
+  71:main.c        **** * Fórmula: RPM = (delta_cuentas * 60) / (ENCODER_CPR * SAMPLE_TIME_S)
+  72:main.c        **** *******************************************************************************/
+  73:main.c        **** 
+  74:main.c        **** CY_ISR(Motor_Speed_ISR)
+  75:main.c        **** {
+  31              		.loc 1 75 0
+  32              		.cfi_startproc
+  33              		@ args = 0, pretend = 0, frame = 0
+  34              		@ frame_needed = 0, uses_anonymous_args = 0
+  35 0000 10B5     		push	{r4, lr}
+  36              		.cfi_def_cfa_offset 8
+  37              		.cfi_offset 4, -8
+  38              		.cfi_offset 14, -4
+  76:main.c        ****     int32 current_count;
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 3
+
+
+  77:main.c        ****     int32 delta_counts;
+  78:main.c        **** 
+  79:main.c        ****     // Leer posición actual del encoder
+  80:main.c        ****     current_count = QuadDec_1_GetCounter();
+  39              		.loc 1 80 0
+  40 0002 FFF7FEFF 		bl	QuadDec_1_GetCounter
+  41              	.LVL0:
+  81:main.c        **** 
+  82:main.c        ****     // Delta con signo (positivo = adelante, negativo = atrás)
+  83:main.c        ****     delta_counts = current_count - encoder_prev_count;
+  42              		.loc 1 83 0
+  43 0006 084C     		ldr	r4, .L3
+  44 0008 2368     		ldr	r3, [r4]
+  45              	.LVL1:
+  84:main.c        ****     encoder_prev_count = current_count;
+  46              		.loc 1 84 0
+  47 000a 2060     		str	r0, [r4]
+  85:main.c        **** 
+  86:main.c        ****     // Calcular RPM
+  87:main.c        ****     motor_speed_rpm = ((float)delta_counts * 60.0f) /
+  48              		.loc 1 87 0
+  49 000c C01A     		subs	r0, r0, r3
+  50              	.LVL2:
+  51 000e FFF7FEFF 		bl	__aeabi_i2f
+  52              	.LVL3:
+  53 0012 0649     		ldr	r1, .L3+4
+  54 0014 FFF7FEFF 		bl	__aeabi_fmul
+  55              	.LVL4:
+  56 0018 0549     		ldr	r1, .L3+8
+  57 001a FFF7FEFF 		bl	__aeabi_fdiv
+  58              	.LVL5:
+  59 001e 6060     		str	r0, [r4, #4]	@ float
+  88:main.c        ****                       ((float)ENCODER_CPR * SAMPLE_TIME_S);
+  89:main.c        **** 
+  90:main.c        ****     // Limpiar flag de interrupción del Timer_1
+  91:main.c        ****     Timer_1_ReadStatusRegister();
+  60              		.loc 1 91 0
+  61 0020 FFF7FEFF 		bl	Timer_1_ReadStatusRegister
+  62              	.LVL6:
+  63 0024 10BD     		pop	{r4, pc}
+  64              	.L4:
+  65 0026 00BF     		.align	2
+  66              	.L3:
+  67 0028 00000000 		.word	.LANCHOR0
+  68 002c 00007042 		.word	1114636288
+  69 0030 66662641 		.word	1093035622
+  70              		.cfi_endproc
+  71              	.LFE66:
+  72              		.size	Motor_Speed_ISR, .-Motor_Speed_ISR
+  73              		.global	__aeabi_fsub
+  74              		.global	__aeabi_fadd
+  75              		.section	.text.RPM_Estimado,"ax",%progbits
+  76              		.align	2
+  77              		.global	RPM_Estimado
+  78              		.thumb
+  79              		.thumb_func
+  80              		.type	RPM_Estimado, %function
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 4
+
+
+  81              	RPM_Estimado:
+  82              	.LFB64:
+  47:main.c        ****     float x = (float)pwm;
+  83              		.loc 1 47 0
+  84              		.cfi_startproc
+  85              		@ args = 0, pretend = 0, frame = 0
+  86              		@ frame_needed = 0, uses_anonymous_args = 0
+  87              	.LVL7:
+  88 0000 10B5     		push	{r4, lr}
+  89              		.cfi_def_cfa_offset 8
+  90              		.cfi_offset 4, -8
+  91              		.cfi_offset 14, -4
+  48:main.c        ****     return (((RPM_P1 * x + RPM_P2) * x + RPM_P3) * x + RPM_P4) * x + RPM_P5;
+  92              		.loc 1 48 0
+  93 0002 FFF7FEFF 		bl	__aeabi_i2f
+  94              	.LVL8:
+  95 0006 0446     		mov	r4, r0
+  96              	.LVL9:
+  49:main.c        **** }
+  97              		.loc 1 49 0
+  98 0008 0D49     		ldr	r1, .L7
+  99 000a FFF7FEFF 		bl	__aeabi_fmul
+ 100              	.LVL10:
+ 101 000e 0D49     		ldr	r1, .L7+4
+ 102 0010 FFF7FEFF 		bl	__aeabi_fsub
+ 103              	.LVL11:
+ 104 0014 0146     		mov	r1, r0
+ 105 0016 2046     		mov	r0, r4
+ 106 0018 FFF7FEFF 		bl	__aeabi_fmul
+ 107              	.LVL12:
+ 108 001c 0A49     		ldr	r1, .L7+8
+ 109 001e FFF7FEFF 		bl	__aeabi_fadd
+ 110              	.LVL13:
+ 111 0022 0146     		mov	r1, r0
+ 112 0024 2046     		mov	r0, r4
+ 113 0026 FFF7FEFF 		bl	__aeabi_fmul
+ 114              	.LVL14:
+ 115 002a 0849     		ldr	r1, .L7+12
+ 116 002c FFF7FEFF 		bl	__aeabi_fadd
+ 117              	.LVL15:
+ 118 0030 0146     		mov	r1, r0
+ 119 0032 2046     		mov	r0, r4
+ 120 0034 FFF7FEFF 		bl	__aeabi_fmul
+ 121              	.LVL16:
+ 122 0038 0549     		ldr	r1, .L7+16
+ 123 003a FFF7FEFF 		bl	__aeabi_fsub
+ 124              	.LVL17:
+  50:main.c        **** 
+ 125              		.loc 1 50 0
+ 126 003e 10BD     		pop	{r4, pc}
+ 127              	.LVL18:
+ 128              	.L8:
+ 129              		.align	2
+ 130              	.L7:
+ 131 0040 BF24C72D 		.word	768025791
+ 132 0044 3FC08133 		.word	864141375
+ 133 0048 00AE3F38 		.word	943697408
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 5
+
+
+ 134 004c 3128D33A 		.word	986916913
+ 135 0050 516B5A3F 		.word	1062890321
+ 136              		.cfi_endproc
+ 137              	.LFE64:
+ 138              		.size	RPM_Estimado, .-RPM_Estimado
+ 139              		.global	__aeabi_f2iz
+ 140              		.section	.text.PWM_Desde_Voltaje,"ax",%progbits
+ 141              		.align	2
+ 142              		.global	PWM_Desde_Voltaje
+ 143              		.thumb
+ 144              		.thumb_func
+ 145              		.type	PWM_Desde_Voltaje, %function
+ 146              	PWM_Desde_Voltaje:
+ 147              	.LFB65:
+  53:main.c        ****     int16 pwm = (int16)((((PWM_P1 * v + PWM_P2) * v + PWM_P3) * v + PWM_P4) * v + PWM_P5);
+ 148              		.loc 1 53 0
+ 149              		.cfi_startproc
+ 150              		@ args = 0, pretend = 0, frame = 0
+ 151              		@ frame_needed = 0, uses_anonymous_args = 0
+ 152              	.LVL19:
+ 153 0000 10B5     		push	{r4, lr}
+ 154              		.cfi_def_cfa_offset 8
+ 155              		.cfi_offset 4, -8
+ 156              		.cfi_offset 14, -4
+ 157 0002 0446     		mov	r4, r0
+  54:main.c        ****     if (pwm > MOTOR_MAX) pwm = MOTOR_MAX;
+ 158              		.loc 1 54 0
+ 159 0004 1349     		ldr	r1, .L15
+ 160 0006 FFF7FEFF 		bl	__aeabi_fmul
+ 161              	.LVL20:
+ 162 000a 1349     		ldr	r1, .L15+4
+ 163 000c FFF7FEFF 		bl	__aeabi_fadd
+ 164              	.LVL21:
+ 165 0010 0146     		mov	r1, r0
+ 166 0012 2046     		mov	r0, r4
+ 167 0014 FFF7FEFF 		bl	__aeabi_fmul
+ 168              	.LVL22:
+ 169 0018 1049     		ldr	r1, .L15+8
+ 170 001a FFF7FEFF 		bl	__aeabi_fsub
+ 171              	.LVL23:
+ 172 001e 0146     		mov	r1, r0
+ 173 0020 2046     		mov	r0, r4
+ 174 0022 FFF7FEFF 		bl	__aeabi_fmul
+ 175              	.LVL24:
+ 176 0026 0E49     		ldr	r1, .L15+12
+ 177 0028 FFF7FEFF 		bl	__aeabi_fadd
+ 178              	.LVL25:
+ 179 002c 0146     		mov	r1, r0
+ 180 002e 2046     		mov	r0, r4
+ 181 0030 FFF7FEFF 		bl	__aeabi_fmul
+ 182              	.LVL26:
+ 183 0034 0B49     		ldr	r1, .L15+16
+ 184 0036 FFF7FEFF 		bl	__aeabi_fadd
+ 185              	.LVL27:
+ 186 003a FFF7FEFF 		bl	__aeabi_f2iz
+ 187              	.LVL28:
+ 188 003e 00B2     		sxth	r0, r0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 6
+
+
+ 189              	.LVL29:
+  55:main.c        ****     if (pwm < 0)         pwm = 0;
+ 190              		.loc 1 55 0
+ 191 0040 B0F59E6F 		cmp	r0, #1264
+ 192 0044 01DD     		ble	.L10
+ 193 0046 4FF49E60 		mov	r0, #1264
+ 194              	.LVL30:
+ 195              	.L10:
+  56:main.c        ****     return pwm;
+ 196              		.loc 1 56 0
+ 197 004a 0028     		cmp	r0, #0
+ 198 004c 00DA     		bge	.L11
+ 199 004e 0020     		movs	r0, #0
+ 200              	.LVL31:
+ 201              	.L11:
+  58:main.c        **** 
+ 202              		.loc 1 58 0
+ 203 0050 10BD     		pop	{r4, pc}
+ 204              	.LVL32:
+ 205              	.L16:
+ 206 0052 00BF     		.align	2
+ 207              	.L15:
+ 208 0054 2AA4E1BD 		.word	-1109285846
+ 209 0058 86D88140 		.word	1082251398
+ 210 005c D3EAF541 		.word	1106635475
+ 211 0060 CC1F0443 		.word	1124343756
+ 212 0064 FB2BFA42 		.word	1123691515
+ 213              		.cfi_endproc
+ 214              	.LFE65:
+ 215              		.size	PWM_Desde_Voltaje, .-PWM_Desde_Voltaje
+ 216              		.section	.text.Motor_Control,"ax",%progbits
+ 217              		.align	2
+ 218              		.global	Motor_Control
+ 219              		.thumb
+ 220              		.thumb_func
+ 221              		.type	Motor_Control, %function
+ 222              	Motor_Control:
+ 223              	.LFB67:
+  92:main.c        **** }
+  93:main.c        **** 
+  94:main.c        **** /*******************************************************************************
+  95:main.c        **** * FUNCIONES DE CONTROL DEL MOTOR
+  96:main.c        **** *******************************************************************************/
+  97:main.c        **** 
+  98:main.c        **** /**
+  99:main.c        ****  * @brief Controla el motor DC con el L298N
+ 100:main.c        ****  * @param velocidad: -2524 (máx. atrás) a +2524 (máx. adelante)
+ 101:main.c        ****  * 
+ 102:main.c        ****  * Pines utilizados:
+ 103:main.c        ****  *   - Pin_ENA (P2[7]): PWM para velocidad
+ 104:main.c        ****  *   - Pin_IN1 (P2[6]): Control de dirección 1
+ 105:main.c        ****  *   - Pin_IN2 (P2[5]): Control de dirección 2
+ 106:main.c        ****  */
+ 107:main.c        **** void Motor_Control(int16 velocidad) {
+ 224              		.loc 1 107 0
+ 225              		.cfi_startproc
+ 226              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 7
+
+
+ 227              		@ frame_needed = 0, uses_anonymous_args = 0
+ 228              	.LVL33:
+ 229 0000 10B5     		push	{r4, lr}
+ 230              		.cfi_def_cfa_offset 8
+ 231              		.cfi_offset 4, -8
+ 232              		.cfi_offset 14, -4
+ 233 0002 0446     		mov	r4, r0
+ 108:main.c        ****     
+ 109:main.c        ****     // Saturación de velocidad
+ 110:main.c        ****     if (velocidad > MOTOR_MAX) velocidad = MOTOR_MAX;
+ 234              		.loc 1 110 0
+ 235 0004 B0F59E6F 		cmp	r0, #1264
+ 236 0008 01DD     		ble	.L18
+ 237 000a 4FF49E64 		mov	r4, #1264
+ 238              	.L18:
+ 239              	.LVL34:
+ 111:main.c        ****     if (velocidad < MOTOR_MIN) velocidad = MOTOR_MIN;
+ 240              		.loc 1 111 0
+ 241 000e 14F59E6F 		cmn	r4, #1264
+ 242 0012 00DA     		bge	.L19
+ 243 0014 114C     		ldr	r4, .L26
+ 244              	.LVL35:
+ 245              	.L19:
+ 112:main.c        ****     
+ 113:main.c        ****     if (velocidad > 0) {
+ 246              		.loc 1 113 0
+ 247 0016 002C     		cmp	r4, #0
+ 248 0018 09DD     		ble	.L20
+ 114:main.c        ****         // Motor ADELANTE
+ 115:main.c        ****         Pin_IN1_Write(1);
+ 249              		.loc 1 115 0
+ 250 001a 0120     		movs	r0, #1
+ 251 001c FFF7FEFF 		bl	Pin_IN1_Write
+ 252              	.LVL36:
+ 116:main.c        ****         Pin_IN2_Write(0);
+ 253              		.loc 1 116 0
+ 254 0020 0020     		movs	r0, #0
+ 255 0022 FFF7FEFF 		bl	Pin_IN2_Write
+ 256              	.LVL37:
+ 117:main.c        ****         PWM_Motor_WriteCompare((uint16)velocidad);
+ 257              		.loc 1 117 0
+ 258 0026 A0B2     		uxth	r0, r4
+ 259 0028 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 260              	.LVL38:
+ 261 002c 10BD     		pop	{r4, pc}
+ 262              	.LVL39:
+ 263              	.L20:
+ 118:main.c        ****     }
+ 119:main.c        ****     else if (velocidad < 0) {
+ 264              		.loc 1 119 0
+ 265 002e 002C     		cmp	r4, #0
+ 266 0030 0ADA     		bge	.L22
+ 120:main.c        ****         // Motor ATRÁS
+ 121:main.c        ****         Pin_IN1_Write(0);
+ 267              		.loc 1 121 0
+ 268 0032 0020     		movs	r0, #0
+ 269 0034 FFF7FEFF 		bl	Pin_IN1_Write
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 8
+
+
+ 270              	.LVL40:
+ 122:main.c        ****         Pin_IN2_Write(1);
+ 271              		.loc 1 122 0
+ 272 0038 0120     		movs	r0, #1
+ 273 003a FFF7FEFF 		bl	Pin_IN2_Write
+ 274              	.LVL41:
+ 123:main.c        ****         PWM_Motor_WriteCompare((uint16)(-velocidad));
+ 275              		.loc 1 123 0
+ 276 003e 6042     		negs	r0, r4
+ 277 0040 80B2     		uxth	r0, r0
+ 278 0042 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 279              	.LVL42:
+ 280 0046 10BD     		pop	{r4, pc}
+ 281              	.LVL43:
+ 282              	.L22:
+ 124:main.c        ****     }
+ 125:main.c        ****     else {
+ 126:main.c        ****         // DETENER (freno activo - cortocircuito)
+ 127:main.c        ****         Pin_IN1_Write(0);
+ 283              		.loc 1 127 0
+ 284 0048 0020     		movs	r0, #0
+ 285 004a FFF7FEFF 		bl	Pin_IN1_Write
+ 286              	.LVL44:
+ 128:main.c        ****         Pin_IN2_Write(0);
+ 287              		.loc 1 128 0
+ 288 004e 0020     		movs	r0, #0
+ 289 0050 FFF7FEFF 		bl	Pin_IN2_Write
+ 290              	.LVL45:
+ 129:main.c        ****         PWM_Motor_WriteCompare(0);
+ 291              		.loc 1 129 0
+ 292 0054 0020     		movs	r0, #0
+ 293 0056 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 294              	.LVL46:
+ 295 005a 10BD     		pop	{r4, pc}
+ 296              	.LVL47:
+ 297              	.L27:
+ 298              		.align	2
+ 299              	.L26:
+ 300 005c 10FBFFFF 		.word	-1264
+ 301              		.cfi_endproc
+ 302              	.LFE67:
+ 303              		.size	Motor_Control, .-Motor_Control
+ 304              		.section	.text.Motor_Control_Percent,"ax",%progbits
+ 305              		.align	2
+ 306              		.global	Motor_Control_Percent
+ 307              		.thumb
+ 308              		.thumb_func
+ 309              		.type	Motor_Control_Percent, %function
+ 310              	Motor_Control_Percent:
+ 311              	.LFB68:
+ 130:main.c        ****     }
+ 131:main.c        **** }
+ 132:main.c        **** 
+ 133:main.c        **** /**
+ 134:main.c        ****  * @brief Controla el motor con porcentaje
+ 135:main.c        ****  * @param percent: -100 (máx. atrás) a +100 (máx. adelante)
+ 136:main.c        ****  */
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 9
+
+
+ 137:main.c        **** void Motor_Control_Percent(int8 percent) {
+ 312              		.loc 1 137 0
+ 313              		.cfi_startproc
+ 314              		@ args = 0, pretend = 0, frame = 0
+ 315              		@ frame_needed = 0, uses_anonymous_args = 0
+ 316              	.LVL48:
+ 317 0000 10B5     		push	{r4, lr}
+ 318              		.cfi_def_cfa_offset 8
+ 319              		.cfi_offset 4, -8
+ 320              		.cfi_offset 14, -4
+ 138:main.c        ****     
+ 139:main.c        ****     int16 pwm_value;
+ 140:main.c        ****     
+ 141:main.c        ****     // Saturación
+ 142:main.c        ****     if (percent > 100) percent = 100;
+ 321              		.loc 1 142 0
+ 322 0002 6428     		cmp	r0, #100
+ 323 0004 00DD     		ble	.L29
+ 324 0006 6420     		movs	r0, #100
+ 325              	.LVL49:
+ 326              	.L29:
+ 143:main.c        ****     if (percent < -100) percent = -100;
+ 327              		.loc 1 143 0
+ 328 0008 10F1640F 		cmn	r0, #100
+ 329 000c 01DA     		bge	.L30
+ 330 000e 6FF06300 		mvn	r0, #99
+ 331              	.LVL50:
+ 332              	.L30:
+ 144:main.c        ****     
+ 145:main.c        ****     // Convertir porcentaje a valor PWM
+ 146:main.c        ****     pwm_value = (abs(percent) * PWM_PERIOD) / 100;
+ 333              		.loc 1 146 0
+ 334 0012 80EAE072 		eor	r2, r0, r0, asr #31
+ 335 0016 A2EBE072 		sub	r2, r2, r0, asr #31
+ 336 001a 4FF49E63 		mov	r3, #1264
+ 337 001e 03FB02F3 		mul	r3, r3, r2
+ 338 0022 144C     		ldr	r4, .L37
+ 339 0024 84FB0324 		smull	r2, r4, r4, r3
+ 340 0028 DB17     		asrs	r3, r3, #31
+ 341 002a C3EB6414 		rsb	r4, r3, r4, asr #5
+ 342              	.LVL51:
+ 147:main.c        ****     
+ 148:main.c        ****     if (percent > 0) {
+ 343              		.loc 1 148 0
+ 344 002e 0028     		cmp	r0, #0
+ 345 0030 09DD     		ble	.L31
+ 149:main.c        ****         // Adelante
+ 150:main.c        ****         Pin_IN1_Write(1);
+ 346              		.loc 1 150 0
+ 347 0032 0120     		movs	r0, #1
+ 348              	.LVL52:
+ 349 0034 FFF7FEFF 		bl	Pin_IN1_Write
+ 350              	.LVL53:
+ 151:main.c        ****         Pin_IN2_Write(0);
+ 351              		.loc 1 151 0
+ 352 0038 0020     		movs	r0, #0
+ 353 003a FFF7FEFF 		bl	Pin_IN2_Write
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 10
+
+
+ 354              	.LVL54:
+ 152:main.c        ****         PWM_Motor_WriteCompare((uint16)pwm_value);
+ 355              		.loc 1 152 0
+ 356 003e A0B2     		uxth	r0, r4
+ 357 0040 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 358              	.LVL55:
+ 359 0044 10BD     		pop	{r4, pc}
+ 360              	.LVL56:
+ 361              	.L31:
+ 153:main.c        ****     }
+ 154:main.c        ****     else if (percent < 0) {
+ 362              		.loc 1 154 0
+ 363 0046 0028     		cmp	r0, #0
+ 364 0048 09DA     		bge	.L33
+ 155:main.c        ****         // Atrás
+ 156:main.c        ****         Pin_IN1_Write(0);
+ 365              		.loc 1 156 0
+ 366 004a 0020     		movs	r0, #0
+ 367              	.LVL57:
+ 368 004c FFF7FEFF 		bl	Pin_IN1_Write
+ 369              	.LVL58:
+ 157:main.c        ****         Pin_IN2_Write(1);
+ 370              		.loc 1 157 0
+ 371 0050 0120     		movs	r0, #1
+ 372 0052 FFF7FEFF 		bl	Pin_IN2_Write
+ 373              	.LVL59:
+ 158:main.c        ****         PWM_Motor_WriteCompare((uint16)pwm_value);
+ 374              		.loc 1 158 0
+ 375 0056 A0B2     		uxth	r0, r4
+ 376 0058 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 377              	.LVL60:
+ 378 005c 10BD     		pop	{r4, pc}
+ 379              	.LVL61:
+ 380              	.L33:
+ 159:main.c        ****     }
+ 160:main.c        ****     else {
+ 161:main.c        ****         // Detener
+ 162:main.c        ****         Pin_IN1_Write(0);
+ 381              		.loc 1 162 0
+ 382 005e 0020     		movs	r0, #0
+ 383              	.LVL62:
+ 384 0060 FFF7FEFF 		bl	Pin_IN1_Write
+ 385              	.LVL63:
+ 163:main.c        ****         Pin_IN2_Write(0);
+ 386              		.loc 1 163 0
+ 387 0064 0020     		movs	r0, #0
+ 388 0066 FFF7FEFF 		bl	Pin_IN2_Write
+ 389              	.LVL64:
+ 164:main.c        ****         PWM_Motor_WriteCompare(0);
+ 390              		.loc 1 164 0
+ 391 006a 0020     		movs	r0, #0
+ 392 006c FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 393              	.LVL65:
+ 394 0070 10BD     		pop	{r4, pc}
+ 395              	.LVL66:
+ 396              	.L38:
+ 397 0072 00BF     		.align	2
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 11
+
+
+ 398              	.L37:
+ 399 0074 1F85EB51 		.word	1374389535
+ 400              		.cfi_endproc
+ 401              	.LFE68:
+ 402              		.size	Motor_Control_Percent, .-Motor_Control_Percent
+ 403              		.section	.text.Motor_Brake,"ax",%progbits
+ 404              		.align	2
+ 405              		.global	Motor_Brake
+ 406              		.thumb
+ 407              		.thumb_func
+ 408              		.type	Motor_Brake, %function
+ 409              	Motor_Brake:
+ 410              	.LFB69:
+ 165:main.c        ****     }
+ 166:main.c        **** }
+ 167:main.c        **** 
+ 168:main.c        **** /**
+ 169:main.c        ****  * @brief Frena el motor activamente (cortocircuito)
+ 170:main.c        ****  */
+ 171:main.c        **** void Motor_Brake(void) {
+ 411              		.loc 1 171 0
+ 412              		.cfi_startproc
+ 413              		@ args = 0, pretend = 0, frame = 0
+ 414              		@ frame_needed = 0, uses_anonymous_args = 0
+ 415 0000 08B5     		push	{r3, lr}
+ 416              		.cfi_def_cfa_offset 8
+ 417              		.cfi_offset 3, -8
+ 418              		.cfi_offset 14, -4
+ 172:main.c        ****     Pin_IN1_Write(0);
+ 419              		.loc 1 172 0
+ 420 0002 0020     		movs	r0, #0
+ 421 0004 FFF7FEFF 		bl	Pin_IN1_Write
+ 422              	.LVL67:
+ 173:main.c        ****     Pin_IN2_Write(0);
+ 423              		.loc 1 173 0
+ 424 0008 0020     		movs	r0, #0
+ 425 000a FFF7FEFF 		bl	Pin_IN2_Write
+ 426              	.LVL68:
+ 174:main.c        ****     PWM_Motor_WriteCompare(PWM_PERIOD);  // PWM al 100%
+ 427              		.loc 1 174 0
+ 428 000e 4FF49E60 		mov	r0, #1264
+ 429 0012 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 430              	.LVL69:
+ 431 0016 08BD     		pop	{r3, pc}
+ 432              		.cfi_endproc
+ 433              	.LFE69:
+ 434              		.size	Motor_Brake, .-Motor_Brake
+ 435              		.section	.text.Motor_Free,"ax",%progbits
+ 436              		.align	2
+ 437              		.global	Motor_Free
+ 438              		.thumb
+ 439              		.thumb_func
+ 440              		.type	Motor_Free, %function
+ 441              	Motor_Free:
+ 442              	.LFB70:
+ 175:main.c        **** }
+ 176:main.c        **** 
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 12
+
+
+ 177:main.c        **** /**
+ 178:main.c        ****  * @brief Deja el motor libre (sin freno)
+ 179:main.c        ****  */
+ 180:main.c        **** void Motor_Free(void) {
+ 443              		.loc 1 180 0
+ 444              		.cfi_startproc
+ 445              		@ args = 0, pretend = 0, frame = 0
+ 446              		@ frame_needed = 0, uses_anonymous_args = 0
+ 447 0000 08B5     		push	{r3, lr}
+ 448              		.cfi_def_cfa_offset 8
+ 449              		.cfi_offset 3, -8
+ 450              		.cfi_offset 14, -4
+ 181:main.c        ****     Pin_IN1_Write(0);
+ 451              		.loc 1 181 0
+ 452 0002 0020     		movs	r0, #0
+ 453 0004 FFF7FEFF 		bl	Pin_IN1_Write
+ 454              	.LVL70:
+ 182:main.c        ****     Pin_IN2_Write(0);
+ 455              		.loc 1 182 0
+ 456 0008 0020     		movs	r0, #0
+ 457 000a FFF7FEFF 		bl	Pin_IN2_Write
+ 458              	.LVL71:
+ 183:main.c        ****     PWM_Motor_WriteCompare(0);  // PWM apagado
+ 459              		.loc 1 183 0
+ 460 000e 0020     		movs	r0, #0
+ 461 0010 FFF7FEFF 		bl	PWM_Motor_WriteCompare
+ 462              	.LVL72:
+ 463 0014 08BD     		pop	{r3, pc}
+ 464              		.cfi_endproc
+ 465              	.LFE70:
+ 466              		.size	Motor_Free, .-Motor_Free
+ 467              		.global	__aeabi_d2f
+ 468 0016 00BF     		.section	.text.main,"ax",%progbits
+ 469              		.align	2
+ 470              		.global	main
+ 471              		.thumb
+ 472              		.thumb_func
+ 473              		.type	main, %function
+ 474              	main:
+ 475              	.LFB71:
+ 184:main.c        **** }
+ 185:main.c        **** 
+ 186:main.c        **** /*******************************************************************************
+ 187:main.c        **** * FUNCIÓN PRINCIPAL
+ 188:main.c        **** *******************************************************************************/
+ 189:main.c        **** 
+ 190:main.c        **** int main(void)
+ 191:main.c        **** {
+ 476              		.loc 1 191 0
+ 477              		.cfi_startproc
+ 478              		@ args = 0, pretend = 0, frame = 72
+ 479              		@ frame_needed = 0, uses_anonymous_args = 0
+ 480 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, r10, lr}
+ 481              		.cfi_def_cfa_offset 32
+ 482              		.cfi_offset 4, -32
+ 483              		.cfi_offset 5, -28
+ 484              		.cfi_offset 6, -24
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 13
+
+
+ 485              		.cfi_offset 7, -20
+ 486              		.cfi_offset 8, -16
+ 487              		.cfi_offset 9, -12
+ 488              		.cfi_offset 10, -8
+ 489              		.cfi_offset 14, -4
+ 490 0004 96B0     		sub	sp, sp, #88
+ 491              		.cfi_def_cfa_offset 120
+ 492              	.LVL73:
+ 192:main.c        ****     char  rx_buf[8];
+ 193:main.c        ****     uint8 rx_idx    = 0u;
+ 194:main.c        ****     uint8 rx_char;
+ 195:main.c        ****     float current_v  = 0.0f;
+ 196:main.c        ****     int16 current_pwm = 0;
+ 197:main.c        ****     char  tx_buf[64];
+ 198:main.c        ****     uint16 print_cnt = 0u;
+ 199:main.c        **** 
+ 200:main.c        ****     CyGlobalIntEnable;
+ 493              		.loc 1 200 0
+ 494              		.syntax unified
+ 495              	@ 200 "main.c" 1
+ 496 0006 62B6     		CPSIE   i
+ 497              	@ 0 "" 2
+ 201:main.c        **** 
+ 202:main.c        ****     // Inicializar componentes
+ 203:main.c        ****     PWM_Motor_Start();
+ 498              		.loc 1 203 0
+ 499              		.thumb
+ 500              		.syntax unified
+ 501 0008 FFF7FEFF 		bl	PWM_Motor_Start
+ 502              	.LVL74:
+ 204:main.c        ****     QuadDec_1_Start();
+ 503              		.loc 1 204 0
+ 504 000c FFF7FEFF 		bl	QuadDec_1_Start
+ 505              	.LVL75:
+ 205:main.c        ****     UART_1_Start();
+ 506              		.loc 1 205 0
+ 507 0010 FFF7FEFF 		bl	UART_1_Start
+ 508              	.LVL76:
+ 206:main.c        **** 
+ 207:main.c        ****     // Timer_1 para medición de velocidad (ISR cada 10 ms)
+ 208:main.c        ****     Timer_1_Start();
+ 509              		.loc 1 208 0
+ 510 0014 FFF7FEFF 		bl	Timer_1_Start
+ 511              	.LVL77:
+ 209:main.c        ****     isr_1_StartEx(Motor_Speed_ISR);
+ 512              		.loc 1 209 0
+ 513 0018 3748     		ldr	r0, .L50
+ 514 001a FFF7FEFF 		bl	isr_1_StartEx
+ 515              	.LVL78:
+ 210:main.c        **** 
+ 211:main.c        ****     UART_1_PutString("=== Motor Control ===\r\n");
+ 516              		.loc 1 211 0
+ 517 001e 3748     		ldr	r0, .L50+4
+ 518 0020 FFF7FEFF 		bl	UART_1_PutString
+ 519              	.LVL79:
+ 212:main.c        ****     UART_1_PutString("Ingrese Voltaje (ej: 7.5) + Enter\r\n");
+ 520              		.loc 1 212 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 14
+
+
+ 521 0024 3648     		ldr	r0, .L50+8
+ 522 0026 FFF7FEFF 		bl	UART_1_PutString
+ 523              	.LVL80:
+ 213:main.c        ****     UART_1_PutString("V_in  | PWM   | RPM_med | RPM_est\r\n");
+ 524              		.loc 1 213 0
+ 525 002a 3648     		ldr	r0, .L50+12
+ 526 002c FFF7FEFF 		bl	UART_1_PutString
+ 527              	.LVL81:
+ 214:main.c        ****     UART_1_PutString("------+-------+---------+--------\r\n");
+ 528              		.loc 1 214 0
+ 529 0030 3548     		ldr	r0, .L50+16
+ 530 0032 FFF7FEFF 		bl	UART_1_PutString
+ 531              	.LVL82:
+ 198:main.c        **** 
+ 532              		.loc 1 198 0
+ 533 0036 0024     		movs	r4, #0
+ 196:main.c        ****     char  tx_buf[64];
+ 534              		.loc 1 196 0
+ 535 0038 A046     		mov	r8, r4
+ 195:main.c        ****     int16 current_pwm = 0;
+ 536              		.loc 1 195 0
+ 537 003a 0027     		movs	r7, #0
+ 193:main.c        ****     uint8 rx_char;
+ 538              		.loc 1 193 0
+ 539 003c 2646     		mov	r6, r4
+ 540              	.LVL83:
+ 541              	.L48:
+ 215:main.c        **** 
+ 216:main.c        ****     for(;;)
+ 217:main.c        ****     {
+ 218:main.c        ****         /*----------------------------------------------------------------------
+ 219:main.c        ****         * Recepción de PWM por UART
+ 220:main.c        ****         * Escribir el número en PuTTY y presionar Enter para aplicarlo.
+ 221:main.c        ****         * Soporta negativos (ej: -1200 + Enter)
+ 222:main.c        ****         *---------------------------------------------------------------------*/
+ 223:main.c        ****         rx_char = UART_1_GetChar();
+ 542              		.loc 1 223 0
+ 543 003e FFF7FEFF 		bl	UART_1_GetChar
+ 544              	.LVL84:
+ 224:main.c        ****         if (rx_char != 0u)
+ 545              		.loc 1 224 0
+ 546 0042 0546     		mov	r5, r0
+ 547 0044 10B3     		cbz	r0, .L44
+ 225:main.c        ****         {
+ 226:main.c        ****             if (rx_char == '\r' || rx_char == '\n')
+ 548              		.loc 1 226 0
+ 549 0046 0D28     		cmp	r0, #13
+ 550 0048 01D0     		beq	.L45
+ 551              		.loc 1 226 0 is_stmt 0 discriminator 1
+ 552 004a 0A28     		cmp	r0, #10
+ 553 004c 14D1     		bne	.L46
+ 554              	.L45:
+ 227:main.c        ****             {
+ 228:main.c        ****                 if (rx_idx > 0u)
+ 555              		.loc 1 228 0 is_stmt 1
+ 556 004e EEB1     		cbz	r6, .L44
+ 229:main.c        ****                 {
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 15
+
+
+ 230:main.c        ****                     rx_buf[rx_idx] = '\0';
+ 557              		.loc 1 230 0
+ 558 0050 16AB     		add	r3, sp, #88
+ 559 0052 3344     		add	r3, r3, r6
+ 560 0054 0026     		movs	r6, #0
+ 561              	.LVL85:
+ 562 0056 03F8086C 		strb	r6, [r3, #-8]
+ 231:main.c        ****                     current_v   = (float)atof(rx_buf);
+ 563              		.loc 1 231 0
+ 564 005a 14A8     		add	r0, sp, #80
+ 565              	.LVL86:
+ 566 005c FFF7FEFF 		bl	atof
+ 567              	.LVL87:
+ 568 0060 FFF7FEFF 		bl	__aeabi_d2f
+ 569              	.LVL88:
+ 570 0064 0746     		mov	r7, r0
+ 571              	.LVL89:
+ 232:main.c        ****                     current_pwm = PWM_Desde_Voltaje(current_v);
+ 572              		.loc 1 232 0
+ 573 0066 FFF7FEFF 		bl	PWM_Desde_Voltaje
+ 574              	.LVL90:
+ 575 006a 8046     		mov	r8, r0
+ 576              	.LVL91:
+ 233:main.c        ****                     Motor_Control(current_pwm);
+ 577              		.loc 1 233 0
+ 578 006c FFF7FEFF 		bl	Motor_Control
+ 579              	.LVL92:
+ 234:main.c        ****                     rx_idx = 0u;
+ 235:main.c        ****                     UART_1_PutString("\r\n");
+ 580              		.loc 1 235 0
+ 581 0070 2648     		ldr	r0, .L50+20
+ 582 0072 FFF7FEFF 		bl	UART_1_PutString
+ 583              	.LVL93:
+ 584 0076 09E0     		b	.L44
+ 585              	.LVL94:
+ 586              	.L46:
+ 236:main.c        ****                 }
+ 237:main.c        ****             }
+ 238:main.c        ****             else if (rx_idx < (sizeof(rx_buf) - 1u))
+ 587              		.loc 1 238 0
+ 588 0078 062E     		cmp	r6, #6
+ 589 007a 07D8     		bhi	.L44
+ 239:main.c        ****             {
+ 240:main.c        ****                 UART_1_PutChar(rx_char);    // eco: ver lo que se escribe
+ 590              		.loc 1 240 0
+ 591 007c FFF7FEFF 		bl	UART_1_PutChar
+ 592              	.LVL95:
+ 241:main.c        ****                 rx_buf[rx_idx++] = (char)rx_char;
+ 593              		.loc 1 241 0
+ 594 0080 731C     		adds	r3, r6, #1
+ 595              	.LVL96:
+ 596 0082 16AA     		add	r2, sp, #88
+ 597 0084 1644     		add	r6, r6, r2
+ 598 0086 06F8085C 		strb	r5, [r6, #-8]
+ 599 008a DEB2     		uxtb	r6, r3
+ 600              	.LVL97:
+ 601              	.L44:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 16
+
+
+ 242:main.c        ****             }
+ 243:main.c        ****         }
+ 244:main.c        **** 
+ 245:main.c        ****         /*----------------------------------------------------------------------
+ 246:main.c        ****         * Imprimir PWM y velocidad cada 500 ms
+ 247:main.c        ****         *---------------------------------------------------------------------*/
+ 248:main.c        ****         print_cnt++;
+ 602              		.loc 1 248 0
+ 603 008c 0134     		adds	r4, r4, #1
+ 604              	.LVL98:
+ 605 008e A4B2     		uxth	r4, r4
+ 606              	.LVL99:
+ 249:main.c        ****         if (print_cnt >= 50u)
+ 607              		.loc 1 249 0
+ 608 0090 312C     		cmp	r4, #49
+ 609 0092 2CD9     		bls	.L47
+ 610              	.LVL100:
+ 250:main.c        ****         {
+ 251:main.c        ****             print_cnt = 0u;
+ 252:main.c        ****             sprintf(tx_buf, "V:%2d.%1d | PWM:%5d | MED:%5d | EST:%5d\r\n",
+ 253:main.c        ****                     (int)current_v,
+ 254:main.c        ****                     (int)((current_v - (float)(int)current_v) * 10.0f),
+ 611              		.loc 1 254 0
+ 612 0094 3846     		mov	r0, r7
+ 613 0096 FFF7FEFF 		bl	__aeabi_f2iz
+ 614              	.LVL101:
+ 615 009a 0446     		mov	r4, r0
+ 616 009c FFF7FEFF 		bl	__aeabi_i2f
+ 617              	.LVL102:
+ 618 00a0 0146     		mov	r1, r0
+ 619 00a2 3846     		mov	r0, r7
+ 620 00a4 FFF7FEFF 		bl	__aeabi_fsub
+ 621              	.LVL103:
+ 622 00a8 1949     		ldr	r1, .L50+24
+ 623 00aa FFF7FEFF 		bl	__aeabi_fmul
+ 624              	.LVL104:
+ 625 00ae 0546     		mov	r5, r0
+ 252:main.c        ****                     (int)current_v,
+ 626              		.loc 1 252 0
+ 627 00b0 184B     		ldr	r3, .L50+28
+ 628 00b2 D3F80490 		ldr	r9, [r3, #4]	@ float
+ 255:main.c        ****                     (int)current_pwm,
+ 256:main.c        ****                     (int)motor_speed_rpm,
+ 257:main.c        ****                     (int)RPM_Estimado(current_pwm));
+ 629              		.loc 1 257 0
+ 630 00b6 4046     		mov	r0, r8
+ 631 00b8 FFF7FEFF 		bl	RPM_Estimado
+ 632              	.LVL105:
+ 633 00bc 8246     		mov	r10, r0
+ 252:main.c        ****                     (int)current_v,
+ 634              		.loc 1 252 0
+ 635 00be 2846     		mov	r0, r5
+ 636 00c0 FFF7FEFF 		bl	__aeabi_f2iz
+ 637              	.LVL106:
+ 638 00c4 0546     		mov	r5, r0
+ 639 00c6 5046     		mov	r0, r10
+ 640 00c8 FFF7FEFF 		bl	__aeabi_f2iz
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 17
+
+
+ 641              	.LVL107:
+ 642 00cc 0290     		str	r0, [sp, #8]
+ 643 00ce 4846     		mov	r0, r9
+ 644 00d0 FFF7FEFF 		bl	__aeabi_f2iz
+ 645              	.LVL108:
+ 646 00d4 0190     		str	r0, [sp, #4]
+ 647 00d6 CDF80080 		str	r8, [sp]
+ 648 00da 2B46     		mov	r3, r5
+ 649 00dc 2246     		mov	r2, r4
+ 650 00de 0E49     		ldr	r1, .L50+32
+ 651 00e0 04A8     		add	r0, sp, #16
+ 652 00e2 FFF7FEFF 		bl	sprintf
+ 653              	.LVL109:
+ 258:main.c        ****             UART_1_PutString(tx_buf);
+ 654              		.loc 1 258 0
+ 655 00e6 04A8     		add	r0, sp, #16
+ 656 00e8 FFF7FEFF 		bl	UART_1_PutString
+ 657              	.LVL110:
+ 251:main.c        ****             sprintf(tx_buf, "V:%2d.%1d | PWM:%5d | MED:%5d | EST:%5d\r\n",
+ 658              		.loc 1 251 0
+ 659 00ec 0024     		movs	r4, #0
+ 660              	.LVL111:
+ 661              	.L47:
+ 259:main.c        ****         }
+ 260:main.c        **** 
+ 261:main.c        ****         CyDelay(10);    // 10 ms por iteración → 50 iter = 500 ms
+ 662              		.loc 1 261 0
+ 663 00ee 0A20     		movs	r0, #10
+ 664 00f0 FFF7FEFF 		bl	CyDelay
+ 665              	.LVL112:
+ 262:main.c        ****     }
+ 666              		.loc 1 262 0
+ 667 00f4 A3E7     		b	.L48
+ 668              	.L51:
+ 669 00f6 00BF     		.align	2
+ 670              	.L50:
+ 671 00f8 00000000 		.word	Motor_Speed_ISR
+ 672 00fc 00000000 		.word	.LC0
+ 673 0100 18000000 		.word	.LC1
+ 674 0104 3C000000 		.word	.LC2
+ 675 0108 60000000 		.word	.LC3
+ 676 010c 84000000 		.word	.LC4
+ 677 0110 00002041 		.word	1092616192
+ 678 0114 00000000 		.word	.LANCHOR0
+ 679 0118 88000000 		.word	.LC5
+ 680              		.cfi_endproc
+ 681              	.LFE71:
+ 682              		.size	main, .-main
+ 683              		.global	motor_speed_rpm
+ 684              		.global	encoder_prev_count
+ 685              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 686              		.align	2
+ 687              	.LC0:
+ 688 0000 3D3D3D20 		.ascii	"=== Motor Control ===\015\012\000"
+ 688      4D6F746F 
+ 688      7220436F 
+ 688      6E74726F 
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 18
+
+
+ 688      6C203D3D 
+ 689              	.LC1:
+ 690 0018 496E6772 		.ascii	"Ingrese Voltaje (ej: 7.5) + Enter\015\012\000"
+ 690      65736520 
+ 690      566F6C74 
+ 690      616A6520 
+ 690      28656A3A 
+ 691              	.LC2:
+ 692 003c 565F696E 		.ascii	"V_in  | PWM   | RPM_med | RPM_est\015\012\000"
+ 692      20207C20 
+ 692      50574D20 
+ 692      20207C20 
+ 692      52504D5F 
+ 693              	.LC3:
+ 694 0060 2D2D2D2D 		.ascii	"------+-------+---------+--------\015\012\000"
+ 694      2D2D2B2D 
+ 694      2D2D2D2D 
+ 694      2D2D2B2D 
+ 694      2D2D2D2D 
+ 695              	.LC4:
+ 696 0084 0D0A00   		.ascii	"\015\012\000"
+ 697 0087 00       		.space	1
+ 698              	.LC5:
+ 699 0088 563A2532 		.ascii	"V:%2d.%1d | PWM:%5d | MED:%5d | EST:%5d\015\012\000"
+ 699      642E2531 
+ 699      64207C20 
+ 699      50574D3A 
+ 699      25356420 
+ 700              		.bss
+ 701              		.align	2
+ 702              		.set	.LANCHOR0,. + 0
+ 703              		.type	encoder_prev_count, %object
+ 704              		.size	encoder_prev_count, 4
+ 705              	encoder_prev_count:
+ 706 0000 00000000 		.space	4
+ 707              		.type	motor_speed_rpm, %object
+ 708              		.size	motor_speed_rpm, 4
+ 709              	motor_speed_rpm:
+ 710 0004 00000000 		.space	4
+ 711              		.text
+ 712              	.Letext0:
+ 713              		.file 2 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\includ
+ 714              		.file 3 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\includ
+ 715              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 716              		.file 5 "Generated_Source\\PSoC5/core_cm3.h"
+ 717              		.file 6 "Generated_Source\\PSoC5/QuadDec_1.h"
+ 718              		.file 7 "Generated_Source\\PSoC5/Timer_1.h"
+ 719              		.file 8 "Generated_Source\\PSoC5/Pin_IN1.h"
+ 720              		.file 9 "Generated_Source\\PSoC5/Pin_IN2.h"
+ 721              		.file 10 "Generated_Source\\PSoC5/PWM_Motor.h"
+ 722              		.file 11 "Generated_Source\\PSoC5/UART_1.h"
+ 723              		.file 12 "Generated_Source\\PSoC5/isr_1.h"
+ 724              		.file 13 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inclu
+ 725              		.file 14 "d:\\psoc\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.1\\arm-none-eabi\\inclu
+ 726              		.file 15 "Generated_Source\\PSoC5/CyLib.h"
+ 727              		.section	.debug_info,"",%progbits
+ 728              	.Ldebug_info0:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 19
+
+
+ 729 0000 C6060000 		.4byte	0x6c6
+ 730 0004 0400     		.2byte	0x4
+ 731 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 732 000a 04       		.byte	0x4
+ 733 000b 01       		.uleb128 0x1
+ 734 000c F3010000 		.4byte	.LASF59
+ 735 0010 0C       		.byte	0xc
+ 736 0011 E1020000 		.4byte	.LASF60
+ 737 0015 61010000 		.4byte	.LASF61
+ 738 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 739 001d 00000000 		.4byte	0
+ 740 0021 00000000 		.4byte	.Ldebug_line0
+ 741 0025 02       		.uleb128 0x2
+ 742 0026 04       		.byte	0x4
+ 743 0027 04       		.byte	0x4
+ 744 0028 E5000000 		.4byte	.LASF0
+ 745 002c 02       		.uleb128 0x2
+ 746 002d 01       		.byte	0x1
+ 747 002e 06       		.byte	0x6
+ 748 002f 9D010000 		.4byte	.LASF1
+ 749 0033 02       		.uleb128 0x2
+ 750 0034 01       		.byte	0x1
+ 751 0035 08       		.byte	0x8
+ 752 0036 4B010000 		.4byte	.LASF2
+ 753 003a 02       		.uleb128 0x2
+ 754 003b 02       		.byte	0x2
+ 755 003c 05       		.byte	0x5
+ 756 003d 20000000 		.4byte	.LASF3
+ 757 0041 02       		.uleb128 0x2
+ 758 0042 02       		.byte	0x2
+ 759 0043 07       		.byte	0x7
+ 760 0044 E0010000 		.4byte	.LASF4
+ 761 0048 03       		.uleb128 0x3
+ 762 0049 40030000 		.4byte	.LASF10
+ 763 004d 02       		.byte	0x2
+ 764 004e 3F       		.byte	0x3f
+ 765 004f 53000000 		.4byte	0x53
+ 766 0053 02       		.uleb128 0x2
+ 767 0054 04       		.byte	0x4
+ 768 0055 05       		.byte	0x5
+ 769 0056 23010000 		.4byte	.LASF5
+ 770 005a 02       		.uleb128 0x2
+ 771 005b 04       		.byte	0x4
+ 772 005c 07       		.byte	0x7
+ 773 005d F6020000 		.4byte	.LASF6
+ 774 0061 02       		.uleb128 0x2
+ 775 0062 08       		.byte	0x8
+ 776 0063 05       		.byte	0x5
+ 777 0064 65000000 		.4byte	.LASF7
+ 778 0068 02       		.uleb128 0x2
+ 779 0069 08       		.byte	0x8
+ 780 006a 07       		.byte	0x7
+ 781 006b B1010000 		.4byte	.LASF8
+ 782 006f 04       		.uleb128 0x4
+ 783 0070 04       		.byte	0x4
+ 784 0071 05       		.byte	0x5
+ 785 0072 696E7400 		.ascii	"int\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 20
+
+
+ 786 0076 02       		.uleb128 0x2
+ 787 0077 04       		.byte	0x4
+ 788 0078 07       		.byte	0x7
+ 789 0079 C8010000 		.4byte	.LASF9
+ 790 007d 03       		.uleb128 0x3
+ 791 007e A9010000 		.4byte	.LASF11
+ 792 0082 03       		.byte	0x3
+ 793 0083 2C       		.byte	0x2c
+ 794 0084 48000000 		.4byte	0x48
+ 795 0088 05       		.uleb128 0x5
+ 796 0089 B5000000 		.4byte	.LASF12
+ 797 008d 04       		.byte	0x4
+ 798 008e E901     		.2byte	0x1e9
+ 799 0090 33000000 		.4byte	0x33
+ 800 0094 05       		.uleb128 0x5
+ 801 0095 A8000000 		.4byte	.LASF13
+ 802 0099 04       		.byte	0x4
+ 803 009a EA01     		.2byte	0x1ea
+ 804 009c 41000000 		.4byte	0x41
+ 805 00a0 05       		.uleb128 0x5
+ 806 00a1 1E010000 		.4byte	.LASF14
+ 807 00a5 04       		.byte	0x4
+ 808 00a6 EC01     		.2byte	0x1ec
+ 809 00a8 2C000000 		.4byte	0x2c
+ 810 00ac 05       		.uleb128 0x5
+ 811 00ad AF000000 		.4byte	.LASF15
+ 812 00b1 04       		.byte	0x4
+ 813 00b2 ED01     		.2byte	0x1ed
+ 814 00b4 3A000000 		.4byte	0x3a
+ 815 00b8 05       		.uleb128 0x5
+ 816 00b9 08030000 		.4byte	.LASF16
+ 817 00bd 04       		.byte	0x4
+ 818 00be EE01     		.2byte	0x1ee
+ 819 00c0 53000000 		.4byte	0x53
+ 820 00c4 02       		.uleb128 0x2
+ 821 00c5 08       		.byte	0x8
+ 822 00c6 04       		.byte	0x4
+ 823 00c7 6A030000 		.4byte	.LASF17
+ 824 00cb 02       		.uleb128 0x2
+ 825 00cc 01       		.byte	0x1
+ 826 00cd 08       		.byte	0x8
+ 827 00ce 8E020000 		.4byte	.LASF18
+ 828 00d2 02       		.uleb128 0x2
+ 829 00d3 08       		.byte	0x8
+ 830 00d4 04       		.byte	0x4
+ 831 00d5 3F010000 		.4byte	.LASF19
+ 832 00d9 02       		.uleb128 0x2
+ 833 00da 04       		.byte	0x4
+ 834 00db 07       		.byte	0x7
+ 835 00dc 2A000000 		.4byte	.LASF20
+ 836 00e0 06       		.uleb128 0x6
+ 837 00e1 CB000000 		.4byte	0xcb
+ 838 00e5 F0000000 		.4byte	0xf0
+ 839 00e9 07       		.uleb128 0x7
+ 840 00ea D9000000 		.4byte	0xd9
+ 841 00ee 07       		.byte	0x7
+ 842 00ef 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 21
+
+
+ 843 00f0 08       		.uleb128 0x8
+ 844 00f1 8A030000 		.4byte	.LASF25
+ 845 00f5 01       		.byte	0x1
+ 846 00f6 4A       		.byte	0x4a
+ 847 00f7 00000000 		.4byte	.LFB66
+ 848 00fb 34000000 		.4byte	.LFE66-.LFB66
+ 849 00ff 01       		.uleb128 0x1
+ 850 0100 9C       		.byte	0x9c
+ 851 0101 36010000 		.4byte	0x136
+ 852 0105 09       		.uleb128 0x9
+ 853 0106 EB000000 		.4byte	.LASF21
+ 854 010a 01       		.byte	0x1
+ 855 010b 4C       		.byte	0x4c
+ 856 010c B8000000 		.4byte	0xb8
+ 857 0110 00000000 		.4byte	.LLST0
+ 858 0114 09       		.uleb128 0x9
+ 859 0115 81020000 		.4byte	.LASF22
+ 860 0119 01       		.byte	0x1
+ 861 011a 4D       		.byte	0x4d
+ 862 011b B8000000 		.4byte	0xb8
+ 863 011f 22000000 		.4byte	.LLST1
+ 864 0123 0A       		.uleb128 0xa
+ 865 0124 06000000 		.4byte	.LVL0
+ 866 0128 19060000 		.4byte	0x619
+ 867 012c 0A       		.uleb128 0xa
+ 868 012d 24000000 		.4byte	.LVL6
+ 869 0131 24060000 		.4byte	0x624
+ 870 0135 00       		.byte	0
+ 871 0136 0B       		.uleb128 0xb
+ 872 0137 A2030000 		.4byte	.LASF23
+ 873 013b 01       		.byte	0x1
+ 874 013c 2E       		.byte	0x2e
+ 875 013d 25000000 		.4byte	0x25
+ 876 0141 00000000 		.4byte	.LFB64
+ 877 0145 54000000 		.4byte	.LFE64-.LFB64
+ 878 0149 01       		.uleb128 0x1
+ 879 014a 9C       		.byte	0x9c
+ 880 014b 6C010000 		.4byte	0x16c
+ 881 014f 0C       		.uleb128 0xc
+ 882 0150 70776D00 		.ascii	"pwm\000"
+ 883 0154 01       		.byte	0x1
+ 884 0155 2E       		.byte	0x2e
+ 885 0156 AC000000 		.4byte	0xac
+ 886 015a 45000000 		.4byte	.LLST2
+ 887 015e 0D       		.uleb128 0xd
+ 888 015f 7800     		.ascii	"x\000"
+ 889 0161 01       		.byte	0x1
+ 890 0162 30       		.byte	0x30
+ 891 0163 25000000 		.4byte	0x25
+ 892 0167 66000000 		.4byte	.LLST3
+ 893 016b 00       		.byte	0
+ 894 016c 0B       		.uleb128 0xb
+ 895 016d 0C010000 		.4byte	.LASF24
+ 896 0171 01       		.byte	0x1
+ 897 0172 34       		.byte	0x34
+ 898 0173 AC000000 		.4byte	0xac
+ 899 0177 00000000 		.4byte	.LFB65
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 22
+
+
+ 900 017b 68000000 		.4byte	.LFE65-.LFB65
+ 901 017f 01       		.uleb128 0x1
+ 902 0180 9C       		.byte	0x9c
+ 903 0181 A0010000 		.4byte	0x1a0
+ 904 0185 0C       		.uleb128 0xc
+ 905 0186 7600     		.ascii	"v\000"
+ 906 0188 01       		.byte	0x1
+ 907 0189 34       		.byte	0x34
+ 908 018a 25000000 		.4byte	0x25
+ 909 018e 84000000 		.4byte	.LLST4
+ 910 0192 0E       		.uleb128 0xe
+ 911 0193 70776D00 		.ascii	"pwm\000"
+ 912 0197 01       		.byte	0x1
+ 913 0198 36       		.byte	0x36
+ 914 0199 AC000000 		.4byte	0xac
+ 915 019d 01       		.uleb128 0x1
+ 916 019e 50       		.byte	0x50
+ 917 019f 00       		.byte	0
+ 918 01a0 0F       		.uleb128 0xf
+ 919 01a1 C7020000 		.4byte	.LASF26
+ 920 01a5 01       		.byte	0x1
+ 921 01a6 6B       		.byte	0x6b
+ 922 01a7 00000000 		.4byte	.LFB67
+ 923 01ab 60000000 		.4byte	.LFE67-.LFB67
+ 924 01af 01       		.uleb128 0x1
+ 925 01b0 9C       		.byte	0x9c
+ 926 01b1 6F020000 		.4byte	0x26f
+ 927 01b5 10       		.uleb128 0x10
+ 928 01b6 16000000 		.4byte	.LASF27
+ 929 01ba 01       		.byte	0x1
+ 930 01bb 6B       		.byte	0x6b
+ 931 01bc AC000000 		.4byte	0xac
+ 932 01c0 B2000000 		.4byte	.LLST5
+ 933 01c4 11       		.uleb128 0x11
+ 934 01c5 20000000 		.4byte	.LVL36
+ 935 01c9 2F060000 		.4byte	0x62f
+ 936 01cd D7010000 		.4byte	0x1d7
+ 937 01d1 12       		.uleb128 0x12
+ 938 01d2 01       		.uleb128 0x1
+ 939 01d3 50       		.byte	0x50
+ 940 01d4 01       		.uleb128 0x1
+ 941 01d5 31       		.byte	0x31
+ 942 01d6 00       		.byte	0
+ 943 01d7 11       		.uleb128 0x11
+ 944 01d8 26000000 		.4byte	.LVL37
+ 945 01dc 3A060000 		.4byte	0x63a
+ 946 01e0 EA010000 		.4byte	0x1ea
+ 947 01e4 12       		.uleb128 0x12
+ 948 01e5 01       		.uleb128 0x1
+ 949 01e6 50       		.byte	0x50
+ 950 01e7 01       		.uleb128 0x1
+ 951 01e8 30       		.byte	0x30
+ 952 01e9 00       		.byte	0
+ 953 01ea 11       		.uleb128 0x11
+ 954 01eb 2C000000 		.4byte	.LVL38
+ 955 01ef 45060000 		.4byte	0x645
+ 956 01f3 FE010000 		.4byte	0x1fe
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 23
+
+
+ 957 01f7 12       		.uleb128 0x12
+ 958 01f8 01       		.uleb128 0x1
+ 959 01f9 50       		.byte	0x50
+ 960 01fa 02       		.uleb128 0x2
+ 961 01fb 74       		.byte	0x74
+ 962 01fc 00       		.sleb128 0
+ 963 01fd 00       		.byte	0
+ 964 01fe 11       		.uleb128 0x11
+ 965 01ff 38000000 		.4byte	.LVL40
+ 966 0203 2F060000 		.4byte	0x62f
+ 967 0207 11020000 		.4byte	0x211
+ 968 020b 12       		.uleb128 0x12
+ 969 020c 01       		.uleb128 0x1
+ 970 020d 50       		.byte	0x50
+ 971 020e 01       		.uleb128 0x1
+ 972 020f 30       		.byte	0x30
+ 973 0210 00       		.byte	0
+ 974 0211 11       		.uleb128 0x11
+ 975 0212 3E000000 		.4byte	.LVL41
+ 976 0216 3A060000 		.4byte	0x63a
+ 977 021a 24020000 		.4byte	0x224
+ 978 021e 12       		.uleb128 0x12
+ 979 021f 01       		.uleb128 0x1
+ 980 0220 50       		.byte	0x50
+ 981 0221 01       		.uleb128 0x1
+ 982 0222 31       		.byte	0x31
+ 983 0223 00       		.byte	0
+ 984 0224 11       		.uleb128 0x11
+ 985 0225 46000000 		.4byte	.LVL42
+ 986 0229 45060000 		.4byte	0x645
+ 987 022d 39020000 		.4byte	0x239
+ 988 0231 12       		.uleb128 0x12
+ 989 0232 01       		.uleb128 0x1
+ 990 0233 50       		.byte	0x50
+ 991 0234 03       		.uleb128 0x3
+ 992 0235 74       		.byte	0x74
+ 993 0236 00       		.sleb128 0
+ 994 0237 1F       		.byte	0x1f
+ 995 0238 00       		.byte	0
+ 996 0239 11       		.uleb128 0x11
+ 997 023a 4E000000 		.4byte	.LVL44
+ 998 023e 2F060000 		.4byte	0x62f
+ 999 0242 4C020000 		.4byte	0x24c
+ 1000 0246 12       		.uleb128 0x12
+ 1001 0247 01       		.uleb128 0x1
+ 1002 0248 50       		.byte	0x50
+ 1003 0249 01       		.uleb128 0x1
+ 1004 024a 30       		.byte	0x30
+ 1005 024b 00       		.byte	0
+ 1006 024c 11       		.uleb128 0x11
+ 1007 024d 54000000 		.4byte	.LVL45
+ 1008 0251 3A060000 		.4byte	0x63a
+ 1009 0255 5F020000 		.4byte	0x25f
+ 1010 0259 12       		.uleb128 0x12
+ 1011 025a 01       		.uleb128 0x1
+ 1012 025b 50       		.byte	0x50
+ 1013 025c 01       		.uleb128 0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 24
+
+
+ 1014 025d 30       		.byte	0x30
+ 1015 025e 00       		.byte	0
+ 1016 025f 13       		.uleb128 0x13
+ 1017 0260 5A000000 		.4byte	.LVL46
+ 1018 0264 45060000 		.4byte	0x645
+ 1019 0268 12       		.uleb128 0x12
+ 1020 0269 01       		.uleb128 0x1
+ 1021 026a 50       		.byte	0x50
+ 1022 026b 01       		.uleb128 0x1
+ 1023 026c 30       		.byte	0x30
+ 1024 026d 00       		.byte	0
+ 1025 026e 00       		.byte	0
+ 1026 026f 0F       		.uleb128 0xf
+ 1027 0270 4F000000 		.4byte	.LASF28
+ 1028 0274 01       		.byte	0x1
+ 1029 0275 89       		.byte	0x89
+ 1030 0276 00000000 		.4byte	.LFB68
+ 1031 027a 78000000 		.4byte	.LFE68-.LFB68
+ 1032 027e 01       		.uleb128 0x1
+ 1033 027f 9C       		.byte	0x9c
+ 1034 0280 4C030000 		.4byte	0x34c
+ 1035 0284 10       		.uleb128 0x10
+ 1036 0285 62030000 		.4byte	.LASF29
+ 1037 0289 01       		.byte	0x1
+ 1038 028a 89       		.byte	0x89
+ 1039 028b A0000000 		.4byte	0xa0
+ 1040 028f D0000000 		.4byte	.LLST6
+ 1041 0293 09       		.uleb128 0x9
+ 1042 0294 83000000 		.4byte	.LASF30
+ 1043 0298 01       		.byte	0x1
+ 1044 0299 8B       		.byte	0x8b
+ 1045 029a AC000000 		.4byte	0xac
+ 1046 029e 04010000 		.4byte	.LLST7
+ 1047 02a2 11       		.uleb128 0x11
+ 1048 02a3 38000000 		.4byte	.LVL53
+ 1049 02a7 2F060000 		.4byte	0x62f
+ 1050 02ab B5020000 		.4byte	0x2b5
+ 1051 02af 12       		.uleb128 0x12
+ 1052 02b0 01       		.uleb128 0x1
+ 1053 02b1 50       		.byte	0x50
+ 1054 02b2 01       		.uleb128 0x1
+ 1055 02b3 31       		.byte	0x31
+ 1056 02b4 00       		.byte	0
+ 1057 02b5 11       		.uleb128 0x11
+ 1058 02b6 3E000000 		.4byte	.LVL54
+ 1059 02ba 3A060000 		.4byte	0x63a
+ 1060 02be C8020000 		.4byte	0x2c8
+ 1061 02c2 12       		.uleb128 0x12
+ 1062 02c3 01       		.uleb128 0x1
+ 1063 02c4 50       		.byte	0x50
+ 1064 02c5 01       		.uleb128 0x1
+ 1065 02c6 30       		.byte	0x30
+ 1066 02c7 00       		.byte	0
+ 1067 02c8 11       		.uleb128 0x11
+ 1068 02c9 44000000 		.4byte	.LVL55
+ 1069 02cd 45060000 		.4byte	0x645
+ 1070 02d1 DC020000 		.4byte	0x2dc
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 25
+
+
+ 1071 02d5 12       		.uleb128 0x12
+ 1072 02d6 01       		.uleb128 0x1
+ 1073 02d7 50       		.byte	0x50
+ 1074 02d8 02       		.uleb128 0x2
+ 1075 02d9 74       		.byte	0x74
+ 1076 02da 00       		.sleb128 0
+ 1077 02db 00       		.byte	0
+ 1078 02dc 11       		.uleb128 0x11
+ 1079 02dd 50000000 		.4byte	.LVL58
+ 1080 02e1 2F060000 		.4byte	0x62f
+ 1081 02e5 EF020000 		.4byte	0x2ef
+ 1082 02e9 12       		.uleb128 0x12
+ 1083 02ea 01       		.uleb128 0x1
+ 1084 02eb 50       		.byte	0x50
+ 1085 02ec 01       		.uleb128 0x1
+ 1086 02ed 30       		.byte	0x30
+ 1087 02ee 00       		.byte	0
+ 1088 02ef 11       		.uleb128 0x11
+ 1089 02f0 56000000 		.4byte	.LVL59
+ 1090 02f4 3A060000 		.4byte	0x63a
+ 1091 02f8 02030000 		.4byte	0x302
+ 1092 02fc 12       		.uleb128 0x12
+ 1093 02fd 01       		.uleb128 0x1
+ 1094 02fe 50       		.byte	0x50
+ 1095 02ff 01       		.uleb128 0x1
+ 1096 0300 31       		.byte	0x31
+ 1097 0301 00       		.byte	0
+ 1098 0302 11       		.uleb128 0x11
+ 1099 0303 5C000000 		.4byte	.LVL60
+ 1100 0307 45060000 		.4byte	0x645
+ 1101 030b 16030000 		.4byte	0x316
+ 1102 030f 12       		.uleb128 0x12
+ 1103 0310 01       		.uleb128 0x1
+ 1104 0311 50       		.byte	0x50
+ 1105 0312 02       		.uleb128 0x2
+ 1106 0313 74       		.byte	0x74
+ 1107 0314 00       		.sleb128 0
+ 1108 0315 00       		.byte	0
+ 1109 0316 11       		.uleb128 0x11
+ 1110 0317 64000000 		.4byte	.LVL63
+ 1111 031b 2F060000 		.4byte	0x62f
+ 1112 031f 29030000 		.4byte	0x329
+ 1113 0323 12       		.uleb128 0x12
+ 1114 0324 01       		.uleb128 0x1
+ 1115 0325 50       		.byte	0x50
+ 1116 0326 01       		.uleb128 0x1
+ 1117 0327 30       		.byte	0x30
+ 1118 0328 00       		.byte	0
+ 1119 0329 11       		.uleb128 0x11
+ 1120 032a 6A000000 		.4byte	.LVL64
+ 1121 032e 3A060000 		.4byte	0x63a
+ 1122 0332 3C030000 		.4byte	0x33c
+ 1123 0336 12       		.uleb128 0x12
+ 1124 0337 01       		.uleb128 0x1
+ 1125 0338 50       		.byte	0x50
+ 1126 0339 01       		.uleb128 0x1
+ 1127 033a 30       		.byte	0x30
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 26
+
+
+ 1128 033b 00       		.byte	0
+ 1129 033c 13       		.uleb128 0x13
+ 1130 033d 70000000 		.4byte	.LVL65
+ 1131 0341 45060000 		.4byte	0x645
+ 1132 0345 12       		.uleb128 0x12
+ 1133 0346 01       		.uleb128 0x1
+ 1134 0347 50       		.byte	0x50
+ 1135 0348 01       		.uleb128 0x1
+ 1136 0349 30       		.byte	0x30
+ 1137 034a 00       		.byte	0
+ 1138 034b 00       		.byte	0
+ 1139 034c 0F       		.uleb128 0xf
+ 1140 034d D5020000 		.4byte	.LASF31
+ 1141 0351 01       		.byte	0x1
+ 1142 0352 AB       		.byte	0xab
+ 1143 0353 00000000 		.4byte	.LFB69
+ 1144 0357 18000000 		.4byte	.LFE69-.LFB69
+ 1145 035b 01       		.uleb128 0x1
+ 1146 035c 9C       		.byte	0x9c
+ 1147 035d 99030000 		.4byte	0x399
+ 1148 0361 11       		.uleb128 0x11
+ 1149 0362 08000000 		.4byte	.LVL67
+ 1150 0366 2F060000 		.4byte	0x62f
+ 1151 036a 74030000 		.4byte	0x374
+ 1152 036e 12       		.uleb128 0x12
+ 1153 036f 01       		.uleb128 0x1
+ 1154 0370 50       		.byte	0x50
+ 1155 0371 01       		.uleb128 0x1
+ 1156 0372 30       		.byte	0x30
+ 1157 0373 00       		.byte	0
+ 1158 0374 11       		.uleb128 0x11
+ 1159 0375 0E000000 		.4byte	.LVL68
+ 1160 0379 3A060000 		.4byte	0x63a
+ 1161 037d 87030000 		.4byte	0x387
+ 1162 0381 12       		.uleb128 0x12
+ 1163 0382 01       		.uleb128 0x1
+ 1164 0383 50       		.byte	0x50
+ 1165 0384 01       		.uleb128 0x1
+ 1166 0385 30       		.byte	0x30
+ 1167 0386 00       		.byte	0
+ 1168 0387 13       		.uleb128 0x13
+ 1169 0388 16000000 		.4byte	.LVL69
+ 1170 038c 45060000 		.4byte	0x645
+ 1171 0390 12       		.uleb128 0x12
+ 1172 0391 01       		.uleb128 0x1
+ 1173 0392 50       		.byte	0x50
+ 1174 0393 03       		.uleb128 0x3
+ 1175 0394 0A       		.byte	0xa
+ 1176 0395 F004     		.2byte	0x4f0
+ 1177 0397 00       		.byte	0
+ 1178 0398 00       		.byte	0
+ 1179 0399 0F       		.uleb128 0xf
+ 1180 039a D5010000 		.4byte	.LASF32
+ 1181 039e 01       		.byte	0x1
+ 1182 039f B4       		.byte	0xb4
+ 1183 03a0 00000000 		.4byte	.LFB70
+ 1184 03a4 16000000 		.4byte	.LFE70-.LFB70
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 27
+
+
+ 1185 03a8 01       		.uleb128 0x1
+ 1186 03a9 9C       		.byte	0x9c
+ 1187 03aa E4030000 		.4byte	0x3e4
+ 1188 03ae 11       		.uleb128 0x11
+ 1189 03af 08000000 		.4byte	.LVL70
+ 1190 03b3 2F060000 		.4byte	0x62f
+ 1191 03b7 C1030000 		.4byte	0x3c1
+ 1192 03bb 12       		.uleb128 0x12
+ 1193 03bc 01       		.uleb128 0x1
+ 1194 03bd 50       		.byte	0x50
+ 1195 03be 01       		.uleb128 0x1
+ 1196 03bf 30       		.byte	0x30
+ 1197 03c0 00       		.byte	0
+ 1198 03c1 11       		.uleb128 0x11
+ 1199 03c2 0E000000 		.4byte	.LVL71
+ 1200 03c6 3A060000 		.4byte	0x63a
+ 1201 03ca D4030000 		.4byte	0x3d4
+ 1202 03ce 12       		.uleb128 0x12
+ 1203 03cf 01       		.uleb128 0x1
+ 1204 03d0 50       		.byte	0x50
+ 1205 03d1 01       		.uleb128 0x1
+ 1206 03d2 30       		.byte	0x30
+ 1207 03d3 00       		.byte	0
+ 1208 03d4 13       		.uleb128 0x13
+ 1209 03d5 14000000 		.4byte	.LVL72
+ 1210 03d9 45060000 		.4byte	0x645
+ 1211 03dd 12       		.uleb128 0x12
+ 1212 03de 01       		.uleb128 0x1
+ 1213 03df 50       		.byte	0x50
+ 1214 03e0 01       		.uleb128 0x1
+ 1215 03e1 30       		.byte	0x30
+ 1216 03e2 00       		.byte	0
+ 1217 03e3 00       		.byte	0
+ 1218 03e4 14       		.uleb128 0x14
+ 1219 03e5 33000000 		.4byte	.LASF62
+ 1220 03e9 01       		.byte	0x1
+ 1221 03ea BE       		.byte	0xbe
+ 1222 03eb 6F000000 		.4byte	0x6f
+ 1223 03ef 00000000 		.4byte	.LFB71
+ 1224 03f3 1C010000 		.4byte	.LFE71-.LFB71
+ 1225 03f7 01       		.uleb128 0x1
+ 1226 03f8 9C       		.byte	0x9c
+ 1227 03f9 CC050000 		.4byte	0x5cc
+ 1228 03fd 15       		.uleb128 0x15
+ 1229 03fe 0F000000 		.4byte	.LASF33
+ 1230 0402 01       		.byte	0x1
+ 1231 0403 C0       		.byte	0xc0
+ 1232 0404 E0000000 		.4byte	0xe0
+ 1233 0408 02       		.uleb128 0x2
+ 1234 0409 91       		.byte	0x91
+ 1235 040a 58       		.sleb128 -40
+ 1236 040b 09       		.uleb128 0x9
+ 1237 040c 0E030000 		.4byte	.LASF34
+ 1238 0410 01       		.byte	0x1
+ 1239 0411 C1       		.byte	0xc1
+ 1240 0412 88000000 		.4byte	0x88
+ 1241 0416 17010000 		.4byte	.LLST8
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 28
+
+
+ 1242 041a 09       		.uleb128 0x9
+ 1243 041b 4A030000 		.4byte	.LASF35
+ 1244 041f 01       		.byte	0x1
+ 1245 0420 C2       		.byte	0xc2
+ 1246 0421 88000000 		.4byte	0x88
+ 1247 0425 63010000 		.4byte	.LLST9
+ 1248 0429 09       		.uleb128 0x9
+ 1249 042a 26030000 		.4byte	.LASF36
+ 1250 042e 01       		.byte	0x1
+ 1251 042f C3       		.byte	0xc3
+ 1252 0430 25000000 		.4byte	0x25
+ 1253 0434 81010000 		.4byte	.LLST10
+ 1254 0438 09       		.uleb128 0x9
+ 1255 0439 7E030000 		.4byte	.LASF37
+ 1256 043d 01       		.byte	0x1
+ 1257 043e C4       		.byte	0xc4
+ 1258 043f AC000000 		.4byte	0xac
+ 1259 0443 BA010000 		.4byte	.LLST11
+ 1260 0447 15       		.uleb128 0x15
+ 1261 0448 A8020000 		.4byte	.LASF38
+ 1262 044c 01       		.byte	0x1
+ 1263 044d C5       		.byte	0xc5
+ 1264 044e CC050000 		.4byte	0x5cc
+ 1265 0452 03       		.uleb128 0x3
+ 1266 0453 91       		.byte	0x91
+ 1267 0454 987F     		.sleb128 -104
+ 1268 0456 09       		.uleb128 0x9
+ 1269 0457 AF020000 		.4byte	.LASF39
+ 1270 045b 01       		.byte	0x1
+ 1271 045c C6       		.byte	0xc6
+ 1272 045d 94000000 		.4byte	0x94
+ 1273 0461 D9010000 		.4byte	.LLST12
+ 1274 0465 0A       		.uleb128 0xa
+ 1275 0466 0C000000 		.4byte	.LVL74
+ 1276 046a 50060000 		.4byte	0x650
+ 1277 046e 0A       		.uleb128 0xa
+ 1278 046f 10000000 		.4byte	.LVL75
+ 1279 0473 5B060000 		.4byte	0x65b
+ 1280 0477 0A       		.uleb128 0xa
+ 1281 0478 14000000 		.4byte	.LVL76
+ 1282 047c 66060000 		.4byte	0x666
+ 1283 0480 0A       		.uleb128 0xa
+ 1284 0481 18000000 		.4byte	.LVL77
+ 1285 0485 71060000 		.4byte	0x671
+ 1286 0489 11       		.uleb128 0x11
+ 1287 048a 1E000000 		.4byte	.LVL78
+ 1288 048e 7C060000 		.4byte	0x67c
+ 1289 0492 A0040000 		.4byte	0x4a0
+ 1290 0496 12       		.uleb128 0x12
+ 1291 0497 01       		.uleb128 0x1
+ 1292 0498 50       		.byte	0x50
+ 1293 0499 05       		.uleb128 0x5
+ 1294 049a 03       		.byte	0x3
+ 1295 049b 00000000 		.4byte	Motor_Speed_ISR
+ 1296 049f 00       		.byte	0
+ 1297 04a0 11       		.uleb128 0x11
+ 1298 04a1 24000000 		.4byte	.LVL79
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 29
+
+
+ 1299 04a5 87060000 		.4byte	0x687
+ 1300 04a9 B7040000 		.4byte	0x4b7
+ 1301 04ad 12       		.uleb128 0x12
+ 1302 04ae 01       		.uleb128 0x1
+ 1303 04af 50       		.byte	0x50
+ 1304 04b0 05       		.uleb128 0x5
+ 1305 04b1 03       		.byte	0x3
+ 1306 04b2 00000000 		.4byte	.LC0
+ 1307 04b6 00       		.byte	0
+ 1308 04b7 11       		.uleb128 0x11
+ 1309 04b8 2A000000 		.4byte	.LVL80
+ 1310 04bc 87060000 		.4byte	0x687
+ 1311 04c0 CE040000 		.4byte	0x4ce
+ 1312 04c4 12       		.uleb128 0x12
+ 1313 04c5 01       		.uleb128 0x1
+ 1314 04c6 50       		.byte	0x50
+ 1315 04c7 05       		.uleb128 0x5
+ 1316 04c8 03       		.byte	0x3
+ 1317 04c9 18000000 		.4byte	.LC1
+ 1318 04cd 00       		.byte	0
+ 1319 04ce 11       		.uleb128 0x11
+ 1320 04cf 30000000 		.4byte	.LVL81
+ 1321 04d3 87060000 		.4byte	0x687
+ 1322 04d7 E5040000 		.4byte	0x4e5
+ 1323 04db 12       		.uleb128 0x12
+ 1324 04dc 01       		.uleb128 0x1
+ 1325 04dd 50       		.byte	0x50
+ 1326 04de 05       		.uleb128 0x5
+ 1327 04df 03       		.byte	0x3
+ 1328 04e0 3C000000 		.4byte	.LC2
+ 1329 04e4 00       		.byte	0
+ 1330 04e5 11       		.uleb128 0x11
+ 1331 04e6 36000000 		.4byte	.LVL82
+ 1332 04ea 87060000 		.4byte	0x687
+ 1333 04ee FC040000 		.4byte	0x4fc
+ 1334 04f2 12       		.uleb128 0x12
+ 1335 04f3 01       		.uleb128 0x1
+ 1336 04f4 50       		.byte	0x50
+ 1337 04f5 05       		.uleb128 0x5
+ 1338 04f6 03       		.byte	0x3
+ 1339 04f7 60000000 		.4byte	.LC3
+ 1340 04fb 00       		.byte	0
+ 1341 04fc 0A       		.uleb128 0xa
+ 1342 04fd 42000000 		.4byte	.LVL84
+ 1343 0501 92060000 		.4byte	0x692
+ 1344 0505 11       		.uleb128 0x11
+ 1345 0506 60000000 		.4byte	.LVL87
+ 1346 050a 9D060000 		.4byte	0x69d
+ 1347 050e 19050000 		.4byte	0x519
+ 1348 0512 12       		.uleb128 0x12
+ 1349 0513 01       		.uleb128 0x1
+ 1350 0514 50       		.byte	0x50
+ 1351 0515 02       		.uleb128 0x2
+ 1352 0516 91       		.byte	0x91
+ 1353 0517 58       		.sleb128 -40
+ 1354 0518 00       		.byte	0
+ 1355 0519 11       		.uleb128 0x11
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 30
+
+
+ 1356 051a 6A000000 		.4byte	.LVL90
+ 1357 051e 6C010000 		.4byte	0x16c
+ 1358 0522 2E050000 		.4byte	0x52e
+ 1359 0526 12       		.uleb128 0x12
+ 1360 0527 01       		.uleb128 0x1
+ 1361 0528 50       		.byte	0x50
+ 1362 0529 03       		.uleb128 0x3
+ 1363 052a F5       		.byte	0xf5
+ 1364 052b 07       		.uleb128 0x7
+ 1365 052c 25       		.uleb128 0x25
+ 1366 052d 00       		.byte	0
+ 1367 052e 11       		.uleb128 0x11
+ 1368 052f 70000000 		.4byte	.LVL92
+ 1369 0533 A0010000 		.4byte	0x1a0
+ 1370 0537 42050000 		.4byte	0x542
+ 1371 053b 12       		.uleb128 0x12
+ 1372 053c 01       		.uleb128 0x1
+ 1373 053d 50       		.byte	0x50
+ 1374 053e 02       		.uleb128 0x2
+ 1375 053f 78       		.byte	0x78
+ 1376 0540 00       		.sleb128 0
+ 1377 0541 00       		.byte	0
+ 1378 0542 11       		.uleb128 0x11
+ 1379 0543 76000000 		.4byte	.LVL93
+ 1380 0547 87060000 		.4byte	0x687
+ 1381 054b 59050000 		.4byte	0x559
+ 1382 054f 12       		.uleb128 0x12
+ 1383 0550 01       		.uleb128 0x1
+ 1384 0551 50       		.byte	0x50
+ 1385 0552 05       		.uleb128 0x5
+ 1386 0553 03       		.byte	0x3
+ 1387 0554 84000000 		.4byte	.LC4
+ 1388 0558 00       		.byte	0
+ 1389 0559 0A       		.uleb128 0xa
+ 1390 055a 80000000 		.4byte	.LVL95
+ 1391 055e A8060000 		.4byte	0x6a8
+ 1392 0562 11       		.uleb128 0x11
+ 1393 0563 BC000000 		.4byte	.LVL105
+ 1394 0567 36010000 		.4byte	0x136
+ 1395 056b 76050000 		.4byte	0x576
+ 1396 056f 12       		.uleb128 0x12
+ 1397 0570 01       		.uleb128 0x1
+ 1398 0571 50       		.byte	0x50
+ 1399 0572 02       		.uleb128 0x2
+ 1400 0573 78       		.byte	0x78
+ 1401 0574 00       		.sleb128 0
+ 1402 0575 00       		.byte	0
+ 1403 0576 11       		.uleb128 0x11
+ 1404 0577 E6000000 		.4byte	.LVL109
+ 1405 057b B3060000 		.4byte	0x6b3
+ 1406 057f A7050000 		.4byte	0x5a7
+ 1407 0583 12       		.uleb128 0x12
+ 1408 0584 01       		.uleb128 0x1
+ 1409 0585 50       		.byte	0x50
+ 1410 0586 03       		.uleb128 0x3
+ 1411 0587 91       		.byte	0x91
+ 1412 0588 987F     		.sleb128 -104
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 31
+
+
+ 1413 058a 12       		.uleb128 0x12
+ 1414 058b 01       		.uleb128 0x1
+ 1415 058c 51       		.byte	0x51
+ 1416 058d 05       		.uleb128 0x5
+ 1417 058e 03       		.byte	0x3
+ 1418 058f 88000000 		.4byte	.LC5
+ 1419 0593 12       		.uleb128 0x12
+ 1420 0594 01       		.uleb128 0x1
+ 1421 0595 52       		.byte	0x52
+ 1422 0596 02       		.uleb128 0x2
+ 1423 0597 74       		.byte	0x74
+ 1424 0598 00       		.sleb128 0
+ 1425 0599 12       		.uleb128 0x12
+ 1426 059a 01       		.uleb128 0x1
+ 1427 059b 53       		.byte	0x53
+ 1428 059c 02       		.uleb128 0x2
+ 1429 059d 75       		.byte	0x75
+ 1430 059e 00       		.sleb128 0
+ 1431 059f 12       		.uleb128 0x12
+ 1432 05a0 02       		.uleb128 0x2
+ 1433 05a1 7D       		.byte	0x7d
+ 1434 05a2 00       		.sleb128 0
+ 1435 05a3 02       		.uleb128 0x2
+ 1436 05a4 78       		.byte	0x78
+ 1437 05a5 00       		.sleb128 0
+ 1438 05a6 00       		.byte	0
+ 1439 05a7 11       		.uleb128 0x11
+ 1440 05a8 EC000000 		.4byte	.LVL110
+ 1441 05ac 87060000 		.4byte	0x687
+ 1442 05b0 BC050000 		.4byte	0x5bc
+ 1443 05b4 12       		.uleb128 0x12
+ 1444 05b5 01       		.uleb128 0x1
+ 1445 05b6 50       		.byte	0x50
+ 1446 05b7 03       		.uleb128 0x3
+ 1447 05b8 91       		.byte	0x91
+ 1448 05b9 987F     		.sleb128 -104
+ 1449 05bb 00       		.byte	0
+ 1450 05bc 13       		.uleb128 0x13
+ 1451 05bd F4000000 		.4byte	.LVL112
+ 1452 05c1 BE060000 		.4byte	0x6be
+ 1453 05c5 12       		.uleb128 0x12
+ 1454 05c6 01       		.uleb128 0x1
+ 1455 05c7 50       		.byte	0x50
+ 1456 05c8 01       		.uleb128 0x1
+ 1457 05c9 3A       		.byte	0x3a
+ 1458 05ca 00       		.byte	0
+ 1459 05cb 00       		.byte	0
+ 1460 05cc 06       		.uleb128 0x6
+ 1461 05cd CB000000 		.4byte	0xcb
+ 1462 05d1 DC050000 		.4byte	0x5dc
+ 1463 05d5 07       		.uleb128 0x7
+ 1464 05d6 D9000000 		.4byte	0xd9
+ 1465 05da 3F       		.byte	0x3f
+ 1466 05db 00       		.byte	0
+ 1467 05dc 16       		.uleb128 0x16
+ 1468 05dd 71030000 		.4byte	.LASF40
+ 1469 05e1 05       		.byte	0x5
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 32
+
+
+ 1470 05e2 1207     		.2byte	0x712
+ 1471 05e4 E8050000 		.4byte	0x5e8
+ 1472 05e8 17       		.uleb128 0x17
+ 1473 05e9 7D000000 		.4byte	0x7d
+ 1474 05ed 18       		.uleb128 0x18
+ 1475 05ee F9000000 		.4byte	.LASF41
+ 1476 05f2 01       		.byte	0x1
+ 1477 05f3 40       		.byte	0x40
+ 1478 05f4 FE050000 		.4byte	0x5fe
+ 1479 05f8 05       		.uleb128 0x5
+ 1480 05f9 03       		.byte	0x3
+ 1481 05fa 00000000 		.4byte	encoder_prev_count
+ 1482 05fe 17       		.uleb128 0x17
+ 1483 05ff B8000000 		.4byte	0xb8
+ 1484 0603 18       		.uleb128 0x18
+ 1485 0604 52030000 		.4byte	.LASF42
+ 1486 0608 01       		.byte	0x1
+ 1487 0609 41       		.byte	0x41
+ 1488 060a 14060000 		.4byte	0x614
+ 1489 060e 05       		.uleb128 0x5
+ 1490 060f 03       		.byte	0x3
+ 1491 0610 00000000 		.4byte	motor_speed_rpm
+ 1492 0614 17       		.uleb128 0x17
+ 1493 0615 25000000 		.4byte	0x25
+ 1494 0619 19       		.uleb128 0x19
+ 1495 061a 93020000 		.4byte	.LASF43
+ 1496 061e 93020000 		.4byte	.LASF43
+ 1497 0622 06       		.byte	0x6
+ 1498 0623 4E       		.byte	0x4e
+ 1499 0624 19       		.uleb128 0x19
+ 1500 0625 8D000000 		.4byte	.LASF44
+ 1501 0629 8D000000 		.4byte	.LASF44
+ 1502 062d 07       		.byte	0x7
+ 1503 062e 5E       		.byte	0x5e
+ 1504 062f 19       		.uleb128 0x19
+ 1505 0630 E8020000 		.4byte	.LASF45
+ 1506 0634 E8020000 		.4byte	.LASF45
+ 1507 0638 08       		.byte	0x8
+ 1508 0639 26       		.byte	0x26
+ 1509 063a 19       		.uleb128 0x19
+ 1510 063b BB000000 		.4byte	.LASF46
+ 1511 063f BB000000 		.4byte	.LASF46
+ 1512 0643 09       		.byte	0x9
+ 1513 0644 26       		.byte	0x26
+ 1514 0645 19       		.uleb128 0x19
+ 1515 0646 38000000 		.4byte	.LASF47
+ 1516 064a 38000000 		.4byte	.LASF47
+ 1517 064e 0A       		.byte	0xa
+ 1518 064f C3       		.byte	0xc3
+ 1519 0650 19       		.uleb128 0x19
+ 1520 0651 30030000 		.4byte	.LASF48
+ 1521 0655 30030000 		.4byte	.LASF48
+ 1522 0659 0A       		.byte	0xa
+ 1523 065a 92       		.byte	0x92
+ 1524 065b 19       		.uleb128 0x19
+ 1525 065c 73000000 		.4byte	.LASF49
+ 1526 0660 73000000 		.4byte	.LASF49
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 33
+
+
+ 1527 0664 06       		.byte	0x6
+ 1528 0665 48       		.byte	0x48
+ 1529 0666 19       		.uleb128 0x19
+ 1530 0667 C9000000 		.4byte	.LASF50
+ 1531 066b C9000000 		.4byte	.LASF50
+ 1532 066f 0B       		.byte	0xb
+ 1533 0670 54       		.byte	0x54
+ 1534 0671 19       		.uleb128 0x19
+ 1535 0672 B9020000 		.4byte	.LASF51
+ 1536 0676 B9020000 		.4byte	.LASF51
+ 1537 067a 07       		.byte	0x7
+ 1538 067b 5A       		.byte	0x5a
+ 1539 067c 19       		.uleb128 0x19
+ 1540 067d 2C010000 		.4byte	.LASF52
+ 1541 0681 2C010000 		.4byte	.LASF52
+ 1542 0685 0C       		.byte	0xc
+ 1543 0686 18       		.byte	0x18
+ 1544 0687 19       		.uleb128 0x19
+ 1545 0688 15030000 		.4byte	.LASF53
+ 1546 068c 15030000 		.4byte	.LASF53
+ 1547 0690 0B       		.byte	0xb
+ 1548 0691 8B       		.byte	0x8b
+ 1549 0692 19       		.uleb128 0x19
+ 1550 0693 00000000 		.4byte	.LASF54
+ 1551 0697 00000000 		.4byte	.LASF54
+ 1552 069b 0B       		.byte	0xb
+ 1553 069c 71       		.byte	0x71
+ 1554 069d 19       		.uleb128 0x19
+ 1555 069e 3A010000 		.4byte	.LASF55
+ 1556 06a2 3A010000 		.4byte	.LASF55
+ 1557 06a6 0D       		.byte	0xd
+ 1558 06a7 49       		.byte	0x49
+ 1559 06a8 19       		.uleb128 0x19
+ 1560 06a9 D6000000 		.4byte	.LASF56
+ 1561 06ad D6000000 		.4byte	.LASF56
+ 1562 06b1 0B       		.byte	0xb
+ 1563 06b2 8A       		.byte	0x8a
+ 1564 06b3 19       		.uleb128 0x19
+ 1565 06b4 59010000 		.4byte	.LASF57
+ 1566 06b8 59010000 		.4byte	.LASF57
+ 1567 06bc 0E       		.byte	0xe
+ 1568 06bd E7       		.byte	0xe7
+ 1569 06be 19       		.uleb128 0x19
+ 1570 06bf 9A030000 		.4byte	.LASF58
+ 1571 06c3 9A030000 		.4byte	.LASF58
+ 1572 06c7 0F       		.byte	0xf
+ 1573 06c8 76       		.byte	0x76
+ 1574 06c9 00       		.byte	0
+ 1575              		.section	.debug_abbrev,"",%progbits
+ 1576              	.Ldebug_abbrev0:
+ 1577 0000 01       		.uleb128 0x1
+ 1578 0001 11       		.uleb128 0x11
+ 1579 0002 01       		.byte	0x1
+ 1580 0003 25       		.uleb128 0x25
+ 1581 0004 0E       		.uleb128 0xe
+ 1582 0005 13       		.uleb128 0x13
+ 1583 0006 0B       		.uleb128 0xb
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 34
+
+
+ 1584 0007 03       		.uleb128 0x3
+ 1585 0008 0E       		.uleb128 0xe
+ 1586 0009 1B       		.uleb128 0x1b
+ 1587 000a 0E       		.uleb128 0xe
+ 1588 000b 55       		.uleb128 0x55
+ 1589 000c 17       		.uleb128 0x17
+ 1590 000d 11       		.uleb128 0x11
+ 1591 000e 01       		.uleb128 0x1
+ 1592 000f 10       		.uleb128 0x10
+ 1593 0010 17       		.uleb128 0x17
+ 1594 0011 00       		.byte	0
+ 1595 0012 00       		.byte	0
+ 1596 0013 02       		.uleb128 0x2
+ 1597 0014 24       		.uleb128 0x24
+ 1598 0015 00       		.byte	0
+ 1599 0016 0B       		.uleb128 0xb
+ 1600 0017 0B       		.uleb128 0xb
+ 1601 0018 3E       		.uleb128 0x3e
+ 1602 0019 0B       		.uleb128 0xb
+ 1603 001a 03       		.uleb128 0x3
+ 1604 001b 0E       		.uleb128 0xe
+ 1605 001c 00       		.byte	0
+ 1606 001d 00       		.byte	0
+ 1607 001e 03       		.uleb128 0x3
+ 1608 001f 16       		.uleb128 0x16
+ 1609 0020 00       		.byte	0
+ 1610 0021 03       		.uleb128 0x3
+ 1611 0022 0E       		.uleb128 0xe
+ 1612 0023 3A       		.uleb128 0x3a
+ 1613 0024 0B       		.uleb128 0xb
+ 1614 0025 3B       		.uleb128 0x3b
+ 1615 0026 0B       		.uleb128 0xb
+ 1616 0027 49       		.uleb128 0x49
+ 1617 0028 13       		.uleb128 0x13
+ 1618 0029 00       		.byte	0
+ 1619 002a 00       		.byte	0
+ 1620 002b 04       		.uleb128 0x4
+ 1621 002c 24       		.uleb128 0x24
+ 1622 002d 00       		.byte	0
+ 1623 002e 0B       		.uleb128 0xb
+ 1624 002f 0B       		.uleb128 0xb
+ 1625 0030 3E       		.uleb128 0x3e
+ 1626 0031 0B       		.uleb128 0xb
+ 1627 0032 03       		.uleb128 0x3
+ 1628 0033 08       		.uleb128 0x8
+ 1629 0034 00       		.byte	0
+ 1630 0035 00       		.byte	0
+ 1631 0036 05       		.uleb128 0x5
+ 1632 0037 16       		.uleb128 0x16
+ 1633 0038 00       		.byte	0
+ 1634 0039 03       		.uleb128 0x3
+ 1635 003a 0E       		.uleb128 0xe
+ 1636 003b 3A       		.uleb128 0x3a
+ 1637 003c 0B       		.uleb128 0xb
+ 1638 003d 3B       		.uleb128 0x3b
+ 1639 003e 05       		.uleb128 0x5
+ 1640 003f 49       		.uleb128 0x49
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 35
+
+
+ 1641 0040 13       		.uleb128 0x13
+ 1642 0041 00       		.byte	0
+ 1643 0042 00       		.byte	0
+ 1644 0043 06       		.uleb128 0x6
+ 1645 0044 01       		.uleb128 0x1
+ 1646 0045 01       		.byte	0x1
+ 1647 0046 49       		.uleb128 0x49
+ 1648 0047 13       		.uleb128 0x13
+ 1649 0048 01       		.uleb128 0x1
+ 1650 0049 13       		.uleb128 0x13
+ 1651 004a 00       		.byte	0
+ 1652 004b 00       		.byte	0
+ 1653 004c 07       		.uleb128 0x7
+ 1654 004d 21       		.uleb128 0x21
+ 1655 004e 00       		.byte	0
+ 1656 004f 49       		.uleb128 0x49
+ 1657 0050 13       		.uleb128 0x13
+ 1658 0051 2F       		.uleb128 0x2f
+ 1659 0052 0B       		.uleb128 0xb
+ 1660 0053 00       		.byte	0
+ 1661 0054 00       		.byte	0
+ 1662 0055 08       		.uleb128 0x8
+ 1663 0056 2E       		.uleb128 0x2e
+ 1664 0057 01       		.byte	0x1
+ 1665 0058 3F       		.uleb128 0x3f
+ 1666 0059 19       		.uleb128 0x19
+ 1667 005a 03       		.uleb128 0x3
+ 1668 005b 0E       		.uleb128 0xe
+ 1669 005c 3A       		.uleb128 0x3a
+ 1670 005d 0B       		.uleb128 0xb
+ 1671 005e 3B       		.uleb128 0x3b
+ 1672 005f 0B       		.uleb128 0xb
+ 1673 0060 27       		.uleb128 0x27
+ 1674 0061 19       		.uleb128 0x19
+ 1675 0062 11       		.uleb128 0x11
+ 1676 0063 01       		.uleb128 0x1
+ 1677 0064 12       		.uleb128 0x12
+ 1678 0065 06       		.uleb128 0x6
+ 1679 0066 40       		.uleb128 0x40
+ 1680 0067 18       		.uleb128 0x18
+ 1681 0068 9642     		.uleb128 0x2116
+ 1682 006a 19       		.uleb128 0x19
+ 1683 006b 01       		.uleb128 0x1
+ 1684 006c 13       		.uleb128 0x13
+ 1685 006d 00       		.byte	0
+ 1686 006e 00       		.byte	0
+ 1687 006f 09       		.uleb128 0x9
+ 1688 0070 34       		.uleb128 0x34
+ 1689 0071 00       		.byte	0
+ 1690 0072 03       		.uleb128 0x3
+ 1691 0073 0E       		.uleb128 0xe
+ 1692 0074 3A       		.uleb128 0x3a
+ 1693 0075 0B       		.uleb128 0xb
+ 1694 0076 3B       		.uleb128 0x3b
+ 1695 0077 0B       		.uleb128 0xb
+ 1696 0078 49       		.uleb128 0x49
+ 1697 0079 13       		.uleb128 0x13
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 36
+
+
+ 1698 007a 02       		.uleb128 0x2
+ 1699 007b 17       		.uleb128 0x17
+ 1700 007c 00       		.byte	0
+ 1701 007d 00       		.byte	0
+ 1702 007e 0A       		.uleb128 0xa
+ 1703 007f 898201   		.uleb128 0x4109
+ 1704 0082 00       		.byte	0
+ 1705 0083 11       		.uleb128 0x11
+ 1706 0084 01       		.uleb128 0x1
+ 1707 0085 31       		.uleb128 0x31
+ 1708 0086 13       		.uleb128 0x13
+ 1709 0087 00       		.byte	0
+ 1710 0088 00       		.byte	0
+ 1711 0089 0B       		.uleb128 0xb
+ 1712 008a 2E       		.uleb128 0x2e
+ 1713 008b 01       		.byte	0x1
+ 1714 008c 3F       		.uleb128 0x3f
+ 1715 008d 19       		.uleb128 0x19
+ 1716 008e 03       		.uleb128 0x3
+ 1717 008f 0E       		.uleb128 0xe
+ 1718 0090 3A       		.uleb128 0x3a
+ 1719 0091 0B       		.uleb128 0xb
+ 1720 0092 3B       		.uleb128 0x3b
+ 1721 0093 0B       		.uleb128 0xb
+ 1722 0094 27       		.uleb128 0x27
+ 1723 0095 19       		.uleb128 0x19
+ 1724 0096 49       		.uleb128 0x49
+ 1725 0097 13       		.uleb128 0x13
+ 1726 0098 11       		.uleb128 0x11
+ 1727 0099 01       		.uleb128 0x1
+ 1728 009a 12       		.uleb128 0x12
+ 1729 009b 06       		.uleb128 0x6
+ 1730 009c 40       		.uleb128 0x40
+ 1731 009d 18       		.uleb128 0x18
+ 1732 009e 9642     		.uleb128 0x2116
+ 1733 00a0 19       		.uleb128 0x19
+ 1734 00a1 01       		.uleb128 0x1
+ 1735 00a2 13       		.uleb128 0x13
+ 1736 00a3 00       		.byte	0
+ 1737 00a4 00       		.byte	0
+ 1738 00a5 0C       		.uleb128 0xc
+ 1739 00a6 05       		.uleb128 0x5
+ 1740 00a7 00       		.byte	0
+ 1741 00a8 03       		.uleb128 0x3
+ 1742 00a9 08       		.uleb128 0x8
+ 1743 00aa 3A       		.uleb128 0x3a
+ 1744 00ab 0B       		.uleb128 0xb
+ 1745 00ac 3B       		.uleb128 0x3b
+ 1746 00ad 0B       		.uleb128 0xb
+ 1747 00ae 49       		.uleb128 0x49
+ 1748 00af 13       		.uleb128 0x13
+ 1749 00b0 02       		.uleb128 0x2
+ 1750 00b1 17       		.uleb128 0x17
+ 1751 00b2 00       		.byte	0
+ 1752 00b3 00       		.byte	0
+ 1753 00b4 0D       		.uleb128 0xd
+ 1754 00b5 34       		.uleb128 0x34
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 37
+
+
+ 1755 00b6 00       		.byte	0
+ 1756 00b7 03       		.uleb128 0x3
+ 1757 00b8 08       		.uleb128 0x8
+ 1758 00b9 3A       		.uleb128 0x3a
+ 1759 00ba 0B       		.uleb128 0xb
+ 1760 00bb 3B       		.uleb128 0x3b
+ 1761 00bc 0B       		.uleb128 0xb
+ 1762 00bd 49       		.uleb128 0x49
+ 1763 00be 13       		.uleb128 0x13
+ 1764 00bf 02       		.uleb128 0x2
+ 1765 00c0 17       		.uleb128 0x17
+ 1766 00c1 00       		.byte	0
+ 1767 00c2 00       		.byte	0
+ 1768 00c3 0E       		.uleb128 0xe
+ 1769 00c4 34       		.uleb128 0x34
+ 1770 00c5 00       		.byte	0
+ 1771 00c6 03       		.uleb128 0x3
+ 1772 00c7 08       		.uleb128 0x8
+ 1773 00c8 3A       		.uleb128 0x3a
+ 1774 00c9 0B       		.uleb128 0xb
+ 1775 00ca 3B       		.uleb128 0x3b
+ 1776 00cb 0B       		.uleb128 0xb
+ 1777 00cc 49       		.uleb128 0x49
+ 1778 00cd 13       		.uleb128 0x13
+ 1779 00ce 02       		.uleb128 0x2
+ 1780 00cf 18       		.uleb128 0x18
+ 1781 00d0 00       		.byte	0
+ 1782 00d1 00       		.byte	0
+ 1783 00d2 0F       		.uleb128 0xf
+ 1784 00d3 2E       		.uleb128 0x2e
+ 1785 00d4 01       		.byte	0x1
+ 1786 00d5 3F       		.uleb128 0x3f
+ 1787 00d6 19       		.uleb128 0x19
+ 1788 00d7 03       		.uleb128 0x3
+ 1789 00d8 0E       		.uleb128 0xe
+ 1790 00d9 3A       		.uleb128 0x3a
+ 1791 00da 0B       		.uleb128 0xb
+ 1792 00db 3B       		.uleb128 0x3b
+ 1793 00dc 0B       		.uleb128 0xb
+ 1794 00dd 27       		.uleb128 0x27
+ 1795 00de 19       		.uleb128 0x19
+ 1796 00df 11       		.uleb128 0x11
+ 1797 00e0 01       		.uleb128 0x1
+ 1798 00e1 12       		.uleb128 0x12
+ 1799 00e2 06       		.uleb128 0x6
+ 1800 00e3 40       		.uleb128 0x40
+ 1801 00e4 18       		.uleb128 0x18
+ 1802 00e5 9742     		.uleb128 0x2117
+ 1803 00e7 19       		.uleb128 0x19
+ 1804 00e8 01       		.uleb128 0x1
+ 1805 00e9 13       		.uleb128 0x13
+ 1806 00ea 00       		.byte	0
+ 1807 00eb 00       		.byte	0
+ 1808 00ec 10       		.uleb128 0x10
+ 1809 00ed 05       		.uleb128 0x5
+ 1810 00ee 00       		.byte	0
+ 1811 00ef 03       		.uleb128 0x3
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 38
+
+
+ 1812 00f0 0E       		.uleb128 0xe
+ 1813 00f1 3A       		.uleb128 0x3a
+ 1814 00f2 0B       		.uleb128 0xb
+ 1815 00f3 3B       		.uleb128 0x3b
+ 1816 00f4 0B       		.uleb128 0xb
+ 1817 00f5 49       		.uleb128 0x49
+ 1818 00f6 13       		.uleb128 0x13
+ 1819 00f7 02       		.uleb128 0x2
+ 1820 00f8 17       		.uleb128 0x17
+ 1821 00f9 00       		.byte	0
+ 1822 00fa 00       		.byte	0
+ 1823 00fb 11       		.uleb128 0x11
+ 1824 00fc 898201   		.uleb128 0x4109
+ 1825 00ff 01       		.byte	0x1
+ 1826 0100 11       		.uleb128 0x11
+ 1827 0101 01       		.uleb128 0x1
+ 1828 0102 31       		.uleb128 0x31
+ 1829 0103 13       		.uleb128 0x13
+ 1830 0104 01       		.uleb128 0x1
+ 1831 0105 13       		.uleb128 0x13
+ 1832 0106 00       		.byte	0
+ 1833 0107 00       		.byte	0
+ 1834 0108 12       		.uleb128 0x12
+ 1835 0109 8A8201   		.uleb128 0x410a
+ 1836 010c 00       		.byte	0
+ 1837 010d 02       		.uleb128 0x2
+ 1838 010e 18       		.uleb128 0x18
+ 1839 010f 9142     		.uleb128 0x2111
+ 1840 0111 18       		.uleb128 0x18
+ 1841 0112 00       		.byte	0
+ 1842 0113 00       		.byte	0
+ 1843 0114 13       		.uleb128 0x13
+ 1844 0115 898201   		.uleb128 0x4109
+ 1845 0118 01       		.byte	0x1
+ 1846 0119 11       		.uleb128 0x11
+ 1847 011a 01       		.uleb128 0x1
+ 1848 011b 31       		.uleb128 0x31
+ 1849 011c 13       		.uleb128 0x13
+ 1850 011d 00       		.byte	0
+ 1851 011e 00       		.byte	0
+ 1852 011f 14       		.uleb128 0x14
+ 1853 0120 2E       		.uleb128 0x2e
+ 1854 0121 01       		.byte	0x1
+ 1855 0122 3F       		.uleb128 0x3f
+ 1856 0123 19       		.uleb128 0x19
+ 1857 0124 03       		.uleb128 0x3
+ 1858 0125 0E       		.uleb128 0xe
+ 1859 0126 3A       		.uleb128 0x3a
+ 1860 0127 0B       		.uleb128 0xb
+ 1861 0128 3B       		.uleb128 0x3b
+ 1862 0129 0B       		.uleb128 0xb
+ 1863 012a 27       		.uleb128 0x27
+ 1864 012b 19       		.uleb128 0x19
+ 1865 012c 49       		.uleb128 0x49
+ 1866 012d 13       		.uleb128 0x13
+ 1867 012e 8701     		.uleb128 0x87
+ 1868 0130 19       		.uleb128 0x19
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 39
+
+
+ 1869 0131 11       		.uleb128 0x11
+ 1870 0132 01       		.uleb128 0x1
+ 1871 0133 12       		.uleb128 0x12
+ 1872 0134 06       		.uleb128 0x6
+ 1873 0135 40       		.uleb128 0x40
+ 1874 0136 18       		.uleb128 0x18
+ 1875 0137 9642     		.uleb128 0x2116
+ 1876 0139 19       		.uleb128 0x19
+ 1877 013a 01       		.uleb128 0x1
+ 1878 013b 13       		.uleb128 0x13
+ 1879 013c 00       		.byte	0
+ 1880 013d 00       		.byte	0
+ 1881 013e 15       		.uleb128 0x15
+ 1882 013f 34       		.uleb128 0x34
+ 1883 0140 00       		.byte	0
+ 1884 0141 03       		.uleb128 0x3
+ 1885 0142 0E       		.uleb128 0xe
+ 1886 0143 3A       		.uleb128 0x3a
+ 1887 0144 0B       		.uleb128 0xb
+ 1888 0145 3B       		.uleb128 0x3b
+ 1889 0146 0B       		.uleb128 0xb
+ 1890 0147 49       		.uleb128 0x49
+ 1891 0148 13       		.uleb128 0x13
+ 1892 0149 02       		.uleb128 0x2
+ 1893 014a 18       		.uleb128 0x18
+ 1894 014b 00       		.byte	0
+ 1895 014c 00       		.byte	0
+ 1896 014d 16       		.uleb128 0x16
+ 1897 014e 34       		.uleb128 0x34
+ 1898 014f 00       		.byte	0
+ 1899 0150 03       		.uleb128 0x3
+ 1900 0151 0E       		.uleb128 0xe
+ 1901 0152 3A       		.uleb128 0x3a
+ 1902 0153 0B       		.uleb128 0xb
+ 1903 0154 3B       		.uleb128 0x3b
+ 1904 0155 05       		.uleb128 0x5
+ 1905 0156 49       		.uleb128 0x49
+ 1906 0157 13       		.uleb128 0x13
+ 1907 0158 3F       		.uleb128 0x3f
+ 1908 0159 19       		.uleb128 0x19
+ 1909 015a 3C       		.uleb128 0x3c
+ 1910 015b 19       		.uleb128 0x19
+ 1911 015c 00       		.byte	0
+ 1912 015d 00       		.byte	0
+ 1913 015e 17       		.uleb128 0x17
+ 1914 015f 35       		.uleb128 0x35
+ 1915 0160 00       		.byte	0
+ 1916 0161 49       		.uleb128 0x49
+ 1917 0162 13       		.uleb128 0x13
+ 1918 0163 00       		.byte	0
+ 1919 0164 00       		.byte	0
+ 1920 0165 18       		.uleb128 0x18
+ 1921 0166 34       		.uleb128 0x34
+ 1922 0167 00       		.byte	0
+ 1923 0168 03       		.uleb128 0x3
+ 1924 0169 0E       		.uleb128 0xe
+ 1925 016a 3A       		.uleb128 0x3a
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 40
+
+
+ 1926 016b 0B       		.uleb128 0xb
+ 1927 016c 3B       		.uleb128 0x3b
+ 1928 016d 0B       		.uleb128 0xb
+ 1929 016e 49       		.uleb128 0x49
+ 1930 016f 13       		.uleb128 0x13
+ 1931 0170 3F       		.uleb128 0x3f
+ 1932 0171 19       		.uleb128 0x19
+ 1933 0172 02       		.uleb128 0x2
+ 1934 0173 18       		.uleb128 0x18
+ 1935 0174 00       		.byte	0
+ 1936 0175 00       		.byte	0
+ 1937 0176 19       		.uleb128 0x19
+ 1938 0177 2E       		.uleb128 0x2e
+ 1939 0178 00       		.byte	0
+ 1940 0179 3F       		.uleb128 0x3f
+ 1941 017a 19       		.uleb128 0x19
+ 1942 017b 3C       		.uleb128 0x3c
+ 1943 017c 19       		.uleb128 0x19
+ 1944 017d 6E       		.uleb128 0x6e
+ 1945 017e 0E       		.uleb128 0xe
+ 1946 017f 03       		.uleb128 0x3
+ 1947 0180 0E       		.uleb128 0xe
+ 1948 0181 3A       		.uleb128 0x3a
+ 1949 0182 0B       		.uleb128 0xb
+ 1950 0183 3B       		.uleb128 0x3b
+ 1951 0184 0B       		.uleb128 0xb
+ 1952 0185 00       		.byte	0
+ 1953 0186 00       		.byte	0
+ 1954 0187 00       		.byte	0
+ 1955              		.section	.debug_loc,"",%progbits
+ 1956              	.Ldebug_loc0:
+ 1957              	.LLST0:
+ 1958 0000 06000000 		.4byte	.LVL0
+ 1959 0004 0E000000 		.4byte	.LVL2
+ 1960 0008 0100     		.2byte	0x1
+ 1961 000a 50       		.byte	0x50
+ 1962 000b 0E000000 		.4byte	.LVL2
+ 1963 000f 11000000 		.4byte	.LVL3-1
+ 1964 0013 0500     		.2byte	0x5
+ 1965 0015 03       		.byte	0x3
+ 1966 0016 00000000 		.4byte	encoder_prev_count
+ 1967 001a 00000000 		.4byte	0
+ 1968 001e 00000000 		.4byte	0
+ 1969              	.LLST1:
+ 1970 0022 0A000000 		.4byte	.LVL1
+ 1971 0026 0E000000 		.4byte	.LVL2
+ 1972 002a 0600     		.2byte	0x6
+ 1973 002c 70       		.byte	0x70
+ 1974 002d 00       		.sleb128 0
+ 1975 002e 73       		.byte	0x73
+ 1976 002f 00       		.sleb128 0
+ 1977 0030 1C       		.byte	0x1c
+ 1978 0031 9F       		.byte	0x9f
+ 1979 0032 0E000000 		.4byte	.LVL2
+ 1980 0036 11000000 		.4byte	.LVL3-1
+ 1981 003a 0100     		.2byte	0x1
+ 1982 003c 50       		.byte	0x50
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 41
+
+
+ 1983 003d 00000000 		.4byte	0
+ 1984 0041 00000000 		.4byte	0
+ 1985              	.LLST2:
+ 1986 0045 00000000 		.4byte	.LVL7
+ 1987 0049 05000000 		.4byte	.LVL8-1
+ 1988 004d 0100     		.2byte	0x1
+ 1989 004f 50       		.byte	0x50
+ 1990 0050 05000000 		.4byte	.LVL8-1
+ 1991 0054 54000000 		.4byte	.LFE64
+ 1992 0058 0400     		.2byte	0x4
+ 1993 005a F3       		.byte	0xf3
+ 1994 005b 01       		.uleb128 0x1
+ 1995 005c 50       		.byte	0x50
+ 1996 005d 9F       		.byte	0x9f
+ 1997 005e 00000000 		.4byte	0
+ 1998 0062 00000000 		.4byte	0
+ 1999              	.LLST3:
+ 2000 0066 08000000 		.4byte	.LVL9
+ 2001 006a 0D000000 		.4byte	.LVL10-1
+ 2002 006e 0100     		.2byte	0x1
+ 2003 0070 50       		.byte	0x50
+ 2004 0071 0D000000 		.4byte	.LVL10-1
+ 2005 0075 40000000 		.4byte	.LVL18
+ 2006 0079 0100     		.2byte	0x1
+ 2007 007b 54       		.byte	0x54
+ 2008 007c 00000000 		.4byte	0
+ 2009 0080 00000000 		.4byte	0
+ 2010              	.LLST4:
+ 2011 0084 00000000 		.4byte	.LVL19
+ 2012 0088 09000000 		.4byte	.LVL20-1
+ 2013 008c 0100     		.2byte	0x1
+ 2014 008e 50       		.byte	0x50
+ 2015 008f 09000000 		.4byte	.LVL20-1
+ 2016 0093 52000000 		.4byte	.LVL32
+ 2017 0097 0100     		.2byte	0x1
+ 2018 0099 54       		.byte	0x54
+ 2019 009a 52000000 		.4byte	.LVL32
+ 2020 009e 68000000 		.4byte	.LFE65
+ 2021 00a2 0600     		.2byte	0x6
+ 2022 00a4 F3       		.byte	0xf3
+ 2023 00a5 03       		.uleb128 0x3
+ 2024 00a6 F5       		.byte	0xf5
+ 2025 00a7 00       		.uleb128 0
+ 2026 00a8 25       		.uleb128 0x25
+ 2027 00a9 9F       		.byte	0x9f
+ 2028 00aa 00000000 		.4byte	0
+ 2029 00ae 00000000 		.4byte	0
+ 2030              	.LLST5:
+ 2031 00b2 00000000 		.4byte	.LVL33
+ 2032 00b6 0E000000 		.4byte	.LVL34
+ 2033 00ba 0100     		.2byte	0x1
+ 2034 00bc 50       		.byte	0x50
+ 2035 00bd 0E000000 		.4byte	.LVL34
+ 2036 00c1 5C000000 		.4byte	.LVL47
+ 2037 00c5 0100     		.2byte	0x1
+ 2038 00c7 54       		.byte	0x54
+ 2039 00c8 00000000 		.4byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 42
+
+
+ 2040 00cc 00000000 		.4byte	0
+ 2041              	.LLST6:
+ 2042 00d0 00000000 		.4byte	.LVL48
+ 2043 00d4 08000000 		.4byte	.LVL49
+ 2044 00d8 0100     		.2byte	0x1
+ 2045 00da 50       		.byte	0x50
+ 2046 00db 08000000 		.4byte	.LVL49
+ 2047 00df 34000000 		.4byte	.LVL52
+ 2048 00e3 0100     		.2byte	0x1
+ 2049 00e5 50       		.byte	0x50
+ 2050 00e6 46000000 		.4byte	.LVL56
+ 2051 00ea 4C000000 		.4byte	.LVL57
+ 2052 00ee 0100     		.2byte	0x1
+ 2053 00f0 50       		.byte	0x50
+ 2054 00f1 5E000000 		.4byte	.LVL61
+ 2055 00f5 60000000 		.4byte	.LVL62
+ 2056 00f9 0100     		.2byte	0x1
+ 2057 00fb 50       		.byte	0x50
+ 2058 00fc 00000000 		.4byte	0
+ 2059 0100 00000000 		.4byte	0
+ 2060              	.LLST7:
+ 2061 0104 2E000000 		.4byte	.LVL51
+ 2062 0108 72000000 		.4byte	.LVL66
+ 2063 010c 0100     		.2byte	0x1
+ 2064 010e 54       		.byte	0x54
+ 2065 010f 00000000 		.4byte	0
+ 2066 0113 00000000 		.4byte	0
+ 2067              	.LLST8:
+ 2068 0117 06000000 		.4byte	.LVL73
+ 2069 011b 3E000000 		.4byte	.LVL83
+ 2070 011f 0200     		.2byte	0x2
+ 2071 0121 30       		.byte	0x30
+ 2072 0122 9F       		.byte	0x9f
+ 2073 0123 3E000000 		.4byte	.LVL83
+ 2074 0127 56000000 		.4byte	.LVL85
+ 2075 012b 0100     		.2byte	0x1
+ 2076 012d 56       		.byte	0x56
+ 2077 012e 70000000 		.4byte	.LVL92
+ 2078 0132 78000000 		.4byte	.LVL94
+ 2079 0136 0200     		.2byte	0x2
+ 2080 0138 30       		.byte	0x30
+ 2081 0139 9F       		.byte	0x9f
+ 2082 013a 78000000 		.4byte	.LVL94
+ 2083 013e 82000000 		.4byte	.LVL96
+ 2084 0142 0100     		.2byte	0x1
+ 2085 0144 56       		.byte	0x56
+ 2086 0145 82000000 		.4byte	.LVL96
+ 2087 0149 8C000000 		.4byte	.LVL97
+ 2088 014d 0100     		.2byte	0x1
+ 2089 014f 53       		.byte	0x53
+ 2090 0150 8C000000 		.4byte	.LVL97
+ 2091 0154 1C010000 		.4byte	.LFE71
+ 2092 0158 0100     		.2byte	0x1
+ 2093 015a 56       		.byte	0x56
+ 2094 015b 00000000 		.4byte	0
+ 2095 015f 00000000 		.4byte	0
+ 2096              	.LLST9:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 43
+
+
+ 2097 0163 42000000 		.4byte	.LVL84
+ 2098 0167 5C000000 		.4byte	.LVL86
+ 2099 016b 0100     		.2byte	0x1
+ 2100 016d 50       		.byte	0x50
+ 2101 016e 78000000 		.4byte	.LVL94
+ 2102 0172 7F000000 		.4byte	.LVL95-1
+ 2103 0176 0100     		.2byte	0x1
+ 2104 0178 50       		.byte	0x50
+ 2105 0179 00000000 		.4byte	0
+ 2106 017d 00000000 		.4byte	0
+ 2107              	.LLST10:
+ 2108 0181 06000000 		.4byte	.LVL73
+ 2109 0185 3E000000 		.4byte	.LVL83
+ 2110 0189 0600     		.2byte	0x6
+ 2111 018b 9E       		.byte	0x9e
+ 2112 018c 04       		.uleb128 0x4
+ 2113 018d 00000000 		.4byte	0
+ 2114 0191 3E000000 		.4byte	.LVL83
+ 2115 0195 66000000 		.4byte	.LVL89
+ 2116 0199 0100     		.2byte	0x1
+ 2117 019b 57       		.byte	0x57
+ 2118 019c 66000000 		.4byte	.LVL89
+ 2119 01a0 69000000 		.4byte	.LVL90-1
+ 2120 01a4 0100     		.2byte	0x1
+ 2121 01a6 50       		.byte	0x50
+ 2122 01a7 69000000 		.4byte	.LVL90-1
+ 2123 01ab 1C010000 		.4byte	.LFE71
+ 2124 01af 0100     		.2byte	0x1
+ 2125 01b1 57       		.byte	0x57
+ 2126 01b2 00000000 		.4byte	0
+ 2127 01b6 00000000 		.4byte	0
+ 2128              	.LLST11:
+ 2129 01ba 06000000 		.4byte	.LVL73
+ 2130 01be 3E000000 		.4byte	.LVL83
+ 2131 01c2 0200     		.2byte	0x2
+ 2132 01c4 30       		.byte	0x30
+ 2133 01c5 9F       		.byte	0x9f
+ 2134 01c6 3E000000 		.4byte	.LVL83
+ 2135 01ca 1C010000 		.4byte	.LFE71
+ 2136 01ce 0100     		.2byte	0x1
+ 2137 01d0 58       		.byte	0x58
+ 2138 01d1 00000000 		.4byte	0
+ 2139 01d5 00000000 		.4byte	0
+ 2140              	.LLST12:
+ 2141 01d9 06000000 		.4byte	.LVL73
+ 2142 01dd 3E000000 		.4byte	.LVL83
+ 2143 01e1 0200     		.2byte	0x2
+ 2144 01e3 30       		.byte	0x30
+ 2145 01e4 9F       		.byte	0x9f
+ 2146 01e5 3E000000 		.4byte	.LVL83
+ 2147 01e9 8E000000 		.4byte	.LVL98
+ 2148 01ed 0100     		.2byte	0x1
+ 2149 01ef 54       		.byte	0x54
+ 2150 01f0 90000000 		.4byte	.LVL99
+ 2151 01f4 94000000 		.4byte	.LVL100
+ 2152 01f8 0100     		.2byte	0x1
+ 2153 01fa 54       		.byte	0x54
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 44
+
+
+ 2154 01fb 94000000 		.4byte	.LVL100
+ 2155 01ff EE000000 		.4byte	.LVL111
+ 2156 0203 0200     		.2byte	0x2
+ 2157 0205 30       		.byte	0x30
+ 2158 0206 9F       		.byte	0x9f
+ 2159 0207 EE000000 		.4byte	.LVL111
+ 2160 020b 1C010000 		.4byte	.LFE71
+ 2161 020f 0100     		.2byte	0x1
+ 2162 0211 54       		.byte	0x54
+ 2163 0212 00000000 		.4byte	0
+ 2164 0216 00000000 		.4byte	0
+ 2165              		.section	.debug_aranges,"",%progbits
+ 2166 0000 54000000 		.4byte	0x54
+ 2167 0004 0200     		.2byte	0x2
+ 2168 0006 00000000 		.4byte	.Ldebug_info0
+ 2169 000a 04       		.byte	0x4
+ 2170 000b 00       		.byte	0
+ 2171 000c 0000     		.2byte	0
+ 2172 000e 0000     		.2byte	0
+ 2173 0010 00000000 		.4byte	.LFB66
+ 2174 0014 34000000 		.4byte	.LFE66-.LFB66
+ 2175 0018 00000000 		.4byte	.LFB64
+ 2176 001c 54000000 		.4byte	.LFE64-.LFB64
+ 2177 0020 00000000 		.4byte	.LFB65
+ 2178 0024 68000000 		.4byte	.LFE65-.LFB65
+ 2179 0028 00000000 		.4byte	.LFB67
+ 2180 002c 60000000 		.4byte	.LFE67-.LFB67
+ 2181 0030 00000000 		.4byte	.LFB68
+ 2182 0034 78000000 		.4byte	.LFE68-.LFB68
+ 2183 0038 00000000 		.4byte	.LFB69
+ 2184 003c 18000000 		.4byte	.LFE69-.LFB69
+ 2185 0040 00000000 		.4byte	.LFB70
+ 2186 0044 16000000 		.4byte	.LFE70-.LFB70
+ 2187 0048 00000000 		.4byte	.LFB71
+ 2188 004c 1C010000 		.4byte	.LFE71-.LFB71
+ 2189 0050 00000000 		.4byte	0
+ 2190 0054 00000000 		.4byte	0
+ 2191              		.section	.debug_ranges,"",%progbits
+ 2192              	.Ldebug_ranges0:
+ 2193 0000 00000000 		.4byte	.LFB66
+ 2194 0004 34000000 		.4byte	.LFE66
+ 2195 0008 00000000 		.4byte	.LFB64
+ 2196 000c 54000000 		.4byte	.LFE64
+ 2197 0010 00000000 		.4byte	.LFB65
+ 2198 0014 68000000 		.4byte	.LFE65
+ 2199 0018 00000000 		.4byte	.LFB67
+ 2200 001c 60000000 		.4byte	.LFE67
+ 2201 0020 00000000 		.4byte	.LFB68
+ 2202 0024 78000000 		.4byte	.LFE68
+ 2203 0028 00000000 		.4byte	.LFB69
+ 2204 002c 18000000 		.4byte	.LFE69
+ 2205 0030 00000000 		.4byte	.LFB70
+ 2206 0034 16000000 		.4byte	.LFE70
+ 2207 0038 00000000 		.4byte	.LFB71
+ 2208 003c 1C010000 		.4byte	.LFE71
+ 2209 0040 00000000 		.4byte	0
+ 2210 0044 00000000 		.4byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 45
+
+
+ 2211              		.section	.debug_line,"",%progbits
+ 2212              	.Ldebug_line0:
+ 2213 0000 D6020000 		.section	.debug_str,"MS",%progbits,1
+ 2213      0200ED01 
+ 2213      00000201 
+ 2213      FB0E0D00 
+ 2213      01010101 
+ 2214              	.LASF54:
+ 2215 0000 55415254 		.ascii	"UART_1_GetChar\000"
+ 2215      5F315F47 
+ 2215      65744368 
+ 2215      617200
+ 2216              	.LASF33:
+ 2217 000f 72785F62 		.ascii	"rx_buf\000"
+ 2217      756600
+ 2218              	.LASF27:
+ 2219 0016 76656C6F 		.ascii	"velocidad\000"
+ 2219      63696461 
+ 2219      6400
+ 2220              	.LASF3:
+ 2221 0020 73686F72 		.ascii	"short int\000"
+ 2221      7420696E 
+ 2221      7400
+ 2222              	.LASF20:
+ 2223 002a 73697A65 		.ascii	"sizetype\000"
+ 2223      74797065 
+ 2223      00
+ 2224              	.LASF62:
+ 2225 0033 6D61696E 		.ascii	"main\000"
+ 2225      00
+ 2226              	.LASF47:
+ 2227 0038 50574D5F 		.ascii	"PWM_Motor_WriteCompare\000"
+ 2227      4D6F746F 
+ 2227      725F5772 
+ 2227      69746543 
+ 2227      6F6D7061 
+ 2228              	.LASF28:
+ 2229 004f 4D6F746F 		.ascii	"Motor_Control_Percent\000"
+ 2229      725F436F 
+ 2229      6E74726F 
+ 2229      6C5F5065 
+ 2229      7263656E 
+ 2230              	.LASF7:
+ 2231 0065 6C6F6E67 		.ascii	"long long int\000"
+ 2231      206C6F6E 
+ 2231      6720696E 
+ 2231      7400
+ 2232              	.LASF49:
+ 2233 0073 51756164 		.ascii	"QuadDec_1_Start\000"
+ 2233      4465635F 
+ 2233      315F5374 
+ 2233      61727400 
+ 2234              	.LASF30:
+ 2235 0083 70776D5F 		.ascii	"pwm_value\000"
+ 2235      76616C75 
+ 2235      6500
+ 2236              	.LASF44:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 46
+
+
+ 2237 008d 54696D65 		.ascii	"Timer_1_ReadStatusRegister\000"
+ 2237      725F315F 
+ 2237      52656164 
+ 2237      53746174 
+ 2237      75735265 
+ 2238              	.LASF13:
+ 2239 00a8 75696E74 		.ascii	"uint16\000"
+ 2239      313600
+ 2240              	.LASF15:
+ 2241 00af 696E7431 		.ascii	"int16\000"
+ 2241      3600
+ 2242              	.LASF12:
+ 2243 00b5 75696E74 		.ascii	"uint8\000"
+ 2243      3800
+ 2244              	.LASF46:
+ 2245 00bb 50696E5F 		.ascii	"Pin_IN2_Write\000"
+ 2245      494E325F 
+ 2245      57726974 
+ 2245      6500
+ 2246              	.LASF50:
+ 2247 00c9 55415254 		.ascii	"UART_1_Start\000"
+ 2247      5F315F53 
+ 2247      74617274 
+ 2247      00
+ 2248              	.LASF56:
+ 2249 00d6 55415254 		.ascii	"UART_1_PutChar\000"
+ 2249      5F315F50 
+ 2249      75744368 
+ 2249      617200
+ 2250              	.LASF0:
+ 2251 00e5 666C6F61 		.ascii	"float\000"
+ 2251      7400
+ 2252              	.LASF21:
+ 2253 00eb 63757272 		.ascii	"current_count\000"
+ 2253      656E745F 
+ 2253      636F756E 
+ 2253      7400
+ 2254              	.LASF41:
+ 2255 00f9 656E636F 		.ascii	"encoder_prev_count\000"
+ 2255      6465725F 
+ 2255      70726576 
+ 2255      5F636F75 
+ 2255      6E7400
+ 2256              	.LASF24:
+ 2257 010c 50574D5F 		.ascii	"PWM_Desde_Voltaje\000"
+ 2257      44657364 
+ 2257      655F566F 
+ 2257      6C74616A 
+ 2257      6500
+ 2258              	.LASF14:
+ 2259 011e 696E7438 		.ascii	"int8\000"
+ 2259      00
+ 2260              	.LASF5:
+ 2261 0123 6C6F6E67 		.ascii	"long int\000"
+ 2261      20696E74 
+ 2261      00
+ 2262              	.LASF52:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 47
+
+
+ 2263 012c 6973725F 		.ascii	"isr_1_StartEx\000"
+ 2263      315F5374 
+ 2263      61727445 
+ 2263      7800
+ 2264              	.LASF55:
+ 2265 013a 61746F66 		.ascii	"atof\000"
+ 2265      00
+ 2266              	.LASF19:
+ 2267 013f 6C6F6E67 		.ascii	"long double\000"
+ 2267      20646F75 
+ 2267      626C6500 
+ 2268              	.LASF2:
+ 2269 014b 756E7369 		.ascii	"unsigned char\000"
+ 2269      676E6564 
+ 2269      20636861 
+ 2269      7200
+ 2270              	.LASF57:
+ 2271 0159 73707269 		.ascii	"sprintf\000"
+ 2271      6E746600 
+ 2272              	.LASF61:
+ 2273 0161 443A5C50 		.ascii	"D:\\PSoc\\Auto\\TPF\\TPF_PenduloInvertido\\Ajuste d"
+ 2273      536F635C 
+ 2273      4175746F 
+ 2273      5C545046 
+ 2273      5C545046 
+ 2274 018f 65204375 		.ascii	"e Curva.cydsn\000"
+ 2274      7276612E 
+ 2274      63796473 
+ 2274      6E00
+ 2275              	.LASF1:
+ 2276 019d 7369676E 		.ascii	"signed char\000"
+ 2276      65642063 
+ 2276      68617200 
+ 2277              	.LASF11:
+ 2278 01a9 696E7433 		.ascii	"int32_t\000"
+ 2278      325F7400 
+ 2279              	.LASF8:
+ 2280 01b1 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 2280      206C6F6E 
+ 2280      6720756E 
+ 2280      7369676E 
+ 2280      65642069 
+ 2281              	.LASF9:
+ 2282 01c8 756E7369 		.ascii	"unsigned int\000"
+ 2282      676E6564 
+ 2282      20696E74 
+ 2282      00
+ 2283              	.LASF32:
+ 2284 01d5 4D6F746F 		.ascii	"Motor_Free\000"
+ 2284      725F4672 
+ 2284      656500
+ 2285              	.LASF4:
+ 2286 01e0 73686F72 		.ascii	"short unsigned int\000"
+ 2286      7420756E 
+ 2286      7369676E 
+ 2286      65642069 
+ 2286      6E7400
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 48
+
+
+ 2287              	.LASF59:
+ 2288 01f3 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 2288      43313120 
+ 2288      352E342E 
+ 2288      31203230 
+ 2288      31363036 
+ 2289 0226 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 2289      20726576 
+ 2289      6973696F 
+ 2289      6E203233 
+ 2289      37373135 
+ 2290 0259 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 2290      66756E63 
+ 2290      74696F6E 
+ 2290      2D736563 
+ 2290      74696F6E 
+ 2291              	.LASF22:
+ 2292 0281 64656C74 		.ascii	"delta_counts\000"
+ 2292      615F636F 
+ 2292      756E7473 
+ 2292      00
+ 2293              	.LASF18:
+ 2294 028e 63686172 		.ascii	"char\000"
+ 2294      00
+ 2295              	.LASF43:
+ 2296 0293 51756164 		.ascii	"QuadDec_1_GetCounter\000"
+ 2296      4465635F 
+ 2296      315F4765 
+ 2296      74436F75 
+ 2296      6E746572 
+ 2297              	.LASF38:
+ 2298 02a8 74785F62 		.ascii	"tx_buf\000"
+ 2298      756600
+ 2299              	.LASF39:
+ 2300 02af 7072696E 		.ascii	"print_cnt\000"
+ 2300      745F636E 
+ 2300      7400
+ 2301              	.LASF51:
+ 2302 02b9 54696D65 		.ascii	"Timer_1_Start\000"
+ 2302      725F315F 
+ 2302      53746172 
+ 2302      7400
+ 2303              	.LASF26:
+ 2304 02c7 4D6F746F 		.ascii	"Motor_Control\000"
+ 2304      725F436F 
+ 2304      6E74726F 
+ 2304      6C00
+ 2305              	.LASF31:
+ 2306 02d5 4D6F746F 		.ascii	"Motor_Brake\000"
+ 2306      725F4272 
+ 2306      616B6500 
+ 2307              	.LASF60:
+ 2308 02e1 6D61696E 		.ascii	"main.c\000"
+ 2308      2E6300
+ 2309              	.LASF45:
+ 2310 02e8 50696E5F 		.ascii	"Pin_IN1_Write\000"
+ 2310      494E315F 
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 49
+
+
+ 2310      57726974 
+ 2310      6500
+ 2311              	.LASF6:
+ 2312 02f6 6C6F6E67 		.ascii	"long unsigned int\000"
+ 2312      20756E73 
+ 2312      69676E65 
+ 2312      6420696E 
+ 2312      7400
+ 2313              	.LASF16:
+ 2314 0308 696E7433 		.ascii	"int32\000"
+ 2314      3200
+ 2315              	.LASF34:
+ 2316 030e 72785F69 		.ascii	"rx_idx\000"
+ 2316      647800
+ 2317              	.LASF53:
+ 2318 0315 55415254 		.ascii	"UART_1_PutString\000"
+ 2318      5F315F50 
+ 2318      75745374 
+ 2318      72696E67 
+ 2318      00
+ 2319              	.LASF36:
+ 2320 0326 63757272 		.ascii	"current_v\000"
+ 2320      656E745F 
+ 2320      7600
+ 2321              	.LASF48:
+ 2322 0330 50574D5F 		.ascii	"PWM_Motor_Start\000"
+ 2322      4D6F746F 
+ 2322      725F5374 
+ 2322      61727400 
+ 2323              	.LASF10:
+ 2324 0340 5F5F696E 		.ascii	"__int32_t\000"
+ 2324      7433325F 
+ 2324      7400
+ 2325              	.LASF35:
+ 2326 034a 72785F63 		.ascii	"rx_char\000"
+ 2326      68617200 
+ 2327              	.LASF42:
+ 2328 0352 6D6F746F 		.ascii	"motor_speed_rpm\000"
+ 2328      725F7370 
+ 2328      6565645F 
+ 2328      72706D00 
+ 2329              	.LASF29:
+ 2330 0362 70657263 		.ascii	"percent\000"
+ 2330      656E7400 
+ 2331              	.LASF17:
+ 2332 036a 646F7562 		.ascii	"double\000"
+ 2332      6C6500
+ 2333              	.LASF40:
+ 2334 0371 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 2334      52784275 
+ 2334      66666572 
+ 2334      00
+ 2335              	.LASF37:
+ 2336 037e 63757272 		.ascii	"current_pwm\000"
+ 2336      656E745F 
+ 2336      70776D00 
+ 2337              	.LASF25:
+ARM GAS  C:\Users\user\AppData\Local\Temp\cc10KRYZ.s 			page 50
+
+
+ 2338 038a 4D6F746F 		.ascii	"Motor_Speed_ISR\000"
+ 2338      725F5370 
+ 2338      6565645F 
+ 2338      49535200 
+ 2339              	.LASF58:
+ 2340 039a 43794465 		.ascii	"CyDelay\000"
+ 2340      6C617900 
+ 2341              	.LASF23:
+ 2342 03a2 52504D5F 		.ascii	"RPM_Estimado\000"
+ 2342      45737469 
+ 2342      6D61646F 
+ 2342      00
+ 2343              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

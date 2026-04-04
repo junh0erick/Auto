@@ -1,0 +1,52 @@
+La aplicación de distintos métodos clásicos sobre la misma planta
+permitió comparar directamente su aplicabilidad práctica,
+su dependencia del modelo y la información que aportan
+para el diseño.
+
+Desde el punto de vista de simplicidad y rapidez de implementación,
+el \textbf{PID} resultó claramente el método más eficiente.
+Permitió obtener una respuesta satisfactoria
+con escasa dependencia del modelo
+y con un proceso de ajuste directo e intuitivo.
+En términos puramente ingenieriles,
+si el objetivo es lograr funcionamiento estable
+con el menor esfuerzo analítico posible,
+el PID se posiciona como la alternativa más práctica.
+
+El \textbf{Lugar de Raíces}, en cambio,
+aportó mayor profundidad conceptual.
+Permite visualizar explícitamente la estabilidad
+en el plano \(z\),
+relacionar polos con desempeño transitorio
+y comprender geométricamente el efecto de la ganancia.
+Si bien exige mayor comprensión del modelo
+y es más sensible a la elección del período de muestreo,
+proporciona una cantidad de información estructural
+superior a la del PID.
+
+El método basado en \textbf{Bode}
+resultó adecuado para analizar márgenes de estabilidad
+y robustez,
+pero menos intuitivo en relación con el comportamiento temporal.
+Sin herramientas de simulación,
+su aplicación manual se vuelve considerablemente más compleja.
+En esta experiencia no ofreció ventajas decisivas
+respecto a los métodos anteriores.
+
+Por su parte,
+la \textbf{Síntesis Directa (Truxal--Ragazzini)}
+mostró gran elegancia analítica
+y rigor matemático,
+pero evidenció una dependencia extrema del modelo
+y una tendencia a generar esfuerzos de control elevados.
+En una planta física con saturaciones y no linealidades,
+esta sensibilidad la vuelve riesgosa para implementación real,
+quedando principalmente como herramienta académica.
+
+En conclusión,
+los métodos que demostraron mayor aplicabilidad práctica
+en la planta experimental fueron el PID y el Lugar de Raíces:
+el primero por su simplicidad y robustez,
+el segundo por la riqueza de información que aporta.
+Los demás métodos resultaron valiosos conceptualmente,
+pero menos determinantes en la implementación experimental concreta.

@@ -1,0 +1,55 @@
+\section{Incidentes experimentales y fallas en los controladores ESC}
+\label{app:esc}
+
+Durante el desarrollo experimental del trabajo se presentaron fallas en los controladores electrónicos de velocidad (ESC) utilizados en las primeras etapas de prueba del sistema. En este apéndice se describen los incidentes observados, junto con el análisis de las posibles causas y las medidas adoptadas posteriormente.
+
+\subsection{Primer incidente: ESC de 30\,A con alimentación externa}
+
+En una primera instancia, se utilizó un ESC de \(30\,\text{A}\) alimentado mediante una batería para automóviles, con el objetivo de verificar el funcionamiento básico del sistema de propulsión. La conexión entre la fuente de alimentación y el ESC se realizó utilizando un cable unifilar de cobre de considerable longitud.
+
+Durante las pruebas iniciales, el sistema logró generar empuje y el cuerpo móvil llegó a elevarse. Sin embargo, tras un período de funcionamiento, el ESC comenzó a emitir una secuencia de señales acústicas consistente en cuatro pitidos cortos seguidos de un pitido largo. En ese momento no se contaba con una interpretación clara del significado de dicha señalización.
+
+Posteriormente, mediante la consulta de documentación y experiencias previas, se determinó que dicha secuencia de pitidos está asociada a condiciones de protección del ESC, tales como sobrecorriente o sobretemperatura. Esta hipótesis se vio reforzada por el hecho de que los cables unifilares utilizados para la alimentación se calentaron excesivamente y llegaron a derretirse, indicando una circulación de corriente elevada y pérdidas resistivas significativas.
+
+
+\subsection{Segundo incidente: reinicios y falla del ESC de 30\,A}
+
+En una segunda etapa de pruebas con el mismo ESC de \(30\,\text{A}\), se reemplazaron los cables de alimentación por conductores adecuados para altas corrientes, conectando el ESC directamente a la batería utilizada en la planta. En esta configuración, el sistema no lograba elevarse de forma sostenida y el ESC emitía una secuencia de sonidos correspondiente a un reinicio del controlador.
+
+Con el fin de descartar un problema en la señal de control, se analizó la señal PWM generada por el PSoC mediante un osciloscopio, verificándose que la misma presentaba una forma adecuada y estable, sin perturbaciones significativas. En consecuencia, se descartó que la falla estuviera asociada a errores en la generación de la señal de control.
+
+Ante la hipótesis de una posible caída de tensión en la alimentación del ESC durante los transitorios de corriente, se incorporaron capacitores de desacople en la línea de alimentación. Tras esta modificación, el sistema logró generar empuje y elevarse durante breves instantes. No obstante, luego de un corto período de funcionamiento, se produjo la falla definitiva del ESC, observándose la quema de un MOSFET correspondiente a una de las fases del motor.
+
+\subsection{Análisis y consideraciones}
+
+A partir de los incidentes descritos, se identificaron como causas probables la combinación de sobrecorriente, exigencias térmicas elevadas y condiciones de alimentación no ideales durante las primeras pruebas. La utilización de una fuente de alimentación inadecuada, conductores con alta resistencia y la ausencia inicial de medidas de protección contribuyeron a someter al ESC a esfuerzos superiores a sus límites operativos.
+
+Estos eventos pusieron de manifiesto la importancia de considerar cuidadosamente los aspectos de potencia, disipación térmica y protección eléctrica en sistemas de propulsión basados en motores brushless, incluso en etapas preliminares de prueba.
+
+Las lecciones aprendidas a partir de estas fallas motivaron la adopción de controladores de mayor capacidad de corriente, mejoras en el cableado de alimentación y la implementación de estrategias de operación más conservadoras, las cuales permitieron continuar con el desarrollo experimental del trabajo de manera segura y confiable. 
+\insertarfigura{img/Planta/ESC30A1.jpeg}{ESC30A incidente 1.}{fig:inc30A1}{1}
+
+\subsection{Tercer incidente: falla del ESC de 30\,A durante operación con batería LiPo}
+
+En un tercer incidente, se utilizó un ESC de \(30\,\text{A}\) alimentado mediante una batería LiPo para drones. Durante esta prueba, se incrementó la señal PWM hasta aproximadamente \(1500\,\mu s\), logrando que el sistema generara empuje suficiente para elevar el cuerpo móvil hasta la parte superior de la estructura.
+
+Al intentar detener el movimiento, se adoptó un procedimiento no óptimo, consistente en bloquear mecánicamente la hélice con el fin de evitar una colisión con el techo de la estructura. Esta acción provocó el trabado de la hélice durante el funcionamiento del motor, lo cual generó un incremento abrupto de la corriente demandada. Como consecuencia, el ESC sufrió una falla catastrófica, produciéndose la quema de múltiples componentes internos y la pérdida total del controlador.
+
+Este incidente permitió identificar el riesgo asociado al bloqueo mecánico del rotor en sistemas de propulsión brushless, dado que dicha condición conduce a corrientes elevadas que superan rápidamente la capacidad de los dispositivos de conmutación del ESC.
+\insertarfigura{img/Planta/ESC30A2.jpeg}{ESC30A incidente 2.}{fig:inc30A2}{1}
+
+
+\subsection{Cuarto incidente: falla del ESC de 30\,A por sobrecorriente}
+
+En un cuarto incidente, se realizaron pruebas controladas con un nuevo ESC de \(30\,\text{A}\), con el objetivo de determinar el valor máximo de PWM que el sistema podía soportar de manera segura. Durante esta prueba, el valor de PWM se incrementó progresivamente hasta alcanzar aproximadamente \(1600\,\mu s\).
+
+En estas condiciones, el ESC volvió a presentar una falla similar a la observada en el segundo incidente, registrándose la quema de un MOSFET correspondiente a una de las fases del motor. Este comportamiento reforzó la hipótesis de que el controlador se encontraba operando cerca de sus límites de corriente, incluso sin que se produjera un bloqueo mecánico del rotor.
+
+\insertarfigura{img/Planta/ESC30A3.jpeg}{ESC30A incidente 3.}{fig:inc30A3}{1}
+
+
+\subsection{Medidas adoptadas}
+
+La repetición de fallas en controladores de \(30\,\text{A}\), tanto bajo condiciones transitorias como en operación sostenida, llevó a concluir que dicho margen de corriente resultaba insuficiente para el motor utilizado y las exigencias mecánicas de la planta. Asimismo, se consideró la posible influencia de algoritmos internos del ESC y de su calidad de construcción, los cuales podrían limitar su capacidad de manejo de sobrecorrientes.
+
+En función de estas observaciones, se decidió sobredimensionar el sistema de actuación mediante la adquisición de un ESC de \(40\,\text{A}\). Esta decisión permitió operar el motor con un mayor margen de seguridad, evitando la necesidad de reducir aún más la masa del cuerpo móvil y mejorando la confiabilidad del sistema durante las prácticas experimentales.

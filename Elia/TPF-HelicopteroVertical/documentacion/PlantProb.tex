@@ -1,0 +1,31 @@
+\section{Planteamiento del problema}
+
+Los sistemas de regulación de altura basados en propulsión vertical
+constituyen un caso particularmente exigente dentro del control automático,
+debido a la interacción entre dinámica inestable, restricciones físicas
+del actuador y presencia de no idealidades significativas.
+
+La planta considerada consiste en un cuerpo móvil guiado en el eje vertical,
+cuya posición depende del equilibrio entre la fuerza gravitatoria y el empuje
+generado por un motor brushless accionado mediante un controlador electrónico
+de velocidad (ESC). En lazo abierto, el sistema presenta comportamiento
+inestable, dinámica de orden superior con integrador y características
+no mínimas que condicionan la respuesta transitoria.
+
+Adicionalmente, el sistema físico opera bajo restricciones reales,
+entre ellas saturaciones estrictas del esfuerzo de control,
+variaciones del punto de operación asociadas a la descarga de la batería,
+fricción no uniforme en los rieles de guiado,
+dinámica propia del conjunto motor–ESC
+y ruido de medición proveniente del sensor de distancia.
+
+Estas características introducen limitaciones estructurales
+en el desempeño alcanzable y dificultan la obtención de un modelo
+lineal simple que represente adecuadamente la dinámica dominante
+alrededor del punto de operación.
+
+En consecuencia, el problema central consiste en modelar y controlar
+un sistema vertical inherentemente inestable, sujeto a restricciones
+físicas y perturbaciones reales, garantizando estabilidad,
+seguimiento de referencia y desempeño transitorio aceptable
+en condiciones experimentales.

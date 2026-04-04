@@ -1,0 +1,166 @@
+
+% ============================================================
+\subsubsection{Modelo Aumentado}
+% ============================================================
+
+Sistema original:
+
+\[
+x_{k+1} = Ax_k + Bu_k
+\]
+
+\[
+y_k = Cx_k
+\]
+
+Se define el estado integrador:
+
+\[
+\xi_{k+1} = \xi_k + (r_k - y_k)
+\]
+
+Definiendo el estado aumentado:
+
+\[
+x_a =
+\begin{bmatrix}
+	x \\
+	\xi
+\end{bmatrix}
+\]
+
+el sistema aumentado queda:
+
+\[
+x_{a,k+1} =
+\underbrace{
+	\begin{bmatrix}
+		A & 0 \\
+		-C & 1
+	\end{bmatrix}
+}_{A_a}
+x_{a,k}
++
+\underbrace{
+	\begin{bmatrix}
+		B \\
+		0
+	\end{bmatrix}
+}_{B_a}
+u_k
++
+\begin{bmatrix}
+	0 \\
+	1
+\end{bmatrix}
+r_k
+\]
+
+
+% ============================================================
+\subsubsection{Diseño LQR sobre el Sistema Aumentado}
+% ============================================================
+
+Se define el funcional de costo:
+
+\[
+J=\sum_{k=0}^{\infty}
+\left(
+x_a^T Q_a x_a + u_k^T R u_k
+\right)
+\]
+
+Matrices de ponderación:
+
+\[
+Q_a = \textbf{[Completar]}
+\]
+
+\[
+R = \textbf{[Completar]}
+\]
+
+La solución se obtiene resolviendo la ecuación de Riccati discreta
+para el sistema aumentado.
+
+Ganancia obtenida:
+
+\[
+K_a =
+\begin{bmatrix}
+	K_x & K_i
+\end{bmatrix}
+\]
+
+donde:
+
+\begin{itemize}
+	\item $K_x$ actúa sobre los estados originales.
+	\item $K_i$ actúa sobre el estado integrador.
+\end{itemize}
+
+Ley de control final:
+
+\[
+u_k = -K_x x_k - K_i \xi_k
+\]
+
+
+% ============================================================
+\subsubsection{Polos del Sistema Aumentado}
+% ============================================================
+
+Los polos del lazo cerrado resultan de:
+
+\[
+\lambda(A_a - B_a K_a)
+=
+\textbf{[Completar]}
+\]
+
+Se verifica estabilidad discreta:
+
+\[
+|p_i| < 1
+\]
+
+
+% ============================================================
+\subsubsection{Resultados}
+% ============================================================
+
+\begin{itemize}
+	\item Error estacionario: \textbf{[Completar]}
+	\item Sobreimpulso: \textbf{[Completar]}
+	\item Tiempo de establecimiento: \textbf{[Completar]}
+	\item Pico de esfuerzo de control: \textbf{[Completar]}
+\end{itemize}
+
+%\insertarfigura{img/Estados/respuesta_LQI.png}{Respuesta temporal con LQI.}{fig:resp_LQI}{1}
+
+%\insertarfigura{img/Estados/esfuerzo_LQI.png}{Esfuerzo de control con LQI.}{fig:esfuerzo_LQI}{1}
+
+
+% ============================================================
+\subsubsection{Discusión}
+% ============================================================
+
+La incorporación del integrador permite eliminar el error
+estacionario frente a referencias constantes.
+
+En comparación con:
+
+\begin{itemize}
+	\item Ubicación arbitraria de polos:
+	el método LQI introduce un criterio explícito de optimización.
+	\item LQR sin integrador:
+	se logra seguimiento exacto de referencia.
+\end{itemize}
+
+Limitaciones:
+
+\begin{itemize}
+	\item Incremento del orden del sistema.
+	\item Mayor sensibilidad a saturación si $K_i$ es elevado.
+	\item Dependencia del modelo identificado.
+\end{itemize}

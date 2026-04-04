@@ -1,0 +1,191 @@
+El método de Lugar de Raíces se fundamenta en el análisis directo de la ecuación característica del sistema en lazo cerrado:
+
+\[
+1 + C(z)G(z) = 0
+\]
+
+Las raíces de esta ecuación determinan los polos del sistema compensado.  
+En el dominio discreto, la condición de estabilidad interna exige que:
+
+\[
+|z_i| < 1 \quad \forall i
+\]
+
+es decir, que todos los polos del lazo cerrado se encuentren estrictamente dentro del círculo unitario.
+
+% ============================================================
+\subsubsection{Inestabilidad discreta de la planta}
+% ============================================================
+
+La planta identificada presenta polos ubicados sobre el perímetro del círculo unitario, lo que implica que el sistema en lazo abierto es criticamente inestable tanto  en el dominio continuo como discreto.
+
+\insertarfigura{img/CircUnitarioPlanta.png}
+{Ubicación de los polos de la planta sin compensar en el plano $z$. Se observa la presencia de polos sobre o fuera del círculo unitario, indicando inestabilidad discreta.}
+{fig:PolosPlantaSinCompensar}{1}
+
+En consecuencia, el objetivo del diseño no consistió únicamente en mejorar el desempeño dinámico, sino en estabilizar activamente la planta mediante la adecuada selección de un compensador.
+
+Los criterios de diseño adoptados fueron:
+
+\begin{itemize}
+	\item Desplazar todos los polos del lazo cerrado dentro del círculo unitario.
+	\item Obtener una respuesta sobreamortiguada, sin sobreimpulso.
+	\item Mantener el esfuerzo de control dentro de límites físicamente realizables.
+\end{itemize}
+
+% ============================================================
+\subsubsection{Frecuencia de muestreo}
+% ============================================================
+
+Para este método en particular se determinó utilizar una frecuencia de muestreo de:
+
+\[
+F_s = 1000\,\text{Hz}
+\]
+
+Esta decisión se tomó inicialmente con el objetivo de capturar adecuadamente la dinámica identificada y aproximar el comportamiento discreto al continuo.
+
+Sin embargo, la elección de una frecuencia de muestreo elevada produjo que los polos discretos asociados a las dinámicas relevantes quedaran extremadamente próximos a \(z=1\). Esto generó un fenómeno que puede interpretarse como un \textbf{desaprovechamiento geométrico del plano Z}, ya que la región efectiva donde se desarrollaba la dinámica quedó concentrada en un sector muy reducido cercano al borde del círculo unitario.
+
+En estas condiciones, pequeñas variaciones en la ganancia del compensador producían desplazamientos significativos de los polos en el plano discreto, aumentando la sensibilidad numérica del diseño.
+
+Posteriormente se verificó que el controlador también hubiese funcionado correctamente para frecuencias menores (200 Hz o 100 Hz), donde el plano Z resulta mejor aprovechado geométricamente y la sensibilidad disminuye. No obstante, el diseño a 1000 Hz permitió experimentar de manera directa los efectos teóricos asociados a la selección del período de muestreo.
+
+% ============================================================
+\subsubsection{Elección de la estructura del compensador}
+% ============================================================
+
+Para estabilizar el sistema se adoptó una estructura de tipo \textbf{lag--lead} (atraso--adelanto).
+
+El término \textit{lead} permitió:
+
+\begin{itemize}
+	\item Incrementar el margen de fase.
+	\item Desplazar los polos dominantes hacia regiones asociadas a mayor amortiguamiento.
+	\item Mejorar el desempeño transitorio.
+\end{itemize}
+
+El término \textit{lag} permitió:
+
+\begin{itemize}
+	\item Ajustar la ganancia en bajas frecuencias.
+	\item Mejorar el comportamiento estacionario.
+	\item Reducir la sensibilidad global del sistema.
+\end{itemize}
+
+La adecuada ubicación de ceros modificó la geometría del lugar de raíces, atrayendo las trayectorias hacia el interior del círculo unitario.
+
+% ============================================================
+\subsubsection{Determinación de la ganancia}
+% ============================================================
+
+Una vez definida la estructura del compensador, se analizó el lugar de raíces del sistema compensado.
+
+Se observó una elevada sensibilidad respecto a la ganancia \(K\).  
+Pequeños incrementos en su valor provocaban que las trayectorias abandonaran la región estable antes de satisfacer las especificaciones dinámicas deseadas.
+
+Esta sensibilidad se atribuye a:
+
+\begin{itemize}
+	\item La naturaleza originalmente inestable de la planta.
+	\item La proximidad de los polos discretos a \(z=1\).
+	\item La frecuencia de muestreo elevada.
+\end{itemize}
+
+El compensador finalmente adoptado fue:
+
+\begin{equation}
+	C(z)=
+	-0.0173 \;
+	\frac{(z-1.0140)(z-0.5)}
+	{(z-0.9522)(z-0.9894)}
+\end{equation}
+
+% ============================================================
+\subsubsection{Optimización basada en especificaciones}
+% ============================================================
+
+Con el fin de sistematizar el ajuste y evitar la extrema sensibilidad manual, se utilizó la herramienta \texttt{Optimization-Based Tuning} de MATLAB.
+
+Este enfoque permitió:
+
+\begin{itemize}
+	\item Definir especificaciones temporales deseadas.
+	\item Ajustar automáticamente los parámetros del compensador.
+	\item Verificar estabilidad discreta.
+\end{itemize}
+
+El resultado fue un compensador cuyos polos en lazo cerrado se ubican completamente dentro del círculo unitario.
+
+\insertarfigura{img/Rlocus/circuloUnitario.png}
+{Ubicación de los polos del sistema compensado en el plano $z$. Se verifica estabilidad discreta.}
+{fig:PolosSistemaCompensado}{1}
+
+% ============================================================
+\subsubsection{Resultados en simulación}
+% ============================================================
+
+La respuesta temporal simulada del modelo lineal mostró:
+
+\begin{itemize}
+	\item Comportamiento sobreamortiguado.
+	\item Ausencia de sobreimpulso.
+	\item Tiempo de subida aproximado de $5\,\text{s}$.
+\end{itemize}
+
+\insertarfigura{img/Rlocus/rsta.png}
+{Respuesta temporal del sistema en lazo cerrado con el compensador diseñado.}
+{fig:RespuestaTemporalCompensada}{1}
+
+El esfuerzo de control obtenido en simulación se mantuvo dentro de límites aceptables:
+
+\insertarfigura{img/Rlocus/Esfuerzo.png}
+{Esfuerzo de control en lazo cerrado con el compensador diseñado.}
+{fig:EsfuerzoControlCompensado}{1}
+
+% ============================================================
+\subsubsection{Resultados experimentales}
+% ============================================================
+
+En la implementación práctica se obtuvo:
+
+\[
+t_r^{\text{exp}} = 1.068\,\text{s} \text{ a } 2.3\,\text{s}
+\]
+
+sin presencia de sobreimpulso.
+
+Se observa que el sistema real resulta considerablemente más rápido que el modelo simulado. Esta discrepancia puede atribuirse a:
+
+\begin{itemize}
+	\item Simplificaciones del modelo lineal.
+	\item Dinámicas no modeladas.
+	\item Sensibilidad numérica asociada al uso de un período de muestreo no adecuado.
+\end{itemize}
+
+No obstante, el esfuerzo aplicado en la práctica resultó visualmente muy similar al predicho por simulación, validando parcialmente la estructura del compensador adoptado.
+
+\insertarfigura{img/Rlocus/RlocusPractica.png}
+{Implementación práctica del controlador diseñado por Lugar de Raíces.}
+{fig:Rlocus_practica}{1}
+\balance
+\newpage
+
+% ============================================================
+\subsubsection{Conclusión del método}
+% ============================================================
+
+El diseño por Lugar de Raíces permitió estabilizar una planta originalmente inestable en el dominio discreto, garantizando que los polos del lazo cerrado se ubiquen dentro del círculo unitario.
+El método demostró ser geométricamente intuitivo y conceptualmente potente, ya que permite visualizar directamente la relación entre ganancia, ubicación de polos y desempeño dinámico.
+
+En esta aplicación particular se evidenció:
+
+\begin{itemize}
+	\item Alta sensibilidad paramétrica.
+	\item Fuerte dependencia de la frecuencia de muestreo.
+	\item Reducción efectiva del espacio geométrico utilizable en el plano Z al emplear una frecuencia de muestreo elevada.
+\end{itemize}
+
+No obstante, el controlador diseñado logró un comportamiento sobreamortiguado sin sobreimpulso y con esfuerzo físicamente realizable.
+
+Una ventaja significativa del método es que, mediante los parámetros clásicos de segundo orden (\(\zeta\) y \(\omega_n\)), puede anticiparse de manera intuitiva el comportamiento del lazo cerrado sin necesidad inmediata de herramientas de simulación. La comprensión profunda de la relación entre el plano Z y la respuesta transitoria resultó especialmente enriquecedora en la práctica, permitiendo interpretar directamente los efectos de la ubicación de polos en el desempeño observado.

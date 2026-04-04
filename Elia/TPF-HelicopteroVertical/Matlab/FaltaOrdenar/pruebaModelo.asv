@@ -1,0 +1,143 @@
+S = tfmini_plus_calibrate_models();   % o con ruta si querés
+T = S.T;
+
+% --- sacar el modelo "best" ---
+% (ajustá esta línea si tu struct usa otro campo)
+mdl = S.best.model;   % debería ser un LinearModel (fitlm)
+
+% Ruta de export (cambiala a tu proyecto si querés)
+out_h = fullfile(pwd, 'tfmini_calib_coeffs.h');
+
+export_fitlm_to_c_header(mdl, out_h, 'tfmini_correct_distance_cm');
+fprintf('OK: Header exportado en: %s\n', out_h);
+
+% --- predicción del modelo ---
+Dist_pred = predict(mdl, T);
+
+% --- vectores ---
+Dist_real = T.Dist_real;
+Dist_cm   = T.Dist_cm;
+
+% --- ordenar por distancia real para que se vea “limpio” ---
+[Dist_real_s, idx] = sort(Dist_real);
+Dist_cm_s   = Dist_cm(idx);
+Dist_pred_s = Dist_pred(idx);
+
+% --- (opcional) downsample si tenés miles de puntos y se ve pesado ---
+step = max(1, floor(numel(idx)/2000));   % deja ~2000 puntos
+ii = 1:step:numel(idx);
+
+figure; hold on; grid on;
+
+% 1) sensor vs real (línea)
+plot(Dist_real_s(ii), Dist_cm_s(ii), '.', 'MarkerSize', 8);
+
+% 2) modelo vs real (línea)
+plot(Dist_real_s(ii), Dist_pred_s(ii), '.', 'MarkerSize', 8);
+
+% 3) línea ideal y=x
+mn = min(Dist_real_s(ii));
+mx = max(Dist_real_s(ii));
+plot([mn mx], [mn mx], 'k--', 'LineWidth', 1.5);
+
+xlabel('Dist\_real [cm]');
+ylabel('Distancia [cm]');
+title('Comparación: real vs sensor vs modelo');
+legend({'Sensor (Dist\_cm)', 'Modelo (pred)', 'Ideal y=x'}, 'Location', 'best');
+function export_fitlm_to_c_header(mdl, out_h, funcName)
+% Exporta un LinearModel (fitlm) a un .h con macros + función C.
+% Soporta términos lineales y de interacción "A:B" típicos.
+
+    if nargin < 3 || isempty(funcName)
+        funcName = 'tfmini_correct_distance_cm';
+    end
+
+    coefNames = string(mdl.Coefficients.Properties.RowNames);
+    coefVals  = mdl.Coefficients.Estimate;
+
+    fid = fopen(out_h, 'w');
+    if fid < 0
+        error('No pude abrir para escritura: %s', out_h);
+    end
+
+    cleanup = onCleanup(@() fclose(fid));
+
+    fprintf(fid, "/* Auto-generated from MATLAB fitlm */\n");
+    fprintf(fid, "/* Model: %s */\n", string(mdl.Formula));
+    fprintf(fid, "\n#ifndef TFMINI_CALIB_COEFFS_H\n#define TFMINI_CALIB_COEFFS_H\n\n");
+    fprintf(fid, "#include <stdint.h>\n\n");
+
+    % ---- macros de coeficientes ----
+    fprintf(fid, "/* Coefficients (float) */\n");
+    for i = 1:numel(coefVals)
+        nm = coef_to_macro(coefNames(i));
+        fprintf(fid, "#define TFMC_%s (%.9gf)\n", nm, single(coefVals(i)));
+    end
+    fprintf(fid, "\n");
+
+    % ---- función C ----
+    % OJO: tu modelo actual predice Dist_real directamente (no Delta).
+    % Entradas pensadas para tu caso:
+    %   Dist_cm    -> dis_sensor (distancia que entrega el TFmini)
+    %   Freq_prom  -> frecuencia (prom o medida, según lo que uses)
+    %   Temp_C     -> temperatura
+    %   Lux        -> “Intensidad de Luz” (si la tenés como número)
+    fprintf(fid, "/* Returns predicted corrected distance (cm) */\n");
+    fprintf(fid, "static inline float %s(float Dist_cm, float Freq_prom, float Temp_C, float Lux)\n{\n", funcName);
+    fprintf(fid, "    float y = 0.0f;\n");
+    fprintf(fid, "    y += TFMC_INTERCEPT;\n");
+
+    for i = 1:numel(coefNames)
+        cn = coefNames(i);
+        if cn == "(Intercept)", continue; end
+        macro = coef_to_macro(cn);
+        expr  = term_to_expr(cn);
+        fprintf(fid, "    y += TFMC_%s * (%s);\n", macro, expr);
+    end
+
+    fprintf(fid, "    return y;\n}\n\n");
+    fprintf(fid, "#endif /* TFMINI_CALIB_COEFFS_H */\n");
+end
+
+function nm = coef_to_macro(cn)
+    s = char(cn);
+    if strcmp(s,'(Intercept)'), s = 'INTERCEPT'; end
+    s = strrep(s,':','_X_');                 % interacción
+    s = upper(regexprep(s,'[^A-Z0-9_]', '')); % limpio para macro
+    nm = s;
+end
+
+function expr = term_to_expr(cn)
+    % Mapea nombres de términos de MATLAB a expresiones C
+    s = char(cn);
+
+    switch s
+        case 'Dist_cm'
+            expr = 'Dist_cm';
+        case 'Freq_prom'
+            expr = 'Freq_prom';
+        case 'Temp_C'
+            expr = 'Temp_C';
+        case 'Lux'
+            expr = 'Lux';
+
+        case 'Dist_cm:Freq_prom'
+            expr = '(Dist_cm*Freq_prom)';
+        case 'Freq_prom:Dist_cm'
+            expr = '(Dist_cm*Freq_prom)';
+
+        case 'Dist_cm:Temp_C'
+            expr = '(Dist_cm*Temp_C)';
+        case 'Temp_C:Dist_cm'
+            expr = '(Dist_cm*Temp_C)';
+
+        case 'Dist_cm:Lux'
+            expr = '(Dist_cm*Lux)';
+        case 'Lux:Dist_cm'
+            expr = '(Dist_cm*Lux)';
+
+        otherwise
+            % Si aparece un término raro, lo anulamos para no generar basura
+            expr = '0.0f /* unsupported term */';
+    end
+end

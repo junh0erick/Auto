@@ -1,0 +1,496 @@
+function psoc_control_gui_hl()
+% GUI basada en UARTP High-Level API.
+% Cambios:
+%  1) Open-loop: habilita "Send Coeffs (c)" para mandar SOLO N y Period (c15,c16).
+%  2) En la UI se ingresa Fs (Hz) y se calcula PeriodCounts = round(timerClockHz/Fs).
+%
+% Uso:
+%   psoc_control_gui_hl(ClockHz)
+%   ej: psoc_control_gui_hl(1e6)
+%
+% Requiere en el path:
+%   uartp_open, uartp_reset, uartp_setmode, uartp_send_coeffs, uartp_get_coeffs,
+%   uartp_init, uartp_stop, uartp_make_tf, uartp_make_ss
+
+
+
+    if nargin < 1 || ~isfinite(timerClockHz) || timerClockHz <= 0
+        error("Debes llamar psoc_control_gui_hl(timerClockHz) con ClockHz > 0 (Hz).");
+    end
+
+    S = struct();
+    S.sp = [];
+    S.isConnected = false;
+
+    % -------------------- UI --------------------
+    fig = uifigure('Name', sprintf('PSoC Control GUI (UARTP HL) | TimerClk=%.0f Hz', timerClockHz), ...
+                   'Position',[80 80 1280 720]);
+    fig.CloseRequestFcn = @onClose;
+
+    % Plot placeholder
+    ax = uiaxes(fig,'Position',[20 220 820 480]);
+    ax.XGrid = 'on'; ax.YGrid = 'on';
+    title(ax,'Streaming u,y (placeholder)'); xlabel(ax,'t (s)'); ylabel(ax,'value');
+    plot(ax, nan, nan); % placeholder
+
+    % Log
+    txtLog = uitextarea(fig,'Editable','off','Position',[20 20 820 180]);
+    txtLog.Value = strings(0,1);
+
+    % Connection panel
+    pConn = uipanel(fig,'Title','Connection','Position',[860 610 400 90]);
+    uilabel(pConn,'Text','COM:','Position',[10 35 35 22]);
+    edtCom = uieditfield(pConn,'text','Value','COM9','Position',[50 35 90 22]);
+    edtBaud = uieditfield(pConn,'numeric','Value',115200,'Limits',[1200 2000000],'Position',[150 35 90 22]);
+    uilabel(pConn,'Text','baud','Position',[245 35 40 22]);
+
+    btnConnect = uibutton(pConn,'Text','Connect','Position',[10 5 90 24],...
+        'ButtonPushedFcn',@onConnectToggle);
+    lblStat = uilabel(pConn,'Text','DISCONNECTED','Position',[110 5 280 24]);
+
+    btnReset = uibutton(pConn,'Text','Reset (r)','Position',[310 5 80 24],...
+        'ButtonPushedFcn',@onReset);
+
+    % Mode panel
+    pMode = uipanel(fig,'Title','Mode','Position',[860 430 400 170]);
+
+    ddType = uidropdown(pMode,'Items',{'TF','SS','Open-loop'},...
+        'Position',[10 120 120 24], 'ValueChangedFcn',@(~,~)refreshVisibility());
+
+    ddObserver = uidropdown(pMode,'Items',{'Predictor','Actual'},...
+        'Position',[150 120 120 24], 'Tooltip','Only applies for SS');
+
+    cbIntegrator = uicheckbox(pMode,'Text','Integrator','Position',[290 120 110 24]);
+
+    % --- N ---
+    uilabel(pMode,'Text','N','Position',[10 85 20 24]);
+    edtN = uieditfield(pMode,'numeric','Limits',[0 100000],'RoundFractionalValues','on', ...
+        'Value',20,'Position',[35 85 80 24]);
+
+    % --- Fs (Hz) ---
+    uilabel(pMode,'Text','Fs (Hz)','Position',[130 85 50 24]);
+    edtFs = uieditfield(pMode,'numeric','Limits',[0.001 1e9], ...
+        'Value', double(timerClockHz)/1500.0, 'Position',[180 85 90 24], ...
+        'ValueChangedFcn', @onFsChanged);
+
+    % --- Computed Period ---
+    lblPeriod = uilabel(pMode,'Text','Period=1500 counts', 'Position',[10 60 260 20]);
+
+    btnSendMode = uibutton(pMode,'Text','Send Mode (m)','Position',[280 85 110 24],...
+        'ButtonPushedFcn',@onSendMode);
+
+    btnSendCoeffs = uibutton(pMode,'Text','Send Coeffs (c)','Position',[10 25 140 28],...
+        'ButtonPushedFcn',@onSendCoeffs);
+
+    cbVerify = uicheckbox(pMode,'Text','Verify (t)','Value',true,'Position',[160 30 120 24]);
+
+    btnGetCoeffs = uibutton(pMode,'Text','Get Coeffs (t)','Position',[280 25 110 28],...
+        'ButtonPushedFcn',@onGetCoeffs);
+
+    % Control panel
+    pRef = uipanel(fig,'Title','Control','Position',[860 320 400 100]);
+    uilabel(pRef,'Text','u0 / ref','Position',[10 45 60 22]);
+    edtU0 = uieditfield(pRef,'numeric','Value',0.25,'Position',[80 40 100 26]);
+
+    btnStart = uibutton(pRef,'Text','Start (i)','Position',[200 40 90 26],...
+        'ButtonPushedFcn',@onStart);
+
+    btnStop = uibutton(pRef,'Text','Stop (s)','Position',[300 40 80 26],...
+        'ButtonPushedFcn',@onStop);
+
+    cbWaitBack = uicheckbox(pRef,'Text','wait back to COMMAND','Value',true,'Position',[10 10 200 24]);
+
+    % TF panel
+    pTF = uipanel(fig,'Title','TF Coeffs','Position',[860 20 400 280]);
+    uilabel(pTF,'Text','Numerator b0..b5','Position',[10 235 200 18]);
+    bEdt = gobjects(1,6);
+    for i=1:6
+        bEdt(i) = uieditfield(pTF,'text','Value','0','Position',[10+63*(i-1) 210 60 22]);
+    end
+
+    uilabel(pTF,'Text','Denominator a0..a5','Position',[10 175 200 18]);
+    aEdt = gobjects(1,6);
+    for i=1:6
+        aEdt(i) = uieditfield(pTF,'text','Value','0','Position',[10+63*(i-1) 150 60 22]);
+    end
+    aEdt(1).Value = '1';
+
+    uilabel(pTF,'Text','Reserved (c13..c16)','Position',[10 115 140 18]);
+    edtC13 = uieditfield(pTF,'numeric','Value',0,'Position',[10 90 80 22]);
+    edtC14 = uieditfield(pTF,'numeric','Value',0,'Position',[100 90 80 22]);
+    uilabel(pTF,'Text','c15=N, c16=Period','Position',[190 90 200 22]);
+
+    % SS panel
+    pSS = uipanel(fig,'Title','SS Coeffs (2 estados)','Position',[860 20 400 280]);
+
+    % A(2x2)
+    uilabel(pSS,'Text','A (2x2)','Position',[10 235 60 18]);
+    edtA11 = uieditfield(pSS,'text','Value','0','Position',[70 232 55 22]);
+    edtA12 = uieditfield(pSS,'text','Value','0','Position',[130 232 55 22]);
+    edtA21 = uieditfield(pSS,'text','Value','0','Position',[70 205 55 22]);
+    edtA22 = uieditfield(pSS,'text','Value','0','Position',[130 205 55 22]);
+
+    % B(2)
+    uilabel(pSS,'Text','B (2)','Position',[200 235 40 18]);
+    edtB1 = uieditfield(pSS,'text','Value','0','Position',[240 232 55 22]);
+    edtB2 = uieditfield(pSS,'text','Value','0','Position',[300 232 55 22]);
+
+    % C(2)
+    uilabel(pSS,'Text','C (2)','Position',[200 205 40 18]);
+    edtC1 = uieditfield(pSS,'text','Value','0','Position',[240 202 55 22]);
+    edtC2 = uieditfield(pSS,'text','Value','0','Position',[300 202 55 22]);
+
+    % D
+    uilabel(pSS,'Text','D','Position',[10 175 20 18]);
+    edtD = uieditfield(pSS,'text','Value','0','Position',[35 172 55 22]);
+
+    % L(2)
+    uilabel(pSS,'Text','L (2)','Position',[100 175 40 18]);
+    edtL1 = uieditfield(pSS,'text','Value','0','Position',[140 172 55 22]);
+    edtL2 = uieditfield(pSS,'text','Value','0','Position',[200 172 55 22]);
+
+    % K(2)
+    uilabel(pSS,'Text','K (2)','Position',[10 145 40 18]);
+    edtK1 = uieditfield(pSS,'text','Value','0','Position',[50 142 55 22]);
+    edtK2 = uieditfield(pSS,'text','Value','0','Position',[110 142 55 22]);
+
+    % Ki
+    uilabel(pSS,'Text','Ki','Position',[200 145 20 18]);
+    edtKi = uieditfield(pSS,'text','Value','0','Position',[225 142 60 22]);
+
+    % init UI state
+    onFsChanged();
+    refreshVisibility();
+
+    % -------------------- callbacks --------------------
+    function refreshVisibility()
+        typ = ddType.Value;
+
+        pTF.Visible = strcmp(typ,'TF');
+        pSS.Visible = strcmp(typ,'SS');
+
+        ddObserver.Enable = strcmp(typ,'SS');
+        cbIntegrator.Enable = strcmp(typ,'SS');
+
+        % Ahora SI habilitamos coeffs también para Open-loop (manda N/Period únicamente)
+        btnSendCoeffs.Enable = true;
+    end
+
+    function onFsChanged(~,~)
+        try
+            fs = double(edtFs.Value);
+            if ~isfinite(fs) || fs <= 0
+                lblPeriod.Text = "Period=? counts (Fs inválida)";
+                return;
+            end
+            per = computePeriodCounts(fs);
+            lblPeriod.Text = sprintf("Period=%d counts  (Fs=%.6g Hz)", per, fs);
+        catch
+            lblPeriod.Text = "Period=? counts";
+        end
+    end
+
+    function onConnectToggle(~,~)
+        if ~S.isConnected
+            com = strtrim(string(edtCom.Value));
+            if com == ""
+                logMsg("COM vacío.");
+                return;
+            end
+            try
+                S.sp = uartp_open(com, edtBaud.Value);
+                S.isConnected = true;
+                btnConnect.Text = "Disconnect";
+                lblStat.Text = "CONNECTED: " + com;
+                logMsg("Connected to " + com);
+            catch e
+                logMsg("Connect error: " + string(e.message));
+            end
+        else
+            try
+                if ~isempty(S.sp)
+                    clear S.sp;
+                end
+            catch
+            end
+            S.sp = [];
+            S.isConnected = false;
+            btnConnect.Text = "Connect";
+            lblStat.Text = "DISCONNECTED";
+            logMsg("Disconnected.");
+        end
+    end
+
+    function onReset(~,~)
+        if ~requireConn(); return; end
+        try
+            uartp_reset(S.sp);
+            logMsg("reset OK");
+        catch e
+            logMsg("reset FAIL: " + string(e.message));
+        end
+    end
+
+    function onSendMode(~,~)
+        if ~requireConn(); return; end
+        try
+            mode = computeMode();
+            uartp_setmode(S.sp, mode);
+            logMsg(sprintf("setmode OK: mode=%d (%s)", mode, ddType.Value));
+        catch e
+            logMsg("setmode FAIL: " + string(e.message));
+        end
+    end
+
+    function onSendCoeffs(~,~)
+        if ~requireConn(); return; end
+
+        typ = ddType.Value;
+
+        try
+            Nval = single(round(double(edtN.Value)));
+
+            fs = double(edtFs.Value);
+            if ~isfinite(fs) || fs <= 0
+                error("Fs inválida (Hz).");
+            end
+            PeriodCounts = single(computePeriodCounts(fs));
+
+            if strcmp(typ,'TF')
+                b = parse6(bEdt,'b');
+                a = parse6(aEdt,'a');
+
+                coeffs = uartp_make_tf(b,a);
+
+                % Reservados c13..c14 desde UI
+                coeffs(13) = single(edtC13.Value);
+                coeffs(14) = single(edtC14.Value);
+
+                % Meta SIEMPRE:
+                coeffs(15) = Nval;
+                coeffs(16) = PeriodCounts;
+
+            elseif strcmp(typ,'SS')
+                A  = [parse1(edtA11,'A11') parse1(edtA12,'A12'); parse1(edtA21,'A21') parse1(edtA22,'A22')];
+                B  = [parse1(edtB1,'B1');  parse1(edtB2,'B2')];
+                C  = [parse1(edtC1,'C1');  parse1(edtC2,'C2')];
+                D  =  parse1(edtD,'D');
+                L  = [parse1(edtL1,'L1');  parse1(edtL2,'L2')];
+                K  = [parse1(edtK1,'K1');  parse1(edtK2,'K2')];
+                Ki =  parse1(edtKi,'Ki');
+
+                coeffs = uartp_make_ss(A,B,C,D,L,K,Ki);
+
+                % Meta SIEMPRE:
+                coeffs(15) = Nval;
+                coeffs(16) = PeriodCounts;
+
+            else
+                % Open-loop: mandamos SOLO N y Period (para que no dependas de haber pasado por TF antes)
+                coeffs = zeros(16,1,'single');
+                coeffs(15) = Nval;
+                coeffs(16) = PeriodCounts;
+            end
+
+            uartp_send_coeffs(S.sp, coeffs, cbVerify.Value);
+
+            logMsg(sprintf("coeffs OK (%s)  N=%g  Fs=%.6g Hz  Period=%g counts", ...
+                typ, double(Nval), fs, double(PeriodCounts)));
+
+        catch e
+            logMsg("coeffs FAIL: " + string(e.message));
+        end
+    end
+
+    function onGetCoeffs(~,~)
+        if ~requireConn(); return; end
+        try
+            c = uartp_get_coeffs(S.sp);  % single(16,1)
+            c = single(c(:));
+
+            typ = ddType.Value;
+
+            if strcmp(typ,'TF')
+                num6 = c(1:6).';
+                den6 = c(7:12).';
+
+                res13 = c(13);
+                res14 = c(14);
+                N     = c(15);
+                Period= c(16);
+
+                fs = periodToFs(double(Period));
+
+                logMsg("t OK (TF)");
+                logMsg("  num6 = " + vecfmt(num6));
+                logMsg("  den6 = " + vecfmt(den6));
+                logMsg(sprintf("  meta: res13=%g res14=%g  N=%g  Period=%g counts  Fs≈%.6g Hz", ...
+                    double(res13), double(res14), double(N), double(Period), fs));
+
+            elseif strcmp(typ,'SS')
+                A = [c(1) c(2); c(3) c(4)];
+                B = [c(5); c(6)];
+                Cv = [c(7) c(8)];
+                D  = c(9);
+                L  = [c(10); c(11)];
+                K  = [c(12); c(13)];
+                Ki = c(14);
+                N  = c(15);
+                Period = c(16);
+
+                fs = periodToFs(double(Period));
+
+                logMsg("t OK (SS)");
+                logMsg("  A = " + matfmt(A));
+                logMsg("  B = " + vecfmt(B.'));
+                logMsg("  C = " + vecfmt(Cv));
+                logMsg(sprintf("  D = %g", double(D)));
+                logMsg("  L = " + vecfmt(L.'));
+                logMsg("  K = " + vecfmt(K.'));
+                logMsg(sprintf("  Ki = %g", double(Ki)));
+                logMsg(sprintf("  meta: N=%g  Period=%g counts  Fs≈%.6g Hz", double(N), double(Period), fs));
+
+            else
+                % Open-loop: mostrar meta igual
+                N = c(15);
+                Period = c(16);
+                fs = periodToFs(double(Period));
+                logMsg("t OK (Open-loop / raw).");
+                logMsg(sprintf("  meta: N=%g  Period=%g counts  Fs≈%.6g Hz", double(N), double(Period), fs));
+            end
+
+        catch e
+            logMsg("t FAIL: " + string(e.message));
+        end
+    end
+
+    function onStart(~,~)
+        if ~requireConn(); return; end
+        try
+            u0 = double(edtU0.Value);
+            uartp_init(S.sp, u0);
+            logMsg(sprintf("init OK: u0/ref=%.6g (CONTROL)", u0));
+        catch e
+            logMsg("init FAIL: " + string(e.message));
+        end
+    end
+
+    function onStop(~,~)
+        if ~requireConn(); return; end
+        try
+            uartp_stop(S.sp, cbWaitBack.Value);
+            logMsg("stop OK");
+        catch e
+            logMsg("stop FAIL: " + string(e.message));
+        end
+    end
+
+    % -------------------- helpers --------------------
+    function ok = requireConn()
+        ok = S.isConnected && ~isempty(S.sp);
+        if ~ok
+            logMsg("Not connected.");
+        end
+    end
+
+    function logMsg(msg)
+        ts = string(datestr(now,'HH:MM:SS.FFF'));
+        line = "[" + ts + "] " + string(msg);
+
+        v = txtLog.Value;
+        if ~isstring(v), v = string(v); end
+        v(end+1,1) = line;
+
+        if numel(v) > 400
+            v = v(end-400:end);
+        end
+        txtLog.Value = v;
+        drawnow limitrate;
+    end
+
+    function mode = computeMode()
+        typ = ddType.Value;
+        if strcmp(typ,'TF')
+            mode = 0; return;
+        end
+        if strcmp(typ,'Open-loop')
+            mode = 5; % openLoop
+            return;
+        end
+
+        isAct = strcmp(ddObserver.Value,'Actual');
+        hasI  = cbIntegrator.Value;
+
+        if ~isAct && ~hasI
+            mode = 1;
+        elseif isAct && ~hasI
+            mode = 2;
+        elseif ~isAct && hasI
+            mode = 3;
+        else
+            mode = 4;
+        end
+    end
+
+    function per = computePeriodCounts(fsHz)
+        % PeriodCounts = round(timerClockHz/fs)
+        % clamp >= 1
+        per = round(double(timerClockHz) / double(fsHz));
+        if ~isfinite(per) || per < 1
+            per = 1;
+        end
+        % opcional: limitar a 32-bit por sanidad
+        if per > 2^31-1
+            per = 2^31-1;
+        end
+    end
+
+    function fs = periodToFs(periodCounts)
+        if ~isfinite(periodCounts) || periodCounts <= 0
+            fs = NaN;
+        else
+            fs = double(timerClockHz) / double(periodCounts);
+        end
+    end
+
+    function v = parse6(edts, name)
+        v = zeros(1,6);
+        for kk=1:6
+            v(kk) = parse1(edts(kk), sprintf("%s[%d]",name,kk-1));
+        end
+    end
+
+    function v = parse1(edt, name)
+        s = strtrim(string(edt.Value));
+        if s == ""
+            uialert(fig, "Campo vacío: " + name, 'Input error');
+            error("Campo vacío: %s", name);
+        end
+        v = str2double(s);
+        if ~isfinite(v)
+            uialert(fig, "Número inválido en " + name + ": '" + s + "'", 'Input error');
+            error("Número inválido: %s", name);
+        end
+    end
+
+    function s = vecfmt(x)
+        x = double(x(:).');
+        s = "[" + strjoin(string(x), " ") + "]";
+    end
+
+    function s = matfmt(M)
+        M = double(M);
+        s = sprintf("[[%g %g]; [%g %g]]", M(1,1), M(1,2), M(2,1), M(2,2));
+        s = string(s);
+    end
+
+    function onClose(~,~)
+        try
+            if S.isConnected && ~isempty(S.sp)
+                clear S.sp;
+            end
+        catch
+        end
+        delete(fig);
+    end
+end

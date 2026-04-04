@@ -1,0 +1,192 @@
+% ============================================================
+\section{Espacio de estado con integrador)}
+\label{ap:ogata_integrador_obs}
+% ============================================================
+
+En este apendice se incluye el script completo utilizado para implementar el metodo de Ogata 6.19
+con un integrador externo (accion integral) y dos variantes de observador en tiempo discreto:
+predictor y actual. El codigo calcula las ganancias \(K_1\) y \(K_2\) mediante \texttt{place} sobre el
+sistema aumentado, disena los observadores con los polos \(p_{\text{obs}}\), y genera las simulaciones y
+graficos asociados.
+
+\begin{lstlisting}[language=Matlab,caption={OGATA 6.19 - SOLO INTEGRADOR + Observador PREDICTOR y ACTUAL (planta orden 3).},label={lst:ogata619_integrador_pred_act}]
+	%% =========================
+	%  OGATA 6.19 - SOLO INTEGRADOR
+	%  + Observador PREDICTOR y ACTUAL
+	%  (Planta discreta desde .mat, orden 3)
+	%% =========================
+	close all; clear; clc
+	
+	%% =========================
+	% 1) CARGA + DISCRETIZACION
+	%% =========================
+	S = load('planta (1).mat');
+	
+	if isfield(S,'plantaC')
+	plantaC = S.plantaC;
+	elseif isfield(S,'sysC')
+	plantaC = S.sysC;
+	else
+	error('No encuentro "plantaC" ni "sysC" dentro de planta (1).mat');
+	end
+	
+	Ts   = 1/50;                 % ajusta si queres
+	sysD = c2d(plantaC, Ts, 'zoh');
+	[A,B,C,D] = ssdata(ss(sysD));
+	
+	n = size(A,1);
+	if n ~= 3
+	error('Esta plantilla asume planta de orden 3. n=%d', n);
+	end
+	
+	% Asegurar SISO (una salida)
+	if size(C,1) ~= 1
+	C = C(1,:);
+	end
+	
+	fprintf('Ts=%.9f | n=%d\n', Ts, n);
+	
+	%% =========================
+	% 2) POLOS DESEADOS (FIJOS)
+	%% =========================
+	p_ctrl = [0.95 + 0.15i, 0.95 - 0.15i, 0.98];   % control
+	p_obs  = [0.8 + 0.25i, 0.8 - 0.25i, 0.9];
+	%p_obs  = [0.4 + 0.25i, 0.4 - 0.25i, 0.6];      % observador
+	p_i    = 0.96;                                  % polo integrador
+	
+	%% =========================
+	% 3) OGATA 6.19 (K1 y K2) TAL CUAL
+	%% =========================
+	m = 1;
+	
+	Ahat = [A B; zeros(m,n+m)];
+	Bhat = [zeros(n,m); eye(m)];
+	Chat = [C zeros(1,m)];
+	
+	polos_i = [p_ctrl p_i];           % 3 polos control + 1 integrador
+	[Khat,pKhat]    = place(Ahat, Bhat, polos_i);
+	
+	Aux  = [A-eye(size(A))  B;
+	C*A             C*B];
+	
+	K2K1 = (Khat + [zeros(1,n) eye(m)]) / Aux;
+	K2   = K2K1(1,1:n);               % sobre xhat (1x3)
+	K1   = K2K1(1,n+1:end);           % sobre v   (1x1)
+	
+	fprintf('\nK2 = '); disp(K2);
+	fprintf('K1 = '); disp(K1); fprintf('\tpK21 = '); disp(pKhat);
+	
+	%% =========================
+	% 4) OBSERVADORES (PRED / ACT) - mismo p_obs
+	%% =========================
+	[L_pred, pL_pred]     = place(A', C',     p_obs);   L_pred   = L_pred.';    % predictor: A - L*C
+	[L_actual, pL_actual] = place(A', (C*A)', p_obs);   L_actual = L_actual.';  % actual:    A - L*C*A
+	
+	fprintf('L_pred = '); disp(L_pred); fprintf('\tpL_pred = '); disp(pL_pred);
+	fprintf('\nL_actual = '); disp(L_actual); fprintf('\tpL_actual = '); disp(pL_actual);
+	
+	%% =========================
+	% 5) SIMULACION (SOLO CON INTEGRADOR)
+	%% =========================
+	N  = 300;
+	t  = 0:Ts:(N-1)*Ts;
+	
+	r = ones(1,N)*25;
+	r(1:30) = 0;
+	
+	% ruido en medicion (igual que tu estilo)
+	w = [zeros(1,75), 0.01*ones(1,N-75)];
+	
+	% ----- PREDICTIVO CON integrador -----
+	X_p    = zeros(n,N);      % estado real
+	Xh_p   = zeros(n,N);      % estado estimado
+	V_p    = zeros(1,N);      % integrador
+	U_p    = zeros(1,N);      % control
+	
+	% ----- ACTUAL CON integrador -----
+	X_a    = zeros(n,N);
+	Xh_a   = zeros(n,N);
+	V_a    = zeros(1,N);
+	U_a    = zeros(1,N);
+	
+	for k = 1:N-1
+	rk = r(k);
+	
+	%% ===== 1) PREDICTIVO + integrador (MISMA FORMA) =====
+	y_p          = C*X_p(:,k);
+	V_p(k+1)     = V_p(k) + (rk - y_p);                 % integrador real
+	u_p          = K1*V_p(k+1) - K2*Xh_p(:,k);
+	X_p(:,k+1)   = A*X_p(:,k) + B*u_p;% + w(k);
+	Xh_p(:,k+1)  = A*Xh_p(:,k) + B*u_p + L_pred*(y_p - C*Xh_p(:,k));
+	U_p(k)       = u_p;
+	
+	%% ===== 2) ACTUAL + integrador (MISMA FORMA) =====
+	y_a          = C*X_a(:,k);
+	V_a(k+1)     = V_a(k) + (rk - y_a);
+	u_a          = K1*V_a(k+1) - K2*Xh_a(:,k);
+	X_a(:,k+1)   = A*X_a(:,k) + B*u_a;% + w(k);
+	y_next       = C*X_a(:,k+1);% + w(k);                 % misma muestra de ruido
+	z_a          = A*Xh_a(:,k) + B*u_a;
+	Xh_a(:,k+1)  = z_a + L_actual*(y_next - C*z_a);
+	U_a(k)       = u_a;
+	end
+	
+	%% =========================
+	% 6) PLOTS RAPIDOS
+	%% =========================
+	figure('Name','y(t) - integrador + predictor vs actual');
+	plot(t, (C*X_p).', t, (C*X_a).', t, r, 'k--','LineWidth',1.2);
+	grid on; grid minor;
+	xlabel('t [s]'); ylabel('y');
+	legend('Pred (planta)','Act (planta)','r','Location','best');
+	
+	figure('Name','u(t) - integrador + predictor vs actual');
+	plot(t(1:end-1), U_p(1:end-1), 'LineWidth',1.4); hold on;
+	plot(t(1:end-1), U_a(1:end-1), '--', 'LineWidth',1.4);
+	grid on; grid minor;
+	xlabel('t [s]'); ylabel('u');
+	legend('Pred','Act','Location','best');
+	
+	figure('Name','v(t) - integrador (estado integral)');
+	plot(t, V_p, 'LineWidth',1.4); hold on;
+	plot(t, V_a, '--', 'LineWidth',1.4);
+	grid on; grid minor;
+	xlabel('t [s]'); ylabel('v');
+	legend('Pred','Act','Location','best');
+	
+	%% =========================
+	% 7) MAPA DE POLOS (resumen)
+	%% =========================
+	figure('Name','Z-plane - planta, aumentado e info obs','Position',[100 100 1000 400]);
+	
+	subplot(1,3,1); zgrid; hold on; grid on; box on;
+	p_planta = eig(A);
+	plot(real(p_planta), imag(p_planta), 'ko','MarkerSize',8,'LineWidth',1.4);
+	title('Planta (A)'); xlabel('Re\{z\}'); ylabel('Im\{z\}');
+	
+	subplot(1,3,2); zgrid; hold on; grid on; box on;
+	p_aug    = eig(Ahat);
+	p_aug_cl = eig(Ahat - Bhat*Khat);
+	plot(real(p_aug),    imag(p_aug),    'm^','MarkerSize',8,'LineWidth',1.4);
+	plot(real(p_aug_cl), imag(p_aug_cl), 'c*','MarkerSize',10,'LineWidth',1.6);
+	title('Aumentado: Ahat y Ahat-BhatKhat'); xlabel('Re\{z\}'); ylabel('Im\{z\}');
+	
+	subplot(1,3,3); zgrid; hold on; grid on; box on;
+	p_obs_pred = eig(A - L_pred*C);
+	p_obs_act  = eig(A - L_actual*C*A);
+	plot(real(p_obs_pred), imag(p_obs_pred), 'bs','MarkerSize',9,'LineWidth',1.5);
+	plot(real(p_obs_act),  imag(p_obs_act),  'rx','MarkerSize',9,'LineWidth',1.5);
+	title('Obs error'); xlabel('Re\{z\}'); ylabel('Im\{z\}');
+	legend('A-LC (pred)','A-LCA (act)','Location','best');
+	
+	sgtitle('Ogata 6.19 - Solo integrador + predictor/actual');
+	
+	Aaug = [A,B;...
+	K2-K2*A-K1*C*A,1-K2*B-K1*C*B];
+	Baug = [0;0;0;K1];
+	Caug    = [C,0];
+	D = 0;
+	sysDaug = ss(Aaug,Baug,Caug,D,Ts);
+	sysObs = ss((A-L_actual*C*A),B,C,D,Ts);
+	figure; pzmap(sysDaug); grid on; zgrid; hold on; pzmap(sysObs);
+\end{lstlisting}

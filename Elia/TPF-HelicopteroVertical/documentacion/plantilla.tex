@@ -1,0 +1,221 @@
+% =========================
+% PLANTILLA: Parámetros de controladores (para completar luego)
+% =========================
+
+% Recomendado en el preámbulo:
+% \usepackage{xcolor}
+% \usepackage{amsmath}   % para \text{...} (y mil cosas más)
+% \usepackage{booktabs}
+% \usepackage{siunitx}   % si querés \si{\degree}
+
+% --- Helper para placeholders ---
+% Texto normal (fuera de ecuaciones)
+\providecommand{\TODO}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
+% Math-safe: SIEMPRE devuelve texto “normal” dentro de math.
+% (usa \mathrm{} en vez de \text{} para no depender de amsmath)
+\providecommand{\TODOm}[1]{\mathrm{\TODO{#1}}}
+
+% --- Si querés una tabla compacta ---
+\newcommand{\coef}[1]{\ensuremath{\mathbf{#1}}}
+
+\subsection{Parámetros de los controladores implementados}
+\label{sec:param_ctrl}
+
+En esta sección se documentan los parámetros finales utilizados en la práctica experimental para cada estrategia de control.
+Todos los valores fueron ajustados considerando restricciones físicas del actuador (PWM) y criterios de seguridad (evitar saturación prolongada y esfuerzos excesivos).
+
+\subsubsection{Convenciones de implementación}
+\label{sec:conv_impl}
+
+\begin{itemize}
+	\item Señal aplicada al ESC (PWM tipo servo): \(u_{\text{PWM}} \in [1000,2000]\ \mu s\).
+	\item Período de muestreo del control: \(T_s=\TODOm{indicar}\,\text{s}\) (o \(f_s=\TODOm{indicar}\,\text{Hz}\)).
+	\item Si se utiliza control incremental: \(u_{\text{PWM}}[k]=\mathrm{sat}\!\left(u_0+\Delta u[k],\,1000,\,2000\right)\).
+	\item Si se utiliza control absoluto: \(u_{\text{PWM}}[k]=\mathrm{sat}\!\left(u[k],\,1000,\,2000\right)\).
+\end{itemize}
+
+% =========================================================
+% 1) BODE (Respuesta en frecuencia)
+% =========================================================
+\subsubsection{Controlador por respuesta en frecuencia (Bode)}
+\label{sec:param_bode}
+
+\paragraph{Estructura del controlador}
+\begin{itemize}
+	\item Tipo: \TODO{Proporcional / Lead / Lag / Lead--Lag}
+	\item Forma general:
+	\[
+	C_{\text{Bode}}(z)=\TODOm{pegar expresión de \(C(z)\)}
+	\]
+\end{itemize}
+
+\paragraph{Parámetros finales (a completar)}
+\begin{itemize}
+	\item Ganancia: \(K=\TODOm{valor}\)
+	\item (Si aplica) Cero: \(z_0=\TODOm{valor}\)
+	\item (Si aplica) Polo: \(p_0=\TODOm{valor}\)
+	\item (Si aplica) Otros parámetros: \TODO{...}
+\end{itemize}
+
+\paragraph{Márgenes de estabilidad medidos en \texttt{controlSystemDesigner}}
+\begin{itemize}
+	\item \textbf{Antes de compensar:} \(M_g=\TODOm{dB}\), \(\phi_m=\TODOm{grados}\).
+	\item \textbf{Después de compensar:} \(M_g=\TODOm{dB}\), \(\phi_m=\TODOm{grados}\).
+\end{itemize}
+
+% Si querés usar grados “lindos” con siunitx, activá esto y comentá las dos líneas de arriba:
+% \item \textbf{Antes de compensar:} \(M_g=\TODOm{dB}\), \(\phi_m=\TODOm{}\si{\degree}\).
+% \item \textbf{Después de compensar:} \(M_g=\TODOm{dB}\), \(\phi_m=\TODOm{}\si{\degree}\).
+
+\paragraph{Ecuación en diferencias (si se implementa como filtro digital)}
+Si el controlador se implementó como filtro IIR/FIR, indicar su forma recursiva:
+\[
+u[k]=\TODOm{b_0 e[k]+b_1 e[k-1]+\dots -a_1 u[k-1]-\dots}
+\]
+
+\paragraph{Notas de implementación}
+\begin{itemize}
+	\item Saturación: \(u_{\text{PWM}}=\mathrm{sat}(\cdot)\).
+	\item \TODO{limitación de esfuerzo / filtro anti-ruido / etc.}
+\end{itemize}
+
+% =========================================================
+% 2) LUGAR DE RAÍCES (Lag-Lead)
+% =========================================================
+\subsubsection{Controlador por lugar de raíces (Lag--Lead)}
+\label{sec:param_rlocus}
+
+\paragraph{Estructura del controlador}
+Se diseñó un compensador Lag--Lead para estabilizar la planta e imponer un desempeño deseado en el plano-\(z\):
+\[
+C_{\text{RL}}(z)=K\,
+\underbrace{\frac{(z-z_{L})(z-z_{D})}{(z-p_{L})(z-p_{D})}}_{\text{Lag--Lead}}
+\]
+donde \(z_{L},p_{L}\) corresponden a la red Lag y \(z_{D},p_{D}\) a la red Lead.
+
+\paragraph{Parámetros finales (a completar)}
+\begin{itemize}
+	\item Ganancia: \(K=\TODOm{valor}\)
+	\item Red Lag: \(z_{L}=\TODOm{valor}\), \(p_{L}=\TODOm{valor}\)
+	\item Red Lead: \(z_{D}=\TODOm{valor}\), \(p_{D}=\TODOm{valor}\)
+\end{itemize}
+
+\paragraph{Polos dominantes objetivo}
+\begin{itemize}
+	\item Polos deseados: \(z_{d,1,2}=\TODOm{valor}\) (criterio: \TODO{\(t_s\), \(M_p\), \(\zeta\), etc.})
+\end{itemize}
+
+\paragraph{Método de ajuste}
+\begin{itemize}
+	\item Se utilizó: \TODO{\texttt{rlocus} manual / \texttt{Optimization Based Tuning}}
+	\item Función objetivo (si aplica): \TODO{por ejemplo, minimizar \(J=\dots\)}
+\end{itemize}
+
+\paragraph{Ecuación en diferencias (implementación)}
+\[
+u[k]=\TODOm{expresión recursiva de \(C_{\text{RL}}(z)\)}
+\]
+
+\paragraph{Notas de implementación}
+\begin{itemize}
+	\item \TODO{saturación, anti-windup si hay integrador, filtro si hay derivada, etc.}
+\end{itemize}
+
+% =========================================================
+% 3) PID (Åström)
+% =========================================================
+\subsubsection{Controlador PID (formulación de Åström)}
+\label{sec:param_pid}
+
+\paragraph{Estructura y parámetros}
+\begin{itemize}
+	\item Ganancia proporcional: \(K=\TODOm{valor}\)
+	\item Peso de referencia proporcional: \(b=\TODOm{valor}\)
+	\item Tiempo integral: \(T_i=\TODOm{valor}\)
+	\item Tiempo derivativo: \(T_d=\TODOm{valor}\)
+	\item Filtro derivativo: \(N=\TODOm{valor}\)
+\end{itemize}
+
+\paragraph{Ecuaciones discretas (para implementación)}
+Sea \(h=T_s\) y \(e[k]=r[k]-y[k]\).
+\[
+P[k]=K\big(b\,r[k]-y[k]\big)
+\]
+\[
+I[k]=I[k-1]+\frac{K h}{T_i}\,e[k-1]
+\]
+\[
+D[k]=\frac{T_d}{T_d+Nh}D[k-1]-\frac{K T_d N}{T_d+Nh}\big(y[k]-y[k-1]\big)
+\]
+\[
+u[k]=P[k]+I[k]+D[k]
+\]
+
+\paragraph{Anti-windup y saturación (si aplica)}
+\begin{itemize}
+	\item Saturación: \(u_{\text{PWM}}[k]=\mathrm{sat}(u_0+\Delta u[k],\,1000,\,2000)\) o \(u_{\text{PWM}}[k]=\mathrm{sat}(u[k],\,1000,\,2000)\).
+	\item Anti-windup: \TODO{back-calculation / clamping / etc. (si se usó)}
+\end{itemize}
+
+\paragraph{Criterios experimentales de sintonización (resumen)}
+\begin{itemize}
+	\item \(K\): \TODO{criterio (ej. borde de inestabilidad)}
+	\item \(T_i\): \TODO{criterio (error estacionario vs \(t_s\))}
+	\item \(T_d\) y \(N\): \TODO{criterio (overshoot vs ruido)}
+	\item Restricción de esfuerzo: \TODO{ej. \(\le 10\,\mu s/\text{cm}\)}
+\end{itemize}
+
+% =========================================================
+% TABLA RESUMEN (opcional)
+% =========================================================
+\subsubsection{Resumen de coeficientes (para completar)}
+\label{sec:tabla_resumen_coef}
+
+\begin{table}[!t]
+	\centering
+	\caption{Resumen de parámetros finales de los controladores (completar).}
+	\label{tab:coef_ctrl}
+	\begin{tabular}{@{}l l@{}}
+		\toprule
+		\textbf{Controlador} & \textbf{Parámetros} \\
+		\midrule
+		Bode & \(K=\TODOm{}\), \TODO{polo/cero si aplica} \\
+		Lugar de raíces & \(K=\TODOm{}\), \(z_L=\TODOm{}\), \(p_L=\TODOm{}\), \(z_D=\TODOm{}\), \(p_D=\TODOm{}\) \\
+		PID (Åström) & \(K=\TODOm{}\), \(b=\TODOm{}\), \(T_i=\TODOm{}\), \(T_d=\TODOm{}\), \(N=\TODOm{}\) \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+% =========================
+% PLANTILLA: Control en espacio de estados (para completar luego)
+% =========================
+
+\subsection{Control en el espacio de estados}
+\label{sec:ss_control}
+
+\subsubsection{Modelo en espacio de estados utilizado}
+\label{sec:ss_modelo}
+
+Se empleó un modelo discreto en espacio de estados de orden \(n=\TODOm{1/2/3}\), obtenido a partir de la planta identificada \(G(z)\) mediante \texttt{tf2ss}/\texttt{ss} en MATLAB:
+\begin{equation}
+	\label{eq:ss_discreto}
+	\begin{aligned}
+		x[k+1] &= A\,x[k] + B\,u[k],\\
+		y[k]   &= C\,x[k] + D\,u[k].
+	\end{aligned}
+\end{equation}
+donde \(x[k]\in\mathbb{R}^{n}\), \(u[k]\in\mathbb{R}\) y \(y[k]\in\mathbb{R}\).
+
+\paragraph{Matrices del modelo (a completar)}
+\[
+A=\TODOm{\text{matriz}},\qquad
+B=\TODOm{\text{matriz}},\qquad
+C=\TODOm{\text{matriz}},\qquad
+D=\TODOm{\text{matriz}}.
+\]
+
+\paragraph{Período de muestreo}
+\[
+T_s=\TODOm{\text{valor}}\ \text{s}\qquad (f_s=\TODOm{\text{valor}}\ \text{Hz}).
+\]

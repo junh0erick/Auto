@@ -1,0 +1,53 @@
+\section{Código de síntesis directa y simulación intramuestra}
+\label{ap:codigo_TR}
+
+A continuación se presenta el script utilizado para la
+discretización de la planta, resolución del sistema
+polinómico asociado al diseño ripple-free y evaluación
+intramuestra mediante retención de orden cero.
+
+\begin{lstlisting}[language=Matlab]
+	close all; clear; clc;
+	
+	S = load("D:\auto\TPF-HelicopteroVertical\Matlab\planta (1).mat");
+	
+	if isfield(S,'plantaC')
+	plantaC = S.plantaC;
+	elseif isfield(S,'sysC')
+	plantaC = S.sysC;
+	elseif isfield(S,'G')
+	plantaC = S.G;
+	else
+	error("No se encontró la planta en el archivo .mat.");
+	end
+	
+	Ts = 1/2;  % Fs = 2 Hz
+	[num, den] = tfdata(c2d(plantaC,Ts,'zoh'),'v');
+	
+	n = length(num)-1;
+	m = length(den)-1;
+	k = max(n,m);
+	
+	num_z = [num zeros(1,k-n)];
+	den_z = [den zeros(1,k-m)];
+	
+	Hz = tf(num_z, den_z, Ts, 'Variable','z');
+	
+	z = tf([1 0],1,Ts);
+	
+	% --- Controlador sin oscilaciones intramuestra ---
+	C1 = (1.73*z^2 - 0.2763*z + 0.1047) / ...
+	(z^2 + 0.6683*z + 0.04352);
+	
+	% --- Controlador con oscilaciones intramuestra ---
+	C2 = (z^3 - 1.16*z^2 + 0.2202*z - 0.0605) / ...
+	(0.1917*z^5 + 0.3612*z^4 + 0.02515*z^3 ...
+	-0.1917*z^2 -0.3612*z -0.02515);
+	
+	% --- Simulación intramuestra ---
+	[ud,n] = step(feedback(C1,Hz));
+	uc = repelem(ud,40);
+	dt = Ts/40;
+	t  = (0:length(uc)-1)' * dt;
+	[yc,t] = lsim(plantaC, uc, t);
+\end{lstlisting}

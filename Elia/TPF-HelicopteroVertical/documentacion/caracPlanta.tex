@@ -1,0 +1,94 @@
+\subsection{Descripción general de la planta}
+
+La planta desarrollada corresponde a un sistema mecatrónico cuyo movimiento dominante es una \textbf{traslación vertical}. El empuje aerodinámico generado por un motor brushless con hélice, accionado mediante un ESC, permite regular la altura de un cuerpo móvil guiado mecánicamente a lo largo de una estructura vertical.
+
+Si bien el movimiento principal es unidimensional, la configuración mecánica admite \textbf{pequeños desplazamientos angulares y laterales}. Las abrazaderas que vinculan el cuerpo móvil con las guías poseen cierta holgura deliberada, con el objetivo de evitar atascamientos debido a las deformaciones inherentes de las vigas metálicas. Esta holgura permite rotaciones del orden de algunos grados, generalmente inferiores a \(10^\circ\).
+
+Estas rotaciones se ven favorecidas por una distribución de masas no perfectamente simétrica, producto de la incorporación tardía de disipadores térmicos en el ESC, junto con el cableado y la cuerda de seguridad. Aunque estos movimientos no alteran significativamente la medición directa de altura, sí influyen en la dinámica global del sistema, dificultando su representación mediante modelos simplificados de cuerpo libre ideal.
+
+\subsection{Estructura física de la planta}
+
+\insertarfigura{img/Planta/planta.jpeg}{Vista general de la planta física.}{fig:plantaFisica}{0.5}
+
+La estructura fue diseñada específicamente para el desarrollo experimental de estrategias de control en altura. La versión inicial poseía aproximadamente \(80\,\text{cm}\) de altura total; posteriormente se extendió hasta \(165\,\text{cm}\), obteniéndose una altura útil de movimiento cercana a \(134\,\text{cm}\).
+
+La base consiste en una placa de madera de \(50 \times 45\,\text{cm}\) y aproximadamente \(2\,\text{cm}\) de espesor. En la parte superior se dispone un techo de \(50 \times 50\,\text{cm}\) y \(0{,}6\,\text{cm}\) de espesor. Ambas superficies se encuentran unidas mediante tres columnas verticales de madera.
+
+El guiado vertical se realiza mediante tres vigas metálicas paralelas de aproximadamente \(0{,}6\,\text{cm}\) de diámetro. Estas presentan deformaciones inherentes asociadas a su longitud y material. Se diseñaron soportes impresos en 3D para fijarlas a la base y al techo, ajustándose empíricamente para asegurar una separación uniforme.
+
+\subsection{Cuerpo móvil y rediseño estructural}
+
+El cuerpo móvil se desplaza mediante abrazaderas impresas en 3D cuyo diámetro interno es superior al de las vigas, permitiendo libertad angular controlada.
+
+\insertarfigura{img/Disenos/abrazadera.png}{Diseño 3D final de la abrazadera con agarre tipo ``muñeca''.}{fig:abrazadera}{0.5}
+
+En la primera versión del sistema, uno de los brazos estructurales se fracturó en la zona de unión con los soportes principales debido a un impacto. Las uniones presentaban transiciones geométricas abruptas que concentraban esfuerzos.
+
+En el rediseño se incorporaron \textbf{curvaturas suaves y transiciones tangenciales} entre elementos estructurales, mejorando la distribución de cargas. Asimismo, se implementó un esquema de acople tipo ``rompecabezas'' entre brazos y soportes, permitiendo apoyo mutuo antes de la fijación mediante tornillos y tuercas.
+
+\insertarfigura{img/Disenos/brazo.png}{Diseño 3D final del brazo estructural.}{fig:brazo}{0.5}
+
+\insertarfigura{img/Disenos/soporte-cuerpo.png}{Diseño 3D final de los soportes principales del cuerpo móvil (superior e inferior).}{fig:soporte-cuerpo}{0.5}
+
+La masa total del conjunto móvil, incluyendo motor, hélice, batería, ESC, cableado y elementos solidarios al movimiento, es aproximadamente:
+
+\[
+m = 0.360\ \text{kg}
+\]
+
+\subsection{Sistema de actuación}
+
+El sistema de propulsión está compuesto por:
+
+\begin{itemize}
+	\item Motor brushless A2212/5T, \(2450\,\text{KV}\) \cite{es_motor_a2212}.
+\end{itemize}
+
+\insertarfigura{img/Planta/motor-a2212-2450kv.jpg}{Motor brushless A2212/5T.}{fig:motor2212a}{0.5}
+
+\begin{itemize}
+	\item Hélice bipala de \(25\,\text{cm}\) de diámetro.
+\end{itemize}
+
+\insertarfigura{img/Planta/heliceMedida.jpeg}{Hélice utilizada en la planta.}{fig:HeliceM}{1}
+
+\begin{itemize}
+	\item ESC de \(40\,\text{A}\) \cite{ESC_40A}.
+\end{itemize}
+
+\insertarfigura{img/Planta/ESC-40A.jpg}{Controlador electrónico de velocidad (ESC) de 40A.}{fig:ESC40A}{0.5}
+
+\begin{itemize}
+	\item Batería LiPo 3S \cite{LiPo3S}, utilizada entre \(12.55\,\text{V}\) y \(11.55\,\text{V}\).
+\end{itemize}
+
+\insertarfigura{img/Planta/bateria2200.jpg}{Batería LiPo 3S utilizada.}{fig:bateria3s}{0.5}
+
+El empuje generado depende fuertemente del comando PWM aplicado y del voltaje instantáneo de la batería. Experimentalmente, alrededor del punto de hover y con batería completamente cargada, el empuje incremental puede aproximarse linealmente en un rango reducido, con una variación aproximada de \(1.2\,\text{g}_f\) por microsegundo de PWM. Fuera de dicho rango el comportamiento presenta saturaciones y marcada no linealidad.
+
+\insertarfigura{img/Planta/motor2212.png}{Características del motor A2212/5T \cite{es_motor_a2212}.}{fig:motor2212datasheet}{1}
+
+\subsection{Sistema de sensado}
+
+La medición de altura se realiza mediante un sensor óptico TFMini Plus \cite{TFminiPlusDatasheet}.
+
+\insertarfigura{img/Planta/TFminiPlus.png}{Sensor óptico de distancia TFMini Plus.}{fig:sensor}{1}
+
+La señal presenta resolución del orden del centímetro en el rango utilizado. Experimentalmente se observó una latencia global aproximada de \(200\,\text{ms}\) entre la aplicación de un cambio abrupto en la señal de control y la detección de una variación apreciable en la medición, resultado combinado de la dinámica mecánica, respuesta del actuador y características del sensado.
+
+\subsection{Variables y no idealidades}
+
+\begin{itemize}
+	\item Entrada: \(u(t) = \text{PWM} \in [1000,2000]\,\mu s\)
+	\item Salida: \(y(t) = z(t)\)
+\end{itemize}
+
+Principales no idealidades:
+
+\begin{itemize}
+	\item Saturación del actuador.
+	\item Dinámica no instantánea del conjunto motor–ESC–hélice.
+	\item Variabilidad paramétrica asociada a la caída de tensión de la batería.
+	\item Fricción no uniforme en las guías.
+	\item Vibraciones y pequeñas rotaciones inducidas por holguras estructurales y desbalance de masas.
+\end{itemize}

@@ -1,0 +1,138 @@
+\subsubsection{Fundamento del Estimador de Estados}
+
+En sistemas donde no es posible medir directamente todos los estados,
+se recurre a un estimador (observador) que reconstruye el vector de
+estados a partir de la señal de entrada y la salida medida.
+
+El sistema dinámico discreto se describe mediante las ecuaciones \ref{eq:din_estado} y \ref{eq:din_salida}.
+
+
+El estimador de Luenberger discreto se define como:
+
+\[
+\hat{x}_{k+1} = A\hat{x}_k + B u_k + L (y_k - \hat{y}_k)
+\]
+
+donde:
+
+\[
+\hat{y}_k = C\hat{x}_k
+\]
+
+y \(L\) es la matriz de ganancia del estimador.
+
+\subsubsection{Dinámica del Error de Estimación}
+
+Definiendo el error de estimación como:
+
+\[
+e_k = x_k - \hat{x}_k
+\]
+
+se obtiene la dinámica:
+
+\[
+e_{k+1} = (A - LC)e_k
+\]
+
+Por lo tanto, la convergencia del estimador depende únicamente de los
+autovalores de la matriz \(A - LC\).
+
+El objetivo del diseño consiste en ubicar arbitrariamente los polos del
+observador:
+
+\[
+\lambda(A - LC) = \{p_{obs,1}, p_{obs,2}, \dots, p_{obs,n}\}
+\]
+
+\subsubsection{Selección de Polos del Observador}
+
+Se seleccionaron los siguientes polos para el estimador:
+
+\[
+\{p_{obs}\} =
+\left\{
+0.8 + 0.25i,\;
+0.8 - 0.25i,\;
+0.9
+\right\}
+\]
+
+Los criterios adoptados fueron:
+
+\begin{itemize}
+	\item Garantizar estabilidad discreta ($|p_{obs,i}|<1$).
+	\item Asegurar una convergencia más rápida que la dinámica del
+	sistema en lazo cerrado.
+	\item Introducir amortiguamiento adecuado en el error de estimación.
+\end{itemize}
+
+\subsubsection{Cálculo de la Ganancia del Observador}
+
+La ganancia \(L\) fue obtenida mediante el método dual de Ackermann,
+utilizando la función \texttt{acker()} aplicada a la matriz transpuesta:
+
+\[
+L = \texttt{acker}(A^T, C^T, p_{obs})^T
+\]
+
+Para la estructura implementada, se obtuvieron las siguientes ganancias:
+
+\[
+L_{\text{actual}} =
+\begin{bmatrix}
+	126.8411 \\
+	172.0621 \\
+	45.1301
+\end{bmatrix}
+\]
+
+y para la variante predictor:
+
+\[
+L_{\text{predictor}} =
+\begin{bmatrix}
+	167.3535 \\
+	253.6822 \\
+	86.0310
+\end{bmatrix}
+\]
+
+\subsubsection{Verificación de Polos}
+
+Se verificó que los autovalores de la matriz \(A - LC\) coinciden con
+los polos deseados:
+
+\[
+\lambda(A - LC) =
+\left\{
+0.8 + 0.25i,\;
+0.8 - 0.25i,\;
+0.9
+\right\}
+\]
+
+confirmando la correcta ubicación arbitraria de polos del estimador.
+
+\subsubsection{Análisis del Comportamiento del Estimador}
+
+La magnitud relativamente elevada de las ganancias del observador se
+debe a la necesidad de forzar una convergencia rápida del error de
+estimación. Polos más cercanos al origen implican mayores ganancias en
+la matriz \(L\), acelerando la dinámica del error:
+
+\[
+e_k \sim p_{obs}^k
+\]
+
+Se observa que el estimador converge rápidamente hacia el estado real,
+permitiendo su utilización en esquemas de control por realimentación
+de estados estimados.
+
+\subsubsection{Conclusión}
+
+El estimador diseñado cumple con los requisitos de estabilidad y
+convergencia rápida. La ubicación arbitraria de los polos del
+observador garantiza que el error de estimación decae exponencialmente,
+validando la implementación del estimador de Luenberger en el dominio
+discreto.

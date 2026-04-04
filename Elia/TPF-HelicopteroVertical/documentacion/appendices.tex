@@ -1,0 +1,54 @@
+\onecolumn
+\appendices
+
+\section{Repositorios y evidencias}
+
+Con el objetivo de garantizar la trazabilidad, reproducibilidad y transparencia
+del desarrollo del trabajo práctico, se pone a disposición el repositorio
+completo del proyecto, incluyendo:
+
+\begin{itemize}
+	\item Código fuente de todos los controladores implementados (PID, LQR, LQG, ubicación de polos, síntesis directa, etc.).
+	\item Versiones preliminares y pruebas intermedias.
+	\item Scripts de identificación en MATLAB.
+	\item Firmware desarrollado para PSoC 5LP.
+	\item Archivos históricos que permiten observar la evolución del diseño.
+	\item Commits detallados que documentan cada etapa del proceso.
+\end{itemize}
+
+El repositorio completo del proyecto puede consultarse en:
+
+\begin{center}
+	\href{https://github.com/simplementeUnPorito/auto}{Repositorio oficial del proyecto (GitHub)}
+\end{center}
+
+La carpeta raíz del repositorio corresponde al proyecto presentado.
+El historial completo de commits permite verificar las fechas de desarrollo,
+las modificaciones realizadas y la progresión iterativa del trabajo.
+La versión final disponible al momento de la entrega fue utilizada para
+generar las figuras, simulaciones y resultados incluidos en este informe.
+
+Adicionalmente, se proporciona un video demostrativo donde se puede
+visualizar el funcionamiento práctico de los distintos controladores
+implementados y las prácticas desarrolladas:
+
+\begin{center}
+	\href{https://onedrive.live.com/?qt=allmyphotos&photosData=%2Fshare%2F316EBACFC0E21183%21s88f2c40124b1443f88bc3d653bf2f29f%3Fithint%3Dvideo%26e%3DVpVrXT%26migratedtospo%3Dtrue&cid=316EBACFC0E21183&id=316EBACFC0E21183%21s88f2c40124b1443f88bc3d653bf2f29f&redeem=aHR0cHM6Ly8xZHJ2Lm1zL3YvYy8zMTZlYmFjZmMwZTIxMTgzL0lRQUJ4UEtJc1NRX1JJaThQV1U3OHZLZkFVdmNhbVpaQ2lFRHZWa1RYLURrX3hZP2U9VnBWclhU&v=photos}{Video demostrativo de las implementaciones}
+\end{center}
+
+En dicho material audiovisual se evidencia la implementación física
+de los algoritmos desarrollados y el comportamiento dinámico real de la planta.
+
+\section{Códigos  MATLAB}
+\input{gui.tex}
+\input{sinstesis.tex}
+\input{integrador.tex}
+\input{LQR.tex}
+\input{estimarRuido.tex}
+\input{LQGi.tex}
+\section{Códigos en C}
+\input{codigoC.tex}
+\twocolumn
+\input{apenAvan.tex}
+\input{apenInc.tex}
+

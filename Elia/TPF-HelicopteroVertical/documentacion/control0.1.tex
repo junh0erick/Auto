@@ -1,0 +1,109 @@
+% ============================================================
+\subsection{Introducción}
+% ============================================================
+
+Los métodos clásicos de control se fundamentan en el análisis de sistemas lineales mediante funciones de transferencia y herramientas del dominio de la frecuencia y del plano complejo.
+
+En este enfoque, la dinámica del sistema se representa como:
+
+\[
+G(s)=\frac{Y(s)}{U(s)}
+\quad \text{o en tiempo discreto} \quad
+G(z)=\frac{Y(z)}{U(z)}
+\]
+
+El objetivo del diseño consiste en definir un controlador \(C\) tal que el lazo cerrado:
+
+\[
+G_{cl}=\frac{C G}{1+CG}
+\]
+
+cumpla simultáneamente:
+
+\begin{itemize}
+	\item Estabilidad.
+	\item Respuesta transitoria adecuada.
+	\item Error estacionario reducido.
+	\item Robustez frente a incertidumbres.
+\end{itemize}
+
+En este trabajo se implementaron y evaluaron las siguientes técnicas clásicas:
+
+\begin{itemize}
+	\item Controlador PID.
+	\item Diseño por Lugar de Raíces.
+	\item Diseño mediante Respuesta en Frecuencia (Bode).
+	\item Síntesis Directa (Truxal--Ragazzini).
+\end{itemize}
+
+% ============================================================
+\subsection{Modelo de la Planta}
+% ============================================================
+
+El diseño clásico parte de la función de transferencia discreta identificada:
+
+\[
+G(z) = \frac{
+	b_0 + b_1 z^{-1} + b_2 z^{-2} + b_3 z^{-3}
+}{
+	1 + a_1 z^{-1} + a_2 z^{-2} + a_3 z^{-3}
+}
+\]
+
+El tiempo de muestreo utilizado depende de la experiencia considerada, ya que los distintos controladores fueron desarrollados en paralelo por los miembros del grupo con diferentes enfoques de diseño.
+
+% ============================================================
+\subsection{Criterio general de estabilidad}
+% ============================================================
+
+Para sistemas discretos, la estabilidad en lazo cerrado requiere que todos los polos satisfagan:
+
+\[
+|z_i| < 1
+\]
+
+Este criterio será verificado en cada uno de los métodos desarrollados.
+
+% ============================================================
+\subsection{Controlador PID}
+% ============================================================
+
+\input{PID.tex}
+
+\balance
+\clearpage
+
+% ============================================================
+\subsection{Diseño por Lugar de Raíces}
+% ============================================================
+
+
+\input{RLOCUS.tex}
+
+\clearpage
+\balance
+% ============================================================
+\subsection{Diseño por Respuesta en Frecuencia}
+% ============================================================
+
+
+\input{BODE.tex}
+
+\balance
+\clearpage
+% ============================================================
+\subsection{Síntesis Directa \cite{Fadali2020}}
+% ============================================================
+
+
+\input{SinDirec.tex}
+
+% ============================================================
+\subsection{Comparación entre Métodos Clásicos}
+% ============================================================
+
+
+\input{ComparacionMClasic.tex}
+
+\balance
+\clearpage

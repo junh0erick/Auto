@@ -1,0 +1,134 @@
+
+Durante las etapas iniciales de diseño se intentó sintonizar un controlador PID utilizando la herramienta \texttt{PID Tuner} de MATLAB. Sin embargo, el desempeño obtenido no resultó adecuado para la planta bajo estudio, por lo que se decidió adoptar una formulación alternativa que permitiera un mayor control estructural sobre el comportamiento dinámico del sistema.
+
+En consecuencia, se implementó un controlador PID basado en la formulación propuesta por Åström, directamente en su versión discreta. Esta decisión permitió diseñar el controlador coherentemente con el tiempo de muestreo del sistema, evitando discretizaciones posteriores y manteniendo consistencia entre simulación e implementación embebida.
+
+El controlador opera en coordenadas relativas al punto de hover previamente estimado, es decir, la señal de control generada corresponde a una variación \(\Delta u\) respecto del equilibrio.
+
+% ============================================================
+\subsubsection{Formulación del PID de Åström \cite{PID-TESIS}}
+% ============================================================
+
+La estructura implementada separa explícitamente las acciones proporcional, integral y derivativa.
+
+La acción proporcional se define como:
+
+\[
+P(k) = K\big(b\,r(k) - y(k)\big)
+\]
+
+donde \(K\) es la ganancia proporcional y \(b\) pondera la contribución de la referencia en la acción proporcional. En este trabajo se adoptó deliberadamente \(b=1\) por simplicidad estructural, evitando introducir grados adicionales de libertad innecesarios.
+
+La acción derivativa se implementa mediante un filtro de primer orden:
+
+\[
+D(k) =
+\frac{T_d}{T_d + N h}\,D(k-1)
+-
+\frac{K T_d N}{T_d + N h}\big(y(k) - y(k-1)\big)
+\]
+
+donde \(T_d\) es la constante derivativa, \(N\) limita el ancho de banda del término derivativo y \(h\) es el período de muestreo.
+
+La inclusión del parámetro \(N\) resulta fundamental para evitar la amplificación excesiva del ruido de medición en altas frecuencias, fenómeno relevante dado que el sensor TFMini presenta cuantización del orden de centímetros.
+
+La acción integral se describe como:
+
+\[
+I(k) = I(k-1) + \frac{K h}{T_i}\,e(k)
+\]
+
+donde \(T_i\) es la constante integral y \(e(k)=r(k)-y(k)\) es el error de control.
+
+La señal de control total es:
+
+\[
+u(k) = P(k) + I(k) + D(k)
+\]
+
+% ============================================================
+\subsubsection{Antiwindup}
+% ============================================================
+
+La acción integral se encuentra condicionada mediante un esquema de antiwindup por integración condicional. El término integral se actualiza únicamente cuando la señal de control no se encuentra saturada, o cuando el error contribuye a desaturar el actuador.
+
+Este mecanismo evita acumulación indebida del estado integral y previene comportamientos abruptos ante saturaciones del PWM, mejorando la estabilidad práctica del sistema.
+
+% ============================================================
+\subsubsection{Criterios de sintonización}
+% ============================================================
+
+La sintonización se realizó de forma iterativa directamente sobre la estructura discreta del controlador, variando los parámetros en el siguiente orden:
+
+\begin{enumerate}
+	\item Ajuste de la ganancia proporcional \(K\) hasta aproximar el sistema al límite de estabilidad para obtener una respuesta rápida.
+	\item Incorporación y ajuste del término integral \(T_i\) para eliminar error estacionario sin introducir oscilaciones excesivas.
+	\item Incorporación del término derivativo \(T_d\) para mejorar amortiguamiento y reducir sobreimpulso.
+	\item Ajuste del parámetro \(N\) como compromiso entre efectividad de la acción derivativa y rechazo de ruido.
+\end{enumerate}
+
+Durante todo el proceso se monitoreó cuidadosamente el esfuerzo de control. Como restricción experimental de diseño se impuso que la variación de la señal PWM no excediera aproximadamente \(10\,\mu s\) por centímetro de incremento en la altura, garantizando que el actuador no ingresara en saturación ni se expusiera la planta a condiciones potencialmente dañinas.
+
+% ============================================================
+\subsubsection{Resultados}
+% ============================================================
+
+Los parámetros implementados fueron:
+
+\[
+K_p = 2.5, \quad
+T_i = 5, \quad
+T_d = 0.1, \quad
+N = 3
+\]
+
+Con un tiempo de muestreo $T_s = 1ms$.
+
+En la simulación del modelo lineal se obtuvo:
+
+\[
+\%OS_{\text{sim}} \approx 46\%, \quad
+t_r^{\text{sim}} = 0.397 \text{ s}
+\]
+
+En la implementación experimental se observaron los siguientes valores de sobreimpulso según la altura de referencia:
+
+\begin{itemize}
+	\item Para $57\,\text{cm}$: $\%OS = 28.07\%$
+	\item Para $78\,\text{cm}$: $\%OS = 11.54\%$
+	\item Para $90\,\text{cm}$: $\%OS \approx 0\%$
+\end{itemize}
+
+El tiempo de subida experimental fue:
+
+\[
+t_r^{\text{exp}} = 0.393 \text{ s}
+\]
+
+Se observa una coincidencia prácticamente exacta entre el tiempo de subida simulado y el experimental, lo cual valida la capacidad del modelo lineal para capturar la dinámica dominante del sistema.
+
+Por otra parte, el sobreimpulso experimental disminuye progresivamente a medida que aumenta la altura de operación. Este comportamiento se asocia a variaciones del punto de operación y a no linealidades no completamente capturadas por el modelo lineal identificado.
+
+\insertarfigura{img/PID/RstaPID.png}{Respuesta al escalón con el controlador PID.}{fig:rstaPID}{1}
+
+\insertarfigura{img/PID/EsfuerzoPID.png}{Esfuerzo de control con el PID implementado.}{fig:EsfPID}{1}
+
+\insertarfigura{img/PID/PID_Practico.png}
+{Implementación práctica del controlador PID.}
+{fig:PID_practica}{1}
+% ============================================================
+\subsubsection{Conclusiones sobre el método}
+% ============================================================
+
+Desde el punto de vista práctico, el controlador PID basado en la formulación de Åström demostró ser una herramienta sumamente eficaz para el control de la planta.
+
+Uno de los aspectos más destacables es la relativa simplicidad con la que puede obtenerse una respuesta dinámica deseada. A diferencia de otros enfoques que requieren un conocimiento detallado de la estructura interna del sistema, el PID permite alcanzar un comportamiento satisfactorio mediante ajuste iterativo de un número reducido de parámetros, sin necesidad de un modelado exhaustivo ni de una comprensión profunda de todos los fenómenos físicos involucrados.
+
+En este trabajo, aun considerando la presencia de dinámicas no modeladas, el PID logró reproducir con notable precisión el tiempo de subida predicho por el modelo y mantener estabilidad robusta en la implementación experimental.
+
+Las diferencias observadas en el sobreimpulso entre simulación y práctica pueden atribuirse principalmente a características no modeladas ya mencionadas con anterioridad. Sin embargo, incluso bajo estas condiciones, el comportamiento general del sistema se mantuvo cercano al previsto teóricamente.
+
+Asimismo, la inclusión del parámetro \(N\) en la acción derivativa permitió limitar la amplificación de ruido de alta frecuencia, resultando en un esfuerzo de control significativamente más limpio que el obtenido mediante otras metodologías analizadas más adelante. Este aspecto resulta particularmente atractivo en una gran variedad de casos reales.
+
+En síntesis, el controlador PID demostró ofrecer una solución de alta relación beneficio–complejidad: requiere bajo conocimiento estructural del sistema, es sencillo de implementar en hardware embebido y permite obtener un desempeño dinámico competitivo dentro del rango operativo seguro de la planta.
+\balance

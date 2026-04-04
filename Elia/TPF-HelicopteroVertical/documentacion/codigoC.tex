@@ -1,0 +1,2458 @@
+% ============================================================
+\section{Control App}
+\label{ap:control_app}
+
+\begin{lstlisting}[style=cfirmware, caption={Control App (control_app.h + control_app.c)}, label={lst:control_app}]
+/* =========================
+control_app.h
+========================= */
+#ifndef CONTROL_APP_H
+#define CONTROL_APP_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/* =========================================================
+1) ACTUADOR (PWM absoluto que sale por write_u callback)
+========================================================= */
+#ifndef CONTROL_SAT_MIN
+#define CONTROL_SAT_MIN (1000.0f)   /* us */
+#endif
+
+#ifndef CONTROL_SAT_MAX
+#define CONTROL_SAT_MAX (1750.0f)   /* us */
+#endif
+
+/* Offset default (fallback). El real se auto-calibra en runtime (g_u0_offset_us) */
+#ifndef CONTROL_U_OFFSET
+#define CONTROL_U_OFFSET (1350.0f)  /* us */
+#endif
+
+
+/* =========================================================
+2) REFERENCIAS (según modo)
+=========================================================
+- OPEN LOOP:
+si CONTROL_OL_REF_IS_DELTA=1 -> ref = deltau [us] relativo a u0
+si CONTROL_OL_REF_IS_DELTA=0 -> ref = PWM absoluto [us]
+- CLOSED LOOP:
+ref = altura física [cm]
+========================================================= */
+#ifndef CONTROL_OL_REF_IS_DELTA
+#define CONTROL_OL_REF_IS_DELTA (1u)
+#endif
+
+/* Usados SOLO si CONTROL_OL_REF_IS_DELTA = 0 (PWM absoluto) */
+#ifndef CONTROL_OL_REF_MIN
+#define CONTROL_OL_REF_MIN (1000.0f) /* us */
+#endif
+#ifndef CONTROL_OL_REF_MAX
+#define CONTROL_OL_REF_MAX (1700.0f) /* us */
+#endif
+
+/* Closed-loop (altura física) */
+#ifndef CONTROL_CL_REF_MIN
+#define CONTROL_CL_REF_MIN (12.0f)   /* cm */
+#endif
+#ifndef CONTROL_CL_REF_MAX
+#define CONTROL_CL_REF_MAX (300.0f)  /* cm */
+#endif
+
+
+/* =========================================================
+3) STOP SUAVE (descenso controlado)
+=========================================================
+- TARGET es deltau relativo (cmd), NO PWM absoluto.
+- CUTOFF es PWM absoluto final de corte.
+========================================================= */
+#ifndef CONTROL_DESC_TARGET_CMD_US
+#define CONTROL_DESC_TARGET_CMD_US   (-50.0f) /* deltau [us] relativo a u0 */
+#endif
+
+#ifndef CONTROL_DESC_CUTOFF_US
+#define CONTROL_DESC_CUTOFF_US       (1000.0f) /* PWM absoluto [us] */
+#endif
+
+#ifndef CONTROL_DESC_MIN_Y_CM
+#define CONTROL_DESC_MIN_Y_CM        (12.0f)   /* cm */
+#endif
+
+#ifndef CONTROL_DESC_STEP_US
+#define CONTROL_DESC_STEP_US         (5.0f)    /* deltau [us] */
+#endif
+
+#ifndef CONTROL_DESC_DELAY_US
+#define CONTROL_DESC_DELAY_US        (20000u)  /* 20ms -> 50Hz */
+#endif
+
+#ifndef CONTROL_DESC_MAX_ITERS
+#define CONTROL_DESC_MAX_ITERS       (600u)    /* 600*20ms = 12s */
+#endif
+
+#ifndef CONTROL_DESC_MIN_HITS
+#define CONTROL_DESC_MIN_HITS        (2u)
+#endif
+
+#ifndef CONTROL_DESC_HOLD_MS
+#define CONTROL_DESC_HOLD_MS         (500u)    /* ms */
+#endif
+
+#ifndef CONTROL_DESC_HOLD_POLL_US
+#define CONTROL_DESC_HOLD_POLL_US    (20000u)  /* us */
+#endif
+
+
+/* =========================================================
+4) AUTO-CALIBRACIÓN u0 (RÁPIDA)
+=========================================================
+Objetivo: detectar el primer PWM (u_phy) donde hay movimiento real.
+
+Nota: estos parámetros suponen fs_calib = 1000 Hz.
+Si fs cambia, escalá HOLD/MIN_HITS/MAX_SAMPLES proporcionalmente.
+========================================================= */
+#ifndef CONTROL_ENABLE_AUTOCAL
+#define CONTROL_ENABLE_AUTOCAL (1u)
+#endif
+
+/* Barrido PWM absoluto durante la rampa */
+#ifndef CONTROL_CALIB_START_US
+#define CONTROL_CALIB_START_US (1250.0f) /* us */
+#endif
+
+#ifndef CONTROL_CALIB_STEP_US
+#define CONTROL_CALIB_STEP_US  (5.0f)    /* us por nivel (rápido) */
+#endif
+
+#ifndef CONTROL_CALIB_MAX_US
+#define CONTROL_CALIB_MAX_US   (1500.0f) /* us */
+#endif
+
+/* Nivel: cuántas muestras se mantiene cada PWM antes de subir */
+#ifndef CONTROL_CALIB_HOLD_SAMPLES
+#define CONTROL_CALIB_HOLD_SAMPLES (200u) /* 120 ms por nivel (rápido pero usable) */
+#endif
+
+/* Detección de movimiento: |y - y0| >= DY durante MIN_HITS consecutivos */
+#ifndef CONTROL_CALIB_DY_CM
+#define CONTROL_CALIB_DY_CM    (2.0f)    /* cm (rápido) */
+#endif
+
+#ifndef CONTROL_CALIB_MIN_HITS
+#define CONTROL_CALIB_MIN_HITS (20u)     /* 20 ms consecutivos */
+#endif
+
+/* Tiempo máximo total de calibración (en muestras) */
+#ifndef CONTROL_CALIB_MAX_SAMPLES
+#define CONTROL_CALIB_MAX_SAMPLES (12000u) /* 12 s (rápido, pero no se corta enseguida) */
+#endif
+
+/* Post-move: mantener u0 detectado un rato y luego soltar a deltau=0 */
+#ifndef CONTROL_CALIB_POSTMOVE_MS
+#define CONTROL_CALIB_POSTMOVE_MS (500u) /* ms */
+#endif
+
+
+/* =========================================================
+5) ESTABILIZACIÓN POST-CALIB (SETTLE)
+=========================================================
+Dy pequeño por N muestras => estable.
+========================================================= */
+#ifndef CONTROL_U0_SETTLE_SAMPLES
+#define CONTROL_U0_SETTLE_SAMPLES (200u) /* 200 ms estable */
+#endif
+
+#ifndef CONTROL_U0_SETTLE_DY_CM
+#define CONTROL_U0_SETTLE_DY_CM   (0.4f) /* cm */
+#endif
+
+
+/* =========================================================
+6) TF (IIR) - orden máximo soportado por el paquete TF
+========================================================= */
+#ifndef CONTROL_TF_MAX_ORDER
+#define CONTROL_TF_MAX_ORDER (10u) /* b0..b10 / a0..a10 */
+#endif
+
+
+/* =========================================================
+7) Callbacks IO
+========================================================= */
+typedef void (*control_write_u_fn_t)(float u_phy);
+
+/* Corre DENTRO del ISR de muestreo.
+Debe ser ultraliviano y terminar llamando:
+control_sample_isr_push(y);
+*/
+typedef void (*control_sample_isr_fn_t)(void);
+
+
+/* =========================================================
+8) Variables ISR -> main
+========================================================= */
+extern volatile float   control_last_y;
+extern volatile uint8_t control_sample_pending;
+extern volatile float   control_ref_v;
+
+
+/* =========================================================
+9) API
+========================================================= */
+void control_register_io(control_sample_isr_fn_t sample_isr,
+control_write_u_fn_t    write_u);
+
+void control_on_sample_isr(void);
+void control_sample_isr_push(float y);
+
+void  control_set_reference(float r);
+float control_get_reference(void);
+
+void  control_set_sample_time(float Ts);
+float control_get_sample_time(void);
+
+/* START: inicia control + dispara autocalibración (si enabled) */
+void  control_start(float ref0);
+
+/* Stop suave: rampa hacia target y corta */
+bool  control_stop_suave_step(void);
+
+/* PAQUETE FIJO 25 floats:
+TF:
+c[0..10]  = b0..b10
+c[11..21] = a0..a10
+c[22]     = order (0..10)
+c[23]     = N
+c[24]     = FsHz
+SS:
+c[0..22]  = matrices/ganancias
+c[23]     = N
+c[24]     = FsHz
+*/
+void  control_apply_tf(const float* c, uint16_t n);
+void  control_apply_ss(const float* c, uint16_t n);
+
+void  control_step(void);
+void  control_force_min(void);
+
+/* Debug: leer u0 runtime */
+float control_get_u0_offset_us(void);
+
+/* Estado de autocal u0 */
+bool control_is_calibrating(void);
+bool control_u0_is_valid(void);
+
+#endif /* CONTROL_APP_H */
+
+/* =========================
+control_app.c
+(PAQUETE FIJO 25 floats)
+=========================
+Meta SIEMPRE al final:
+c[23] = N
+c[24] = FsHz
+TF además usa:
+c[22] = order (0..10)
+*/
+
+#include "control_app.h"
+
+#include "project.h"
+#include "uartp_sw.h"
+#include "arm_math.h"
+#include <string.h>
+
+/* =======================
+Defaults de estabilización post-calib (si no están en .h)
+======================= */
+#ifndef CONTROL_U0_SETTLE_SAMPLES
+#define CONTROL_U0_SETTLE_SAMPLES (50u)
+#endif
+#ifndef CONTROL_U0_SETTLE_DY_CM
+#define CONTROL_U0_SETTLE_DY_CM   (0.5f)
+#endif
+
+/* =======================
+Variables ISR -> main
+======================= */
+volatile float   control_last_y = 0.0f;
+volatile uint8_t control_sample_pending = 0u;
+volatile float   control_ref_v = 0.0f;
+
+/* =======================
+IO callbacks
+======================= */
+static control_sample_isr_fn_t s_sample_isr_cb = 0;
+static control_write_u_fn_t    s_write_u_cb    = 0;
+
+/* =======================
+Estado general
+======================= */
+static float g_ref = 0.0f;
+static float g_Ts  = 1.0f;
+
+/* Interno: deltau (us) */
+static float g_u_cmd = 0.0f;  /* comando interno (deltau) */
+static float g_u_out = 0.0f;  /* físico (PWM us) post offset+sat */
+
+/* integrador */
+static float g_vint  = 0.0f;
+
+/* Offset runtime (u0). Se calcula en calibración o cae al default */
+static float g_u0_offset_us = CONTROL_U_OFFSET;
+
+float control_get_u0_offset_us(void)
+{
+	return g_u0_offset_us;
+}
+
+/* =======================
+Sesión de control
+======================= */
+static uint8_t g_session_active = 0u; /* 0=parado, 1=en sesión */
+static uint8_t g_u0_valid       = 0u; /* 0=pendiente calibrar, 1=u0 fijo en esta sesión */
+static uint8_t g_first_start = 1u;
+
+/* =======================
+TF (IIR DF2T) hasta orden 10
+======================= */
+static float tf_b[CONTROL_TF_MAX_ORDER + 1u] = {0}; /* b0..b10 */
+static float tf_a[CONTROL_TF_MAX_ORDER + 1u] = {0}; /* a0..a10 */
+static float tf_w[CONTROL_TF_MAX_ORDER]      = {0}; /* w0..w9 (usa solo [0..order-1]) */
+static uint8  tf_order = 0u;                         /* orden efectivo 0..10 */
+
+/* =======================
+SS (3 estados)
+======================= */
+static float ss_A[9] = {0};   /* fila-major 3x3 */
+static float ss_B[3] = {0};   /* 3x1 */
+static float ss_C[3] = {0};   /* 1x3 */
+static float ss_D    = 0.0f;
+static float ss_L[3] = {0};   /* 3x1 */
+static float ss_K[3] = {0};   /* 1x3 */
+static float ss_Kx   = 0.0f;  /* Ki (modo I) o Kr (modo NOI) */
+
+static float xhat[3] = {0.0f, 0.0f, 0.0f};  /* posterior */
+static float zhat[3] = {0.0f, 0.0f, 0.0f};  /* prior (para ACT) */
+
+/* =======================
+Auto-calibración u0 (estado)
+======================= */
+#if CONTROL_ENABLE_AUTOCAL
+typedef enum {
+	CALIB_IDLE = 0,
+	CALIB_RAMP,
+	CALIB_POSTMOVE,
+	CALIB_SETTLE,
+	CALIB_DONE,
+	CALIB_FAIL
+} calib_state_t;
+
+static calib_state_t g_calib_state   = CALIB_IDLE;
+
+/* Calibración por niveles */
+static float    g_calib_u_phy         = CONTROL_CALIB_START_US;
+static float    g_calib_y_level0      = 0.0f;
+static uint16_t g_calib_hits          = 0u;
+static uint16_t g_calib_level_samples = 0u;
+static uint32_t g_calib_total_samples = 0u;
+static uint16_t g_postmove_cnt   = 0u;
+static uint16_t g_postmove_need  = 0u;
+static float    g_postmove_u_phy = 0.0f;
+
+
+/* Estabilización post-calib */
+static float    g_settle_y_prev       = 0.0f;
+static uint16_t g_settle_stable_cnt   = 0u;
+static uint8_t  g_settle_first        = 1u;
+#endif
+
+
+static volatile uint8_t g_stop_busy      = 0u;
+static volatile uint8_t g_start_queued   = 0u;
+static volatile float   g_start_ref_q    = 0.0f;
+
+/* =======================
+Helpers
+======================= */
+
+static inline uint16_t samples_from_ms(uint16_t ms)
+{
+	float Ts = g_Ts;
+	if (!(Ts > 0.0f)) Ts = 1.0f;
+	
+	float fs = 1.0f / Ts;
+	float n  = fs * ((float)ms / 1000.0f);
+	
+	if (n < 1.0f) n = 1.0f;
+	if (n > 65535.0f) n = 65535.0f;
+	
+	return (uint16_t)(n + 0.5f);
+}
+
+
+static inline uint16_t u16_from_float(float x)
+{
+	if (x <= 0.0f) return 0u;
+	if (x >= 65535.0f) return 65535u;
+	return (uint16_t)(x + 0.5f);
+}
+
+static inline uint8 tf_order_from_float(float x)
+{
+	int32_t o = (int32_t)(x + 0.5f);
+	if (o < 0) o = 0;
+	if (o > (int32_t)CONTROL_TF_MAX_ORDER) o = (int32_t)CONTROL_TF_MAX_ORDER;
+	return (uint8)o;
+}
+
+static inline float dot3_cmsis(const float a[3], const float b[3])
+{
+	float out = 0.0f;
+	arm_dot_prod_f32((float32_t*)a, (float32_t*)b, 3u, (float32_t*)&out);
+	return out;
+}
+
+static inline float ss_yhat_from_xu(const float x[3], float u_cmd)
+{
+	return dot3_cmsis(ss_C, x) + ss_D * u_cmd;
+}
+
+static inline void ss_predict_from_xu(const float x[3], float u_cmd, float z[3])
+{
+	arm_dot_prod_f32((float32_t*)&ss_A[0], (float32_t*)x, 3u, (float32_t*)&z[0]);
+	z[0] += ss_B[0] * u_cmd;
+	
+	arm_dot_prod_f32((float32_t*)&ss_A[3], (float32_t*)x, 3u, (float32_t*)&z[1]);
+	z[1] += ss_B[1] * u_cmd;
+	
+	arm_dot_prod_f32((float32_t*)&ss_A[6], (float32_t*)x, 3u, (float32_t*)&z[2]);
+	z[2] += ss_B[2] * u_cmd;
+}
+
+static inline float satf(float u, float umin, float umax)
+{
+	if (u > umax) return umax;
+	if (u < umin) return umin;
+	return u;
+}
+
+static inline uint8 ss_mode_has_integrator(uint8 impl)
+{
+	return (impl == UARTP_IMPL_SS_PRED_I) || (impl == UARTP_IMPL_SS_ACT_I);
+}
+
+static inline float ss_Kr_eff(void)
+{
+	return ss_mode_has_integrator((uint8)UARTP_Impl) ? 0.0f : ss_Kx;
+}
+
+static inline float ss_Ki_eff(void)
+{
+	return ss_mode_has_integrator((uint8)UARTP_Impl) ? ss_Kx : 0.0f;
+}
+
+/* Conversión: PWM físico (us) -> deltau (us) */
+static inline float ucmd_from_uphy(float u_phy)
+{
+	return (u_phy - g_u0_offset_us);
+}
+
+/* Conversión: deltau (us) -> PWM físico (us) */
+static inline float uphy_from_ucmd(float u_cmd)
+{
+	return (u_cmd + g_u0_offset_us);
+}
+
+/* Rango deltau permitido (dinámico) */
+static inline float cmd_min_dyn(void) { return (CONTROL_SAT_MIN - g_u0_offset_us); }
+static inline float cmd_max_dyn(void) { return (CONTROL_SAT_MAX - g_u0_offset_us); }
+
+static inline float y_rel_from_y(float y_phys) { return (y_phys - (float)CONTROL_DESC_MIN_Y_CM); }
+static inline float r_rel_from_r(float r_phys) { return (r_phys - (float)CONTROL_DESC_MIN_Y_CM); }
+
+/* --- clamp de referencia según modo --- */
+static inline float clamp_ref(float r)
+{
+	if (UARTP_Impl == UARTP_IMPL_OPENLOOP)
+	{
+		#if CONTROL_OL_REF_IS_DELTA
+		return satf(r, cmd_min_dyn(), cmd_max_dyn());
+		#else
+		if (r < CONTROL_OL_REF_MIN) return CONTROL_OL_REF_MIN;
+		if (r > CONTROL_OL_REF_MAX) return CONTROL_OL_REF_MAX;
+		return r;
+		#endif
+	}
+	else
+	{
+		if (r < CONTROL_CL_REF_MIN) return CONTROL_CL_REF_MIN;
+		if (r > CONTROL_CL_REF_MAX) return CONTROL_CL_REF_MAX;
+		return r;
+	}
+}
+
+/* =======================
+write_u (único actuador)
+Entrada: deltau (us)
+======================= */
+static inline void write_u(float u_cmd)
+{
+	u_cmd = satf(u_cmd, cmd_min_dyn(), cmd_max_dyn());
+	g_u_cmd = u_cmd;
+	
+	float u_phy = uphy_from_ucmd(u_cmd);
+	u_phy = satf(u_phy, CONTROL_SAT_MIN, CONTROL_SAT_MAX);
+	g_u_out = u_phy;
+	
+	if (s_write_u_cb) s_write_u_cb(u_phy);
+}
+
+void control_force_min(void)
+{
+	write_u(ucmd_from_uphy(CONTROL_SAT_MIN));
+}
+
+/* =======================
+Observadores
+======================= */
+static inline void ss_observer_pred_step(float y, float u_prev_cmd, float u_k_cmd)
+{
+	const float innov = y - ss_yhat_from_xu(xhat, u_prev_cmd);
+	
+	float z[3];
+	ss_predict_from_xu(xhat, u_k_cmd, z);
+	
+	float Linv[3];
+	arm_scale_f32((float32_t*)ss_L, innov, (float32_t*)Linv, 3u);
+	
+	arm_add_f32((float32_t*)z, (float32_t*)Linv, (float32_t*)xhat, 3u);
+}
+
+static inline void ss_observer_act_correct(float y, float u_prev_cmd)
+{
+	const float innov = y - ss_yhat_from_xu(zhat, u_prev_cmd);
+	
+	float Linv[3];
+	arm_scale_f32((float32_t*)ss_L, innov, (float32_t*)Linv, 3u);
+	
+	arm_add_f32((float32_t*)zhat, (float32_t*)Linv, (float32_t*)xhat, 3u);
+}
+
+static inline void ss_observer_act_predict(float u_k_cmd)
+{
+	ss_predict_from_xu(xhat, u_k_cmd, zhat);
+}
+
+/* =======================
+TF DF2T step (usa SOLO el orden efectivo)
+======================= */
+static inline float tf_step(float x)
+{
+	const uint8 ord = tf_order;
+	
+	if (ord == 0u) {
+		return tf_b[0] * x;
+	}
+	
+	float y = tf_b[0] * x + tf_w[0];
+	
+	for (uint8 i = 0u; i < (uint8)(ord - 1u); i++) {
+		tf_w[i] = tf_w[i + 1u] + tf_b[i + 1u] * x - tf_a[i + 1u] * y;
+	}
+	
+	tf_w[ord - 1u] = tf_b[ord] * x - tf_a[ord] * y;
+	
+	return y;
+}
+
+/* =======================
+IO / ISR glue
+======================= */
+void control_register_io(control_sample_isr_fn_t sample_isr,
+control_write_u_fn_t    write_u_fn)
+{
+	s_sample_isr_cb = sample_isr;
+	s_write_u_cb    = write_u_fn;
+}
+
+void control_on_sample_isr(void)
+{
+	if (s_sample_isr_cb) {
+		s_sample_isr_cb();
+	} else {
+		control_sample_pending = 1u;
+	}
+}
+
+void control_sample_isr_push(float y)
+{
+	control_last_y = y;
+	control_sample_pending = 1u;
+}
+
+/* =======================
+Referencia y Ts
+======================= */
+void control_set_reference(float r)
+{
+	uint8 intr = CyEnterCriticalSection();
+	g_ref = r;
+	control_ref_v = r;
+	CyExitCriticalSection(intr);
+}
+
+float control_get_reference(void)
+{
+	return g_ref;
+}
+
+void control_set_sample_time(float Ts)
+{
+	if (Ts <= 0.0f) Ts = 1.0f;
+	g_Ts = Ts;
+}
+
+float control_get_sample_time(void)
+{
+	return g_Ts;
+}
+
+/* =======================
+START: 1x por sesión
+======================= */
+void control_start(float ref0)
+{
+	
+	control_set_reference(ref0);
+	
+	/* ===== FIX RÁPIDO: limpiar estado en el primer START ===== */
+	if (g_first_start)
+	{
+		g_first_start   = 0u;
+		
+		/* reset duro de estados que pueden quedar "a medio camino" */
+		g_session_active = 0u;
+		g_stop_busy      = 0u;
+		g_start_queued   = 0u;
+		
+		#if CONTROL_ENABLE_AUTOCAL
+		g_calib_state = CALIB_IDLE;
+		#endif
+		g_u0_valid = 0u;                 /* fuerza calibración */
+		g_u0_offset_us = CONTROL_U_OFFSET;
+		
+		g_u_cmd = 0.0f;
+		g_u_out = CONTROL_SAT_MIN;       /* o CONTROL_U_OFFSET si preferís */
+		g_vint  = 0.0f;
+		
+		xhat[0]=0; xhat[1]=0; xhat[2]=0;
+		zhat[0]=0; zhat[1]=0; zhat[2]=0;
+		memset(tf_w, 0, sizeof(tf_w));
+	}
+	/* ======================================================== */
+	
+	#if CONTROL_ENABLE_AUTOCAL
+	if (g_stop_busy)
+	{
+		g_start_queued = 1u;
+		g_start_ref_q  = ref0;
+		return;
+	}
+	#endif
+	
+	if (g_session_active) return;
+	g_session_active = 1u;
+	
+	
+	xhat[0] = 0.0f; xhat[1] = 0.0f; xhat[2] = 0.0f;
+	zhat[0] = 0.0f; zhat[1] = 0.0f; zhat[2] = 0.0f;
+	
+	memset(tf_w, 0, sizeof(tf_w));
+	g_vint = 0.0f;
+	
+	#if CONTROL_ENABLE_AUTOCAL
+	if (!g_u0_valid)
+	{
+		g_calib_state          = CALIB_RAMP;
+		g_calib_u_phy          = CONTROL_CALIB_START_US;
+		g_calib_hits           = 0u;
+		g_calib_level_samples  = 0u;
+		g_calib_total_samples  = 0u;
+		g_calib_y_level0       = 0.0f;
+		
+		g_u0_offset_us = CONTROL_U_OFFSET;
+		
+		write_u(ucmd_from_uphy(g_calib_u_phy));
+		return;
+	}
+	#endif
+	
+	/* bumpless desde u actual */
+	{
+		float u0_cmd = ucmd_from_uphy(g_u_out);
+		
+		if (UARTP_Impl != UARTP_IMPL_TF && UARTP_Impl != UARTP_IMPL_OPENLOOP) {
+			float Ki = ss_Ki_eff();
+			if (Ki != 0.0f) g_vint = -u0_cmd / Ki;
+		}
+		
+		write_u(u0_cmd);
+		
+		if (UARTP_Impl != UARTP_IMPL_TF && UARTP_Impl != UARTP_IMPL_OPENLOOP) {
+			ss_predict_from_xu(xhat, u0_cmd, zhat);
+		}
+	}
+}
+
+/* =======================
+STOP suave: termina sesión
+(FIX: target es deltau directo, no PWM absoluto)
+======================= */
+bool control_stop_suave_step(void)
+{
+	g_stop_busy = 1u;
+	
+	/* TARGET es deltau relativo (cmd) */
+	float u_target_cmd = (float)CONTROL_DESC_TARGET_CMD_US;
+	u_target_cmd = satf(u_target_cmd, cmd_min_dyn(), cmd_max_dyn());
+	
+	for (uint32_t i = 0u; i < (uint32_t)CONTROL_DESC_MAX_ITERS; i++)
+	{
+		float u = g_u_cmd;
+		
+		if (u < u_target_cmd) {
+			break;
+		} else if (u > u_target_cmd) {
+			u -= CONTROL_DESC_STEP_US;
+			if (u < u_target_cmd) u = u_target_cmd;
+			write_u(u);
+		} else {
+			break;
+		}
+		
+		CyDelayUs(CONTROL_DESC_DELAY_US);
+	}
+	
+	write_u(u_target_cmd);
+	
+	uint32_t hold_loops = (CONTROL_DESC_HOLD_MS * 1000u) / CONTROL_DESC_HOLD_POLL_US;
+	if (hold_loops < 1u) hold_loops = 1u;
+	
+	for (uint32_t k = 0u; k < hold_loops; k++) {
+		write_u(u_target_cmd);
+		CyDelayUs(CONTROL_DESC_HOLD_POLL_US);
+	}
+	
+	/* CUTOFF es PWM absoluto (us) -> convertir a deltau */
+	write_u(ucmd_from_uphy((float)CONTROL_DESC_CUTOFF_US));
+	
+	g_session_active = 0u;
+	g_u0_valid       = 0u;
+	#if CONTROL_ENABLE_AUTOCAL
+	g_calib_state    = CALIB_IDLE;
+	#endif
+	
+	g_stop_busy = 0u;
+	
+	#if CONTROL_ENABLE_AUTOCAL
+	/* Si llegó un START durante el STOP, ejecutalo ahora */
+	if (g_start_queued)
+	{
+		float r0 = g_start_ref_q;
+		g_start_queued = 0u;
+		control_start(r0);
+	}
+	#endif
+	
+	return true;
+	
+}
+
+/* =======================
+Carga coeficientes (PAQUETE FIJO 25 floats)
+======================= */
+
+void control_apply_tf(const float* c, uint16_t n)
+{
+	if (!c || n < 25u) return;
+	
+	for (uint8 i = 0u; i < (uint8)(CONTROL_TF_MAX_ORDER + 1u); i++) {
+		tf_b[i] = c[i];
+		tf_a[i] = c[i + 11u];
+	}
+	
+	tf_order = tf_order_from_float(c[22]);
+	
+	for (uint8 i = (uint8)(tf_order + 1u); i < (uint8)(CONTROL_TF_MAX_ORDER + 1u); i++) {
+		tf_b[i] = 0.0f;
+		tf_a[i] = 0.0f;
+	}
+	
+	if (tf_a[0] == 0.0f) {
+		tf_a[0] = 1.0f;
+	}
+	if (tf_a[0] != 1.0f) {
+		const float a0 = tf_a[0];
+		for (uint8 i = 0u; i <= tf_order; i++) {
+			tf_b[i] /= a0;
+		}
+		for (uint8 i = 1u; i <= tf_order; i++) {
+			tf_a[i] /= a0;
+		}
+		tf_a[0] = 1.0f;
+	}
+	
+	UARTP_StreamN    = u16_from_float(c[23]);
+	UARTP_StreamFsHz = c[24];
+	
+	memset(tf_w, 0, sizeof(tf_w));
+}
+
+void control_apply_ss(const float* c, uint16_t n)
+{
+	if (!c || n < 25u) return;
+	
+	ss_A[0] = c[0]; ss_A[1] = c[1]; ss_A[2] = c[2];
+	ss_A[3] = c[3]; ss_A[4] = c[4]; ss_A[5] = c[5];
+	ss_A[6] = c[6]; ss_A[7] = c[7]; ss_A[8] = c[8];
+	
+	ss_B[0] = c[9];  ss_B[1] = c[10]; ss_B[2] = c[11];
+	
+	ss_C[0] = c[12]; ss_C[1] = c[13]; ss_C[2] = c[14];
+	
+	ss_D    = c[15];
+	
+	ss_L[0] = c[16]; ss_L[1] = c[17]; ss_L[2] = c[18];
+	
+	ss_K[0] = c[19]; ss_K[1] = c[20]; ss_K[2] = c[21];
+	
+	ss_Kx   = c[22];
+	
+	UARTP_StreamN    = u16_from_float(c[23]);
+	UARTP_StreamFsHz = c[24];
+	
+	xhat[0] = 0.0f; xhat[1] = 0.0f; xhat[2] = 0.0f;
+	zhat[0] = 0.0f; zhat[1] = 0.0f; zhat[2] = 0.0f;
+	g_vint  = 0.0f;
+}
+
+
+
+bool control_is_calibrating(void)
+{
+	#if CONTROL_ENABLE_AUTOCAL
+	return (g_calib_state == CALIB_RAMP) ||
+	(g_calib_state == CALIB_POSTMOVE) ||
+	(g_calib_state == CALIB_SETTLE);
+	
+	#else
+	return false;
+	#endif
+}
+
+bool control_u0_is_valid(void)
+{
+	return (g_u0_valid != 0u);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =======================
+CONTROL STEP (main)
++ Anti-windup (freeze) en:
+- TF (congelando estados DF2T si satura y el error empuja hacia afuera)
+- SS_PRED_I / SS_ACT_I (congelando g_vint si satura y el error empuja hacia afuera)
+======================= */
+void control_step(void)
+{
+	uint8 intr = CyEnterCriticalSection();
+	controlPin_Write(1);
+	
+	float y_phys = control_last_y;
+	control_sample_pending = 0u;
+	
+	float r_phys = g_ref;
+	
+	/* u_prev_cmd: deltau usado para yhat/innov (consistente con tu obs) */
+	float u_prev_cmd = ucmd_from_uphy(g_u_out);
+	
+	CyExitCriticalSection(intr);
+	
+	r_phys = clamp_ref(r_phys);
+	
+	#if CONTROL_ENABLE_AUTOCAL
+	/* ... TODO lo tuyo de autocal igual (sin cambios) ... */
+	if (g_calib_state == CALIB_RAMP)
+	{
+		g_calib_total_samples++;
+		
+		if (g_calib_level_samples == 0u) {
+			g_calib_y_level0 = y_phys;
+			g_calib_hits = 0u;
+		}
+		
+		g_calib_level_samples++;
+		
+		float dy = y_phys - g_calib_y_level0;
+		if (dy < 0) dy = -dy;
+		
+		if (dy >= CONTROL_CALIB_DY_CM) {
+			if (g_calib_hits < 65535u) g_calib_hits++;
+		} else {
+			g_calib_hits = 0u;
+		}
+		
+		if (g_calib_hits >= (uint16_t)CONTROL_CALIB_MIN_HITS)
+		{
+			g_u0_offset_us = g_calib_u_phy;
+			g_u0_valid     = 1u;
+			
+			g_postmove_u_phy = g_calib_u_phy;
+			g_postmove_cnt   = 0u;
+			g_postmove_need  = samples_from_ms((uint16_t)CONTROL_CALIB_POSTMOVE_MS);
+			g_calib_state    = CALIB_POSTMOVE;
+			
+			write_u(ucmd_from_uphy(g_postmove_u_phy));
+			
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		if (g_calib_total_samples >= CONTROL_CALIB_MAX_SAMPLES || g_calib_u_phy >= CONTROL_CALIB_MAX_US)
+		{
+			g_calib_state   = CALIB_FAIL;
+			g_u0_offset_us  = CONTROL_U_OFFSET;
+			g_u0_valid      = 0u;
+			
+			write_u(0.0f);
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		if (g_calib_level_samples < (uint16_t)CONTROL_CALIB_HOLD_SAMPLES)
+		{
+			write_u(ucmd_from_uphy(g_calib_u_phy));
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		g_calib_u_phy += CONTROL_CALIB_STEP_US;
+		if (g_calib_u_phy > CONTROL_CALIB_MAX_US) g_calib_u_phy = CONTROL_CALIB_MAX_US;
+		
+		g_calib_level_samples = 0u;
+		
+		write_u(ucmd_from_uphy(g_calib_u_phy));
+		UARTP_Telemetry_Push(g_u_cmd, y_phys);
+		controlPin_Write(0);
+		return;
+	}
+	
+	if (g_calib_state == CALIB_POSTMOVE)
+	{
+		write_u(ucmd_from_uphy(g_postmove_u_phy));
+		
+		if (g_postmove_cnt < 65535u) g_postmove_cnt++;
+		
+		if (g_postmove_cnt >= g_postmove_need)
+		{
+			write_u(0.0f);
+			g_calib_state       = CALIB_SETTLE;
+			g_settle_first      = 1u;
+			g_settle_stable_cnt = 0u;
+			
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		UARTP_Telemetry_Push(g_u_cmd, y_phys);
+		controlPin_Write(0);
+		return;
+	}
+	
+	if (g_calib_state == CALIB_SETTLE)
+	{
+		write_u(0.0f);
+		
+		if (g_settle_first) {
+			g_settle_y_prev = y_phys;
+			g_settle_first = 0u;
+			g_settle_stable_cnt = 0u;
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		float dy = y_phys - g_settle_y_prev;
+		if (dy < 0) dy = -dy;
+		g_settle_y_prev = y_phys;
+		
+		if (dy <= (float)CONTROL_U0_SETTLE_DY_CM) {
+			if (g_settle_stable_cnt < 65535u) g_settle_stable_cnt++;
+		} else {
+			g_settle_stable_cnt = 0u;
+		}
+		
+		if (g_settle_stable_cnt >= (uint16_t)CONTROL_U0_SETTLE_SAMPLES)
+		{
+			g_calib_state = CALIB_DONE;
+			
+			if (UARTP_Impl != UARTP_IMPL_TF && UARTP_Impl != UARTP_IMPL_OPENLOOP) {
+				ss_predict_from_xu(xhat, 0.0f, zhat);
+			}
+			
+			UARTP_Telemetry_Push(g_u_cmd, y_phys);
+			controlPin_Write(0);
+			return;
+		}
+		
+		UARTP_Telemetry_Push(g_u_cmd, y_phys);
+		controlPin_Write(0);
+		return;
+	}
+	#endif
+	
+	/* referencias en modo closed-loop: en cm (físico) -> relativo */
+	float y_rel = y_rel_from_y(y_phys);
+	float r_rel = r_rel_from_r(r_phys);
+	
+	/* límites de deltau (cmd) (dinámicos por u0) */
+	const float umin_cmd = cmd_min_dyn();
+	const float umax_cmd = cmd_max_dyn();
+	
+	switch (UARTP_Impl)
+	{
+		case UARTP_IMPL_OPENLOOP:
+		{
+			#if CONTROL_OL_REF_IS_DELTA
+			float u_cmd = satf(r_phys, umin_cmd, umax_cmd);
+			write_u(u_cmd);
+			#else
+			float u_cmd = ucmd_from_uphy(r_phys);
+			write_u(u_cmd);
+			#endif
+		} break;
+		
+		case UARTP_IMPL_TF:
+		{
+			/* Error en relativo (cm) */
+			const float e = (r_rel - y_rel);
+			
+			/* TF devuelve comando relativo deltau (us) */
+			float u_unsat = tf_step(e);
+			
+			/* Saturación en deltau (dinámica por u0) */
+			float u_cmd = satf(u_unsat, umin_cmd, umax_cmd);
+			
+			/* write_u espera deltau */
+			write_u(u_cmd);
+		} break;
+		
+		
+		case UARTP_IMPL_SS_PRED_NOI:
+		case UARTP_IMPL_SS_PRED_I:
+		{
+			uint8 has_i = ss_mode_has_integrator((uint8)UARTP_Impl);
+			
+			if (has_i)
+			{
+				/* Ogata: v(k+1)=v(k)+e ; u = K1*v(k+1) - K2*xhat */
+				const float K1 = ss_Kx;                 /* K1 (integrador) */
+				const float e  = (r_rel - y_rel);
+				
+				const float v0 = g_vint;
+				const float v1 = v0 + e;                /* si querés Ts: v0 + g_Ts*e */
+				
+				const float u_unsat = (K1 * v1) - dot3_cmsis(ss_K, xhat);  /* ss_K = K2 */
+				const float u_cmd   = satf(u_unsat, umin_cmd, umax_cmd);
+				
+				/* Anti-windup: CONDITIONAL INTEGRATION
+				- Integro si NO satura
+				- Si satura: integro solo si el error empuja hacia adentro
+				(saturado arriba => e<0 baja u; saturado abajo => e>0 sube u) */
+				if (u_unsat == u_cmd)
+				{
+					g_vint = v1;
+				}
+				else
+				{
+					if ( (u_unsat > umax_cmd && e < 0.0f) ||
+					(u_unsat < umin_cmd && e > 0.0f) )
+					{
+						g_vint = v1;   /* deja integrar: desatura */
+					}
+					else
+					{
+						g_vint = v0;   /* freeze */
+					}
+				}
+				
+				write_u(u_cmd);
+			}
+			else
+			{
+				/* NOI: NO TOCAR */
+				float u_cmd = ss_Kr_eff()*r_rel - dot3_cmsis(ss_K, xhat);
+				write_u(u_cmd);
+			}
+			
+			/* predictor step (NO TOCAR) */
+			{
+				float u_k_cmd = ucmd_from_uphy(g_u_out);
+				ss_observer_pred_step(y_rel, u_prev_cmd, u_k_cmd);
+			}
+		} break;
+		
+		case UARTP_IMPL_SS_ACT_NOI:
+		case UARTP_IMPL_SS_ACT_I:
+		default:
+		{
+			uint8 has_i = ss_mode_has_integrator((uint8)UARTP_Impl);
+			
+			/* corrección ACT (NO TOCAR) */
+			ss_observer_act_correct(y_rel, u_prev_cmd);
+			
+			if (has_i)
+			{
+				/* Ogata: v(k+1)=v(k)+e ; u = K1*v(k+1) - K2*xhat */
+				const float K1 = ss_Kx;
+				const float e  = (r_rel - y_rel);
+				
+				const float v0 = g_vint;
+				const float v1 = v0 + e;
+				
+				const float u_unsat = (K1 * v1) - dot3_cmsis(ss_K, xhat);
+				const float u_cmd   = satf(u_unsat, umin_cmd, umax_cmd);
+				
+				/* Anti-windup: CONDITIONAL INTEGRATION (igual que arriba) */
+				if (u_unsat == u_cmd)
+				{
+					g_vint = v1;
+				}
+				else
+				{
+					if ( (u_unsat > umax_cmd && e < 0.0f) ||
+					(u_unsat < umin_cmd && e > 0.0f) )
+					{
+						g_vint = v1;
+					}
+					else
+					{
+						g_vint = v0;
+					}
+				}
+				
+				write_u(u_cmd);
+			}
+			else
+			{
+				/* NOI: NO TOCAR */
+				float u_cmd = ss_Kr_eff()*r_rel - dot3_cmsis(ss_K, xhat);
+				write_u(u_cmd);
+			}
+			
+			/* predicción ACT (NO TOCAR) */
+			{
+				float u_k_cmd = ucmd_from_uphy(g_u_out);
+				ss_observer_act_predict(u_k_cmd);
+			}
+		} break;
+		
+		
+	}
+	
+	UARTP_Telemetry_Push(g_u_cmd, y_phys);
+	controlPin_Write(0);
+}
+	
+\end{lstlisting}
+
+% ============================================================
+\section{Comunicación y máquina de estados}
+\label{ap:uartp_sw}
+% ============================================================
+
+\begin{lstlisting}[style=cfirmware, caption={UARTP: comunicación y máquina de estados (uartp_sw.h + uartp_sw.c)}, label={lst:uartp_sw}]
+/* uartp_sw.h */
+#ifndef UARTP_SW_H
+#define UARTP_SW_H
+
+#include "project.h"
+#include "cytypes.h"
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+
+/* ===== UART mapping (ajustá si tu componente no se llama UART) ===== */
+#ifndef UARTP_UART_Start
+#define UARTP_UART_Start()            UART_Start()
+#endif
+#ifndef UARTP_UART_ClearRxBuffer
+#define UARTP_UART_ClearRxBuffer()    UART_ClearRxBuffer()
+#endif
+#ifndef UARTP_UART_ClearTxBuffer
+#define UARTP_UART_ClearTxBuffer()    UART_ClearTxBuffer()
+#endif
+#ifndef UARTP_UART_GetRxBufferSize
+#define UARTP_UART_GetRxBufferSize()  UART_GetRxBufferSize()
+#endif
+#ifndef UARTP_UART_ReadRxData
+#define UARTP_UART_ReadRxData()       UART_ReadRxData()
+#endif
+#ifndef UARTP_UART_ReadRxStatus
+#define UARTP_UART_ReadRxStatus()     UART_ReadRxStatus()
+#endif
+#ifndef UARTP_UART_PutChar
+#define UARTP_UART_PutChar(c)         UART_PutChar((c))
+#endif
+#ifndef UARTP_UART_PutArray
+#define UARTP_UART_PutArray(p,n)      UART_PutArray((p),(n))
+#endif
+
+#if defined(UART_TX_BUFFER_SIZE) && (UART_TX_BUFFER_SIZE > 0)
+#ifndef UARTP_UART_GetTxBufferSize
+#define UARTP_UART_GetTxBufferSize()  UART_GetTxBufferSize()
+#endif
+#endif
+
+/* ===== ISR mapping (tu componente ISR se llama isr_rx?) ===== */
+#ifndef UARTP_ISR_RX_StartEx
+#define UARTP_ISR_RX_StartEx(f)       isr_rx_StartEx((f))
+#endif
+#ifndef UARTP_ISR_RX_Enable
+#define UARTP_ISR_RX_Enable()         isr_rx_Enable()
+#endif
+#ifndef UARTP_ISR_RX_Disable
+#define UARTP_ISR_RX_Disable()        isr_rx_Disable()
+#endif
+
+/* ===== sampling callbacks (abstracto) ===== */
+typedef void (*uartp_sampling_enable_fn_t)(void);
+typedef void (*uartp_sampling_disable_fn_t)(void);
+
+/* La librería pasa Fs (Hz) y el MAIN decide cómo convertirlo a Period/ticks */
+typedef void (*uartp_sampling_change_fs_fn_t)(float fs_hz);
+
+typedef void (*uartp_sampling_clear_flags_fn_t)(void);
+
+/* ===== Timer UART OneShot para timeouts (sin CyDelay) ===== */
+#ifndef UARTP_TIMER_UART_Start
+#define UARTP_TIMER_UART_Start()              timer_uart_Start()
+#endif
+#ifndef UARTP_TIMER_UART_Stop
+#define UARTP_TIMER_UART_Stop()               timer_uart_Stop()
+#endif
+#ifndef UARTP_TIMER_UART_WritePeriod
+#define UARTP_TIMER_UART_WritePeriod(p)       timer_uart_WritePeriod((p))
+#endif
+#ifndef UARTP_TIMER_UART_ReadStatusRegister
+#define UARTP_TIMER_UART_ReadStatusRegister() timer_uart_ReadStatusRegister()
+#endif
+#ifndef UARTP_TIMER_UART_ReadCounter
+#define UARTP_TIMER_UART_ReadCounter()        timer_uart_ReadCounter()
+#endif
+#ifndef UARTP_TIMER_UART_STATUS_TC
+#define UARTP_TIMER_UART_STATUS_TC            (0x01u)
+#endif
+
+/* ===== comandos ===== */
+#define UARTP_CMD_RESET     ((uint8)'r')
+#define UARTP_CMD_STOP      ((uint8)'s')
+#define UARTP_CMD_INIT      ((uint8)'i')
+#define UARTP_CMD_COEFFS    ((uint8)'c')
+#define UARTP_CMD_TXCOEF    ((uint8)'t')
+#define UARTP_CMD_SETMODE   ((uint8)'m')
+
+/* ===== respuestas ===== */
+#define UARTP_RSP_READY_RX  ((uint8)'R')
+#define UARTP_RSP_READY_TX  ((uint8)'S')
+#define UARTP_RSP_OK        ((uint8)'K')
+#define UARTP_RSP_ERR       ((uint8)'!')
+
+/* ===== control por word (eco-confirmado) ===== */
+#define UARTP_CTL_ACK       ((uint8)'A')
+#define UARTP_CTL_NAK       ((uint8)'N')
+#define UARTP_WORD_BYTES    (4u)
+
+/* ===== tamaños fijos =====
+Normalización:
+- Siempre se envían 25 floats (100 bytes).
+- Meta SIEMPRE al final:
+c[23] = N     (float -> u16)
+c[24] = FsHz  (float32)
+- Para TF (nuevo layout):
+c[0..10]  = b0..b10
+c[11..21] = a0..a10
+c[22]     = order (0..10)
+*/
+#define UARTP_COEF_COUNT    (25u)
+#define UARTP_COEF_BYTES    (UARTP_COEF_COUNT*4u)
+#define UARTP_INIT_BYTES    (4u)
+#define UARTP_MODE_BYTES    (4u)
+
+/* TF max order soportado por el protocolo (debe coincidir con control_app) */
+#define UARTP_TF_MAX_ORDER  (10u)
+
+/* Indices (0-based) dentro del vector de 25 floats */
+#define UARTP_IDX_TF_ORDER      (22u)
+#define UARTP_IDX_META_N        (23u)
+#define UARTP_IDX_META_FSHZ     (24u)
+
+/* ===== robustez ===== */
+#define UARTP_STEP_TIMEOUT_MS   (300u)
+#define UARTP_ABORT_TIMEOUTS    (6u)
+#define UARTP_MAX_WORD_RETRIES  (50u)
+
+/* ===== modos globales ===== */
+typedef enum { UARTP_SYS_COMMAND=0, UARTP_SYS_CONTROL=1 } uartp_sysmode_t;
+typedef enum { UARTP_CTRL_STOPPED=0, UARTP_CTRL_STOPPING=1, UARTP_CTRL_RUNNING=2 } uartp_ctrl_state_t;
+
+typedef enum {
+	UARTP_IMPL_TF            = 0,
+	UARTP_IMPL_SS_PRED_NOI   = 1,
+	UARTP_IMPL_SS_ACT_NOI    = 2,
+	UARTP_IMPL_SS_PRED_I     = 3,
+	UARTP_IMPL_SS_ACT_I      = 4,
+	UARTP_IMPL_OPENLOOP      = 5
+} uartp_impl_t;
+
+/* ===== callbacks ===== */
+typedef bool (*uartp_stop_step_fn_t)(void);
+typedef void (*uartp_start_fn_t)(float u0);
+typedef void (*uartp_apply_tf_fn_t)(const float* c, uint16 n);
+typedef void (*uartp_apply_ss_fn_t)(const float* c, uint16 n);
+typedef void (*uartp_force_min_fn_t)(void);
+
+typedef struct {
+	uartp_stop_step_fn_t stop_step;
+	uartp_force_min_fn_t force_min;
+	uartp_start_fn_t     start;
+	uartp_apply_tf_fn_t  apply_tf;
+	uartp_apply_ss_fn_t  apply_ss;
+	
+	uartp_sampling_enable_fn_t        sampling_enable;
+	uartp_sampling_disable_fn_t       sampling_disable;
+	uartp_sampling_change_fs_fn_t     sampling_change_fs;     /* Fs (Hz) */
+	uartp_sampling_clear_flags_fn_t   sampling_clear_flags;   /* puede ser NULL */
+} uartp_cfg_t;
+
+/* ===== globals (extern) ===== */
+extern volatile uartp_sysmode_t     UARTP_SysMode;
+extern volatile uartp_ctrl_state_t  UARTP_CtrlState;
+
+extern volatile uartp_impl_t        UARTP_Impl;
+extern volatile uint8               UARTP_ModeValid;
+extern volatile uint8               UARTP_CoeffsValid;
+
+extern volatile uint8               UARTP_StopRequested;
+extern volatile uint8               UARTP_LastCmd;
+
+extern float                        UARTP_Coeffs[UARTP_COEF_COUNT];
+extern float                        UARTP_InitValue;
+
+/* meta streaming */
+extern volatile uint16              UARTP_StreamN;
+extern float                        UARTP_StreamFsHz;
+
+/* ===== API ===== */
+void UARTP_Init(const uartp_cfg_t* cfg);
+bool UARTP_ProcessOnce(void);
+void UARTP_ControlTick(void);
+void UARTP_EnterCommandMode(void);
+void UARTP_EnterControlMode(void);
+
+/* ===== Telemetry streaming (u,y) ===== */
+void UARTP_Telemetry_Reset(void);
+void UARTP_Telemetry_Push(float u, float y);
+
+#endif
+/* uartp_sw.c */
+#include "uartp_sw.h"
+
+/* ================= globals ================= */
+volatile uartp_sysmode_t    UARTP_SysMode   = UARTP_SYS_COMMAND;
+volatile uartp_ctrl_state_t UARTP_CtrlState = UARTP_CTRL_STOPPED;
+
+volatile uartp_impl_t UARTP_Impl        = UARTP_IMPL_TF;
+volatile uint8        UARTP_ModeValid   = 0u;
+volatile uint8        UARTP_CoeffsValid = 0u;
+
+static volatile uint8 g_telem_enable = 0u;
+
+volatile uint8 UARTP_StopRequested = 0u;
+volatile uint8 UARTP_LastCmd = 0u;
+
+float UARTP_Coeffs[UARTP_COEF_COUNT];
+float UARTP_InitValue = 0.0f;
+
+/* meta streaming:
+N y FsHz se toman SIEMPRE de:
+c[23] = N
+c[24] = FsHz
+*/
+volatile uint16 UARTP_StreamN    = 0u;
+float           UARTP_StreamFsHz = 0.0f;
+
+static uartp_cfg_t g_cfg;
+
+/* update 'i' en CONTROL */
+static volatile uint8  g_init_update_pending = 0u;
+static uint8           g_init_update_raw[UARTP_INIT_BYTES];
+
+/* ================= helpers ================= */
+static void sampling_disable(void)
+{
+	if (g_cfg.sampling_disable) g_cfg.sampling_disable();
+}
+static void sampling_enable(void)
+{
+	if (g_cfg.sampling_enable) g_cfg.sampling_enable();
+}
+static void sampling_change_fs(float fs_hz)
+{
+	if (g_cfg.sampling_change_fs) g_cfg.sampling_change_fs(fs_hz);
+}
+static void sampling_clear_flags(void)
+{
+	if (g_cfg.sampling_clear_flags) g_cfg.sampling_clear_flags();
+}
+static void flush_rx(void)
+{
+	while (UARTP_UART_GetRxBufferSize() > 0u) (void)UARTP_UART_ReadRxData();
+}
+
+/* float -> u16 (para N) */
+static uint16 u16_from_float(float x)
+{
+	if (x <= 0.0f) return 0u;
+	if (x >= 65535.0f) return 65535u;
+	return (uint16)(x + 0.5f);
+}
+
+/* Clamp/sanitize order TF (float -> int 0..UARTP_TF_MAX_ORDER) */
+static void sanitize_tf_order_in_coeffs(void)
+{
+	float ord_f = UARTP_Coeffs[UARTP_IDX_TF_ORDER];
+	
+	/* NaN check: (NaN != NaN) */
+	if (!(ord_f == ord_f)) ord_f = 0.0f;
+	
+	int32 ord_i = (int32)(ord_f + 0.5f);
+	if (ord_i < 0) ord_i = 0;
+	if (ord_i > (int32)UARTP_TF_MAX_ORDER) ord_i = (int32)UARTP_TF_MAX_ORDER;
+	
+	UARTP_Coeffs[UARTP_IDX_TF_ORDER] = (float)ord_i;
+}
+
+/* Lee N/Fs desde el vector normalizado (25 floats) */
+static void update_stream_meta_from_coeffs(void)
+{
+	UARTP_StreamN    = u16_from_float(UARTP_Coeffs[UARTP_IDX_META_N]);
+	UARTP_StreamFsHz = UARTP_Coeffs[UARTP_IDX_META_FSHZ];
+}
+
+/* ---- timer oneshot timeout (sin CyDelay) ---- */
+static void uart_timer_start_ms(uint16 ms)
+{
+	if (ms == 0u) ms = 1u;
+	
+	UARTP_TIMER_UART_Stop();
+	(void)UARTP_TIMER_UART_ReadStatusRegister();
+	UARTP_TIMER_UART_WritePeriod(ms);
+	UARTP_TIMER_UART_Start();
+}
+static bool uart_timer_expired(void)
+{
+	uint8 st = (uint8)UARTP_TIMER_UART_ReadStatusRegister();
+	return ((st & UARTP_TIMER_UART_STATUS_TC) != 0u);
+}
+static bool read_byte_timeout(uint8* out, uint16 timeout_ms)
+{
+	uart_timer_start_ms(timeout_ms);
+	
+	while (!uart_timer_expired())
+	{
+		if (UARTP_UART_GetRxBufferSize() > 0u) {
+			*out = UARTP_UART_ReadRxData();
+			UARTP_TIMER_UART_Stop();
+			(void)UARTP_TIMER_UART_ReadStatusRegister();
+			return true;
+		}
+	}
+	
+	UARTP_TIMER_UART_Stop();
+	(void)UARTP_TIMER_UART_ReadStatusRegister();
+	return false;
+}
+static bool read_n_timeout(uint8* out, uint16 n, uint16 timeout_ms_each)
+{
+	for (uint16 i=0u; i<n; i++) {
+		if (!read_byte_timeout(&out[i], timeout_ms_each)) return false;
+	}
+	return true;
+}
+
+static void write_byte(uint8 b){ UARTP_UART_PutChar(b); }
+static void write_n(const uint8* p, uint16 n){ UARTP_UART_PutArray(p,n); }
+
+/* ===== eco-confirmado RX word ===== */
+static bool rx_word_try(uint8* dst4_or_partial, uint16 bytes_to_store, bool* did_timeout)
+{
+	*did_timeout = false;
+	uint8 w[4];
+	uint8 ctl;
+	
+	if (!read_n_timeout(w, 4u, UARTP_STEP_TIMEOUT_MS)) {
+		*did_timeout = true;
+		return false;
+	}
+	
+	write_n(w, 4u);
+	
+	if (!read_byte_timeout(&ctl, UARTP_STEP_TIMEOUT_MS)) {
+		*did_timeout = true;
+		return false;
+	}
+	
+	if (ctl == UARTP_CTL_ACK) {
+		for (uint16 i=0u; i<bytes_to_store; i++) dst4_or_partial[i] = w[i];
+		write_byte(UARTP_CTL_ACK);
+		return true;
+	}
+	
+	write_byte(UARTP_CTL_NAK);
+	return false;
+}
+
+static bool recv_payload(uint8* dst, uint16 nbytes)
+{
+	uint16 off = 0u;
+	uint8 timeouts_in_row = 0u;
+	
+	while (off < nbytes)
+	{
+		uint16 rem   = (uint16)(nbytes - off);
+		uint16 store = (rem >= 4u) ? 4u : rem;
+		
+		uint16 tries = 0u;
+		for (;;)
+		{
+			bool did_timeout = false;
+			bool ok = rx_word_try(&dst[off], store, &did_timeout);
+			
+			if (ok) { off = (uint16)(off + store); timeouts_in_row = 0u; break; }
+			
+			if (did_timeout) {
+				if (++timeouts_in_row >= UARTP_ABORT_TIMEOUTS) { flush_rx(); return false; }
+			}
+			if (++tries >= UARTP_MAX_WORD_RETRIES) { flush_rx(); return false; }
+		}
+	}
+	return true;
+}
+
+/* ===== eco-confirmado TX word ===== */
+static bool tx_word_once(const uint8 w[4], bool* accepted, bool* did_timeout)
+{
+	*did_timeout = false;
+	uint8 echo[4];
+	uint8 host_confirm;
+	
+	write_n(w, 4u);
+	
+	if (!read_n_timeout(echo, 4u, UARTP_STEP_TIMEOUT_MS)) {
+		*did_timeout = true;
+		return false;
+	}
+	
+	bool match = (memcmp(echo, w, 4u) == 0);
+	write_byte(match ? UARTP_CTL_ACK : UARTP_CTL_NAK);
+	
+	if (!read_byte_timeout(&host_confirm, UARTP_STEP_TIMEOUT_MS)) {
+		*did_timeout = true;
+		return false;
+	}
+	
+	if (host_confirm != (match ? UARTP_CTL_ACK : UARTP_CTL_NAK)) {
+		*accepted = false;
+		return false;
+	}
+	
+	*accepted = match;
+	return true;
+}
+
+static bool send_payload(const uint8* src, uint16 nbytes)
+{
+	uint16 off = 0u;
+	uint8 timeouts_in_row = 0u;
+	
+	while (off < nbytes)
+	{
+		uint8 w[4] = {0,0,0,0};
+		uint16 rem  = (uint16)(nbytes - off);
+		uint16 take = (rem >= 4u) ? 4u : rem;
+		
+		for (uint16 i=0u; i<take; i++) w[i] = src[off+i];
+		
+		uint16 tries = 0u;
+		for (;;)
+		{
+			bool accepted = false;
+			bool did_timeout = false;
+			
+			bool ok = tx_word_once(w, &accepted, &did_timeout);
+			if (ok && accepted) { off = (uint16)(off + take); timeouts_in_row = 0u; break; }
+			
+			if (did_timeout) {
+				if (++timeouts_in_row >= UARTP_ABORT_TIMEOUTS) { flush_rx(); return false; }
+			}
+			if (++tries >= UARTP_MAX_WORD_RETRIES) { flush_rx(); return false; }
+		}
+	}
+	return true;
+}
+
+/* ================= RX ISR: STOP y INIT en CONTROL ================= */
+CY_ISR(UARTP_RxIsr)
+{
+	while (UARTP_UART_GetRxBufferSize() > 0u)
+	{
+		uint8 b = UARTP_UART_ReadRxData();
+		
+		if (b == UARTP_CMD_STOP) {
+			g_telem_enable = 0u;
+			
+			UARTP_StopRequested = 1u;
+			if (UARTP_CtrlState == UARTP_CTRL_RUNNING) UARTP_CtrlState = UARTP_CTRL_STOPPING;
+			write_byte(UARTP_RSP_OK);
+			UARTP_ISR_RX_Disable();
+		}
+		else if (b == UARTP_CMD_INIT) {
+			g_telem_enable = 0u;
+			
+			if (UARTP_CtrlState == UARTP_CTRL_RUNNING) {
+				g_init_update_pending = 1u;
+				write_byte(UARTP_RSP_READY_RX);
+				UARTP_ISR_RX_Disable();
+			} else {
+				write_byte(UARTP_RSP_ERR);
+			}
+		}
+		else {
+			write_byte(UARTP_RSP_ERR);
+		}
+	}
+	(void)UARTP_UART_ReadRxStatus();
+}
+
+/* ================= transitions ================= */
+void UARTP_EnterCommandMode(void)
+{
+	sampling_disable();
+	sampling_clear_flags();
+	
+	g_telem_enable = 0u;
+	UARTP_ISR_RX_Disable();
+	
+	UARTP_StopRequested = 0u;
+	UARTP_CtrlState = UARTP_CTRL_STOPPED;
+	UARTP_SysMode = UARTP_SYS_COMMAND;
+	
+	flush_rx();
+}
+
+void UARTP_EnterControlMode(void)
+{
+	UARTP_StopRequested = 0u;
+	g_telem_enable = 1u;
+	
+	sampling_disable();
+	sampling_clear_flags();
+	
+	/* pasamos FsHz al MAIN (si es válido) */
+	if (UARTP_StreamFsHz > 0.0f) {
+		sampling_change_fs(UARTP_StreamFsHz);
+	}
+	
+	sampling_enable();
+	
+	UARTP_SysMode = UARTP_SYS_CONTROL;
+	UARTP_CtrlState = UARTP_CTRL_RUNNING;
+	UARTP_ISR_RX_Enable();
+	UARTP_Telemetry_Reset();
+}
+
+/* ================= public ================= */
+void UARTP_Init(const uartp_cfg_t* cfg)
+{
+	UARTP_UART_Start();
+	UARTP_UART_ClearRxBuffer();
+	UARTP_UART_ClearTxBuffer();
+	flush_rx();
+	
+	UARTP_TIMER_UART_Stop();
+	(void)UARTP_TIMER_UART_ReadStatusRegister();
+	
+	memset(&g_cfg, 0, sizeof(g_cfg));
+	if (cfg) g_cfg = *cfg;
+	
+	UARTP_SysMode = UARTP_SYS_COMMAND;
+	UARTP_CtrlState = UARTP_CTRL_STOPPED;
+	
+	UARTP_Impl = UARTP_IMPL_TF;
+	UARTP_ModeValid = 0u;
+	UARTP_CoeffsValid = 0u;
+	
+	UARTP_StopRequested = 0u;
+	UARTP_LastCmd = 0u;
+	
+	memset((void*)UARTP_Coeffs, 0, sizeof(UARTP_Coeffs));
+	UARTP_InitValue = 0.0f;
+	
+	UARTP_StreamN = 0u;
+	UARTP_StreamFsHz = 0.0f;
+	
+	g_init_update_pending = 0u;
+	memset((void*)g_init_update_raw, 0, sizeof(g_init_update_raw));
+	
+	UARTP_ISR_RX_StartEx(UARTP_RxIsr);
+	UARTP_ISR_RX_Disable();
+	
+	if (g_cfg.force_min) {
+		g_cfg.force_min();
+	}
+	
+	sampling_disable();
+	sampling_clear_flags();
+}
+
+bool UARTP_ProcessOnce(void)
+{
+	if (UARTP_SysMode != UARTP_SYS_COMMAND) return false;
+	if (UARTP_UART_GetRxBufferSize() == 0u) return false;
+	
+	uint8 cmd = UARTP_UART_ReadRxData();
+	UARTP_LastCmd = cmd;
+	
+	if (UARTP_CtrlState != UARTP_CTRL_STOPPED) {
+		if (cmd == UARTP_CMD_STOP) { write_byte(UARTP_RSP_OK); return true; }
+		write_byte(UARTP_RSP_ERR);
+		return true;
+	}
+	
+	switch (cmd)
+	{
+		case UARTP_CMD_RESET:
+		write_byte(UARTP_RSP_OK);
+		CySoftwareReset();
+		return true;
+		
+		case UARTP_CMD_STOP:
+		write_byte(UARTP_RSP_OK);
+		return true;
+		
+		case UARTP_CMD_SETMODE:
+		{
+			write_byte(UARTP_RSP_READY_RX);
+			
+			uint8 raw[UARTP_MODE_BYTES];
+			if (!recv_payload(raw, (uint16)UARTP_MODE_BYTES)) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			uint8 mode = raw[0];
+			if (mode > 5u) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			UARTP_Impl = (uartp_impl_t)mode;
+			UARTP_ModeValid = 1u;
+			
+			write_byte(UARTP_RSP_OK);
+			return true;
+		}
+		
+		case UARTP_CMD_COEFFS:
+		{
+			if (UARTP_ModeValid == 0u) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			write_byte(UARTP_RSP_READY_RX);
+			
+			uint8 rawc[UARTP_COEF_BYTES];
+			if (!recv_payload(rawc, (uint16)UARTP_COEF_BYTES)) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			memcpy((void*)UARTP_Coeffs, rawc, UARTP_COEF_BYTES);
+			UARTP_CoeffsValid = 1u;
+			
+			/* meta streaming normalizada (siempre al final) */
+			update_stream_meta_from_coeffs();
+			
+			/* si es TF, saneamos el order en c[22] */
+			if (UARTP_Impl == UARTP_IMPL_TF) {
+				sanitize_tf_order_in_coeffs();
+			}
+			
+			if (UARTP_Impl == UARTP_IMPL_TF) {
+				if (g_cfg.apply_tf) g_cfg.apply_tf((const float*)UARTP_Coeffs, UARTP_COEF_COUNT);
+			} else if (UARTP_Impl == UARTP_IMPL_OPENLOOP) {
+				/* nada */
+			} else {
+				if (g_cfg.apply_ss) g_cfg.apply_ss((const float*)UARTP_Coeffs, UARTP_COEF_COUNT);
+			}
+			
+			write_byte(UARTP_RSP_OK);
+			return true;
+		}
+		
+		case UARTP_CMD_TXCOEF:
+		{
+			if (UARTP_CoeffsValid == 0u) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			write_byte(UARTP_RSP_READY_TX);
+			
+			if (!send_payload((const uint8*)UARTP_Coeffs, (uint16)UARTP_COEF_BYTES)) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			write_byte(UARTP_RSP_OK);
+			return true;
+		}
+		
+		case UARTP_CMD_INIT:
+		{
+			if (UARTP_ModeValid == 0u)   { write_byte(UARTP_RSP_ERR); return true; }
+			if (UARTP_CoeffsValid == 0u) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			write_byte(UARTP_RSP_READY_RX);
+			
+			uint8 rawi[UARTP_INIT_BYTES];
+			if (!recv_payload(rawi, (uint16)UARTP_INIT_BYTES)) { write_byte(UARTP_RSP_ERR); return true; }
+			
+			memcpy((void*)&UARTP_InitValue, rawi, 4u);
+			
+			if (g_cfg.start) g_cfg.start(UARTP_InitValue);
+			
+			write_byte(UARTP_RSP_OK);
+			
+			UARTP_EnterControlMode();
+			return true;
+		}
+		
+		default:
+		flush_rx();
+		write_byte(UARTP_RSP_ERR);
+		return true;
+	}
+}
+
+void UARTP_ControlTick(void)
+{
+	if (UARTP_SysMode != UARTP_SYS_CONTROL) return;
+	
+	if (g_init_update_pending)
+	{
+		bool ok = recv_payload((uint8*)g_init_update_raw, (uint16)UARTP_INIT_BYTES);
+		if (ok)
+		{
+			memcpy((void*)&UARTP_InitValue, (const void*)g_init_update_raw, 4u);
+			if (g_cfg.start) g_cfg.start(UARTP_InitValue);
+			write_byte(UARTP_RSP_OK);
+		}
+		else {
+			write_byte(UARTP_RSP_ERR);
+			flush_rx();
+		}
+		
+		g_init_update_pending = 0u;
+		g_telem_enable = 1u;
+		UARTP_ISR_RX_Enable();
+	}
+	
+	if (UARTP_CtrlState == UARTP_CTRL_STOPPING)
+	{
+		sampling_disable();
+		sampling_clear_flags();
+		
+		bool done = true;
+		if (g_cfg.stop_step) done = g_cfg.stop_step();
+		if (!done) return;
+		
+		UARTP_Telemetry_Reset();
+		
+		UARTP_CtrlState = UARTP_CTRL_STOPPED;
+		UARTP_SysMode = UARTP_SYS_COMMAND;
+		UARTP_ISR_RX_Disable();
+		g_telem_enable = 0u;
+		flush_rx();
+	}
+}
+
+/* ================= Telemetry (u,y) ================= */
+static volatile uint16 g_tel_cnt = 0u;
+
+void UARTP_Telemetry_Reset(void)
+{
+	g_tel_cnt = 0u;
+}
+
+void UARTP_Telemetry_Push(float u, float y)
+{
+	if (!g_telem_enable) return;
+	if (UARTP_SysMode != UARTP_SYS_CONTROL) return;
+	
+	uint16 N = UARTP_StreamN;
+	if (N == 0u) return;
+	
+	uint16 cnt = (uint16)(g_tel_cnt + 1u);
+	g_tel_cnt = cnt;
+	
+	if (cnt < N) return;
+	g_tel_cnt = 0u;
+	
+	uint8 pkt[8];
+	memcpy(&pkt[0], &u, 4u);
+	memcpy(&pkt[4], &y, 4u);
+	
+	#if defined(UART_TX_BUFFER_SIZE) && (UART_TX_BUFFER_SIZE > 0)
+	if (UARTP_UART_GetTxBufferSize() > (UART_TX_BUFFER_SIZE - 8u)) {
+		return;
+	}
+	#endif
+	
+	UARTP_UART_PutArray(pkt, 8u);
+}
+\end{lstlisting}
+% ============================================================
+% ============================================================
+\section{Funciones de esfuerzo}
+\label{ap:firmware_esfuerzo}
+% ============================================================
+
+\begin{lstlisting}[style=cfirmware, caption={ESC PWM (esc_pwm.h + esc_pwm.c)}, label={lst:esfuerzo}]
+#ifndef ESC_PWM_H
+#define ESC_PWM_H
+
+#include <stdint.h>
+
+#define ESC_MIN_US   (1000u)
+#define ESC_MAX_US   (2000u)
+
+/* Inicializa el PWM del ESC y deja en mínimo */
+void esc_pwm_init(void);
+
+/* Escribe pulso en microsegundos (satura 1000..2000) */
+void esc_pwm_write_us(uint16_t us);
+
+#endif
+#include "project.h"
+#include "esc_pwm.h"
+
+/* Ajustá si tu ESC usa otros límites */
+
+
+static uint16_t clamp_u16(uint16_t x)
+{
+	if (x < ESC_MIN_US) return ESC_MIN_US;
+	if (x > ESC_MAX_US) return ESC_MAX_US;
+	return x;
+}
+
+void esc_pwm_init(void)
+{
+	PWM_ESC_Start();
+	esc_pwm_write_us(ESC_MIN_US);
+}
+
+void esc_pwm_write_us(uint16_t us)
+{
+	us = clamp_u16(us);
+	PWM_ESC_WriteCompare(us);
+}
+
+	
+\end{lstlisting}
+% ============================================================
+% ============================================================
+\section{Sampling y sensor TFMini}
+\label{ap:sampling}
+% ============================================================
+
+\begin{lstlisting}[style=cfirmware, caption={TFMini driver + calibración (tfmini\_psoc.h/.c y tfm\_calib\_simple.h)}, label={lst:sampling}]
+
+#ifndef TFMINI_PSOC_H
+#define TFMINI_PSOC_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "cytypes.h"
+#include "CyLib.h"
+#include "uart_TFminiPlus.h"
+#include "isr_rx_TFminiPlus.h"
+
+#define TFMINI_FRAME_SIZE (9u)
+#define TFMINI_MIN_CM   (10u)
+#define TFMINI_MAX_CM   (130u)
+
+/* “hay muestra nueva lista” */
+extern volatile uint8_t tfmini_sample_pending;
+
+void  tfmini_init(void);
+void  tfmini_clear_flags(void);
+
+bool  tfmini_enable(void);
+bool  tfmini_disable(void);
+bool  tfmini_set_fps(uint16_t fps_hz);
+
+/* Consume una muestra calibrada */
+bool  tfmini_pop_cm(uint16_t *y_cm);
+
+/* Calibración: SOLO distancia */
+uint16_t tfmini_calibrate_cm(uint16_t dist_cm);
+
+#endif /* TFMINI_PSOC_H */
+#ifndef TFM_CALIB_SIMPLE_H_
+#define TFM_CALIB_SIMPLE_H_
+
+/* y = A + B*d + C*d^2  (ajustá desde MATLAB) */
+#define TFM_CAL_A   (3.795825465480922f)
+#define TFM_CAL_B   (0.999665425307861f)
+#define TFM_CAL_C   (-0.001091976037850f)
+
+static inline float tfmini_correct_distance_cm_simple(float d_cm)
+{
+	return (TFM_CAL_A + (TFM_CAL_B * d_cm) + (TFM_CAL_C * d_cm * d_cm));
+}
+
+#endif /* TFM_CALIB_SIMPLE_H_ */
+#include "tfmini_psoc.h"
+#include "tfm_calib_simple.h"
+
+#include <string.h>
+
+volatile uint8_t tfmini_sample_pending = 0u;
+
+/* Parser state */
+static volatile uint8_t  s_frame[TFMINI_FRAME_SIZE];
+static volatile uint8_t  s_state = 0u; /* 0:wait H1, 1:wait H2, 2:collect */
+static volatile uint8_t  s_idx   = 0u;
+
+/* Última distancia calibrada */
+static volatile uint16_t s_last_cm = 0u;
+
+/* ===== TFMini Plus protocol ===== */
+#define TF_CMD_HDR   (0x5Au)
+#define TF_DATA_HDR  (0x59u)
+
+#define CMD_SET_RATE (0x03u) /* payload: rate (uint16 LE) */
+#define CMD_OUTPUT   (0x07u) /* payload: 0 disable, 1 enable */
+
+/* =========================
+Helpers
+========================= */
+static void parser_reset(void)
+{
+	s_state = 0u;
+	s_idx   = 0u;
+}
+
+static uint8_t sum8_first8(const uint8_t* p9)
+{
+	uint16_t s = 0u;
+	uint8_t i;
+	for (i = 0u; i < 8u; i++) s += p9[i];
+	return (uint8_t)s;
+}
+
+static void rx_flush_nolock(void)
+{
+	while (uart_TFminiPlus_GetRxBufferSize() > 0u) {
+		(void)uart_TFminiPlus_ReadRxData();
+	}
+	(void)uart_TFminiPlus_ReadRxStatus();
+}
+
+static void rx_flush_and_reset_locked(void)
+{
+	uint8 intr = CyEnterCriticalSection();
+	rx_flush_nolock();
+	parser_reset();
+	tfmini_sample_pending = 0u;
+	isr_rx_TFminiPlus_ClearPending();
+	CyExitCriticalSection(intr);
+}
+
+static bool send_cmd(uint8_t id, const uint8_t* payload, uint8_t plen)
+{
+	uint8_t  len;
+	uint8_t  buf[8];
+	uint16_t s;
+	uint8_t  i;
+	
+	len = (uint8_t)(3u + plen + 1u);
+	if (len > 8u) return false;
+	
+	buf[0] = TF_CMD_HDR;
+	buf[1] = len;
+	buf[2] = id;
+	
+	for (i = 0u; i < plen; i++) buf[3u + i] = payload[i];
+	
+	s = 0u;
+	for (i = 0u; i < (uint8_t)(len - 1u); i++) s += buf[i];
+	buf[len - 1u] = (uint8_t)s;
+	
+	rx_flush_and_reset_locked();
+	for (i = 0u; i < len; i++) uart_TFminiPlus_PutChar(buf[i]);
+	
+	CyDelay(2u);
+	rx_flush_and_reset_locked();
+	
+	return true;
+}
+
+/* =========================
+Calibración: SOLO dist
+========================= */
+uint16_t tfmini_calibrate_cm(uint16_t dist_cm)
+{
+	float y = tfmini_correct_distance_cm_simple((float)dist_cm);
+	
+	/* guardas mínimas */
+	if (!(y == y)) y = 0.0f;          /* NaN */
+	if (y < 0.0f) y = 0.0f;
+	if (y > 65535.0f) y = 65535.0f;
+	
+	return (uint16_t)(y + 0.5f);
+}
+
+/* =========================
+Frame handler
+========================= */
+static void on_frame(const uint8_t* f)
+{
+	if (sum8_first8(f) != f[8]) return;
+	
+	/* dist = bytes[2..3] little-endian */
+	uint16_t dist = (uint16_t)f[2] | ((uint16_t)f[3] << 8);
+	
+	dist = tfmini_calibrate_cm(dist);
+	/* saturación a rango útil */
+	if (dist < TFMINI_MIN_CM) dist = TFMINI_MIN_CM;
+	else if (dist > TFMINI_MAX_CM) dist = TFMINI_MAX_CM;
+	
+	s_last_cm = dist;
+	tfmini_sample_pending = 1u;
+}
+
+/* =========================
+Byte parser
+========================= */
+static void parser_push(uint8_t b)
+{
+	if (s_state == 0u) {
+		if (b == TF_DATA_HDR) {
+			s_frame[0] = b;
+			s_state = 1u;
+		}
+		return;
+	}
+	
+	if (s_state == 1u) {
+		if (b == TF_DATA_HDR) {
+			s_frame[1] = b;
+			s_idx = 2u;
+			s_state = 2u;
+		} else {
+			s_state = 0u;
+		}
+		return;
+	}
+	
+	/* collect */
+	s_frame[s_idx] = b;
+	s_idx++;
+	
+	if (s_idx >= TFMINI_FRAME_SIZE) {
+		uint8_t fcopy[TFMINI_FRAME_SIZE];
+		uint8_t i;
+		for (i = 0u; i < TFMINI_FRAME_SIZE; i++) fcopy[i] = s_frame[i];
+		on_frame(fcopy);
+		parser_reset();
+	}
+}
+
+/* =========================
+ISR RX
+========================= */
+CY_ISR(isr_rx_tfmini_handler)
+{
+	isr_rx_TFminiPlus_ClearPending();
+	
+	#if defined(uart_TFminiPlus_RX_STS_FIFO_NOTEMPTY)
+	for (;;) {
+		uint8_t st = uart_TFminiPlus_ReadRxStatus();
+		
+		#if defined(uart_TFminiPlus_RX_STS_OVERRUN)
+		if (st & uart_TFminiPlus_RX_STS_OVERRUN) {
+			rx_flush_nolock();        /* ya estás en ISR */
+			parser_reset();
+			tfmini_sample_pending = 0u;
+			break;
+		}
+		#endif
+		
+		if (st & uart_TFminiPlus_RX_STS_FIFO_NOTEMPTY) {
+			uint8_t b = (uint8_t)uart_TFminiPlus_ReadRxData();
+			parser_push(b);
+			continue;
+		}
+		break;
+	}
+	#else
+	while (uart_TFminiPlus_GetRxBufferSize() > 0u) {
+		uint8_t b = (uint8_t)uart_TFminiPlus_ReadRxData();
+		parser_push(b);
+	}
+	(void)uart_TFminiPlus_ReadRxStatus();
+	#endif
+}
+
+/* =========================
+API pública
+========================= */
+void tfmini_init(void)
+{
+	parser_reset();
+	tfmini_sample_pending = 0u;
+	s_last_cm = 0u;
+	
+	uart_TFminiPlus_Start();
+	rx_flush_and_reset_locked();
+	
+	isr_rx_TFminiPlus_StartEx(isr_rx_tfmini_handler);
+}
+
+void tfmini_clear_flags(void)
+{
+	rx_flush_and_reset_locked();
+}
+
+bool tfmini_enable(void)
+{
+	uint8_t p = 1u;
+	return send_cmd(CMD_OUTPUT, &p, 1u);
+}
+
+bool tfmini_disable(void)
+{
+	uint8_t p = 0u;
+	return send_cmd(CMD_OUTPUT, &p, 1u);
+}
+
+bool tfmini_set_fps(uint16_t fps_hz)
+{
+	uint8_t p[2];
+	
+	if (fps_hz < 1u)    fps_hz = 1u;
+	if (fps_hz > 1000u) fps_hz = 1000u;
+	
+	p[0] = (uint8_t)(fps_hz & 0xFFu);
+	p[1] = (uint8_t)((fps_hz >> 8) & 0xFFu);
+	
+	return send_cmd(CMD_SET_RATE, p, 2u);
+}
+
+bool tfmini_pop_cm(uint16_t *y_cm)
+{
+	if (!y_cm) return false;
+	
+	uint8 intr = CyEnterCriticalSection();
+	if (tfmini_sample_pending == 0u) {
+		CyExitCriticalSection(intr);
+		return false;
+	}
+	
+	*y_cm = (uint16_t)s_last_cm;
+	tfmini_sample_pending = 0u;
+	CyExitCriticalSection(intr);
+	
+	return true;
+}
+
+	
+\end{lstlisting}
+
+
+% ============================================================
+\section{Main}
+\label{ap:main}
+% ============================================================
+
+\begin{lstlisting}[style=cfirmware, caption={Programa principal (main.c)}, label={lst:main}]
+	
+#include "project.h"
+#include "uartp_sw.h"
+#include "control_app.h"
+#include "tfmini_psoc.h"
+#include "esc_pwm.h"
+#include <stdint.h>
+
+#define TFMINI_FPS_DEFAULT   (1000u)
+#define CALIB_FORCE_FS_HZ    (1000.0f)
+
+/* =========================================================
+Actuador: u_phy = microsegundos (1000..2000)
+El control_app ya satura, pero acá también por seguridad.
+========================================================= */
+static void my_write_u(float u_us)
+{
+	if (u_us < 1000.0f) u_us = 1000.0f;
+	if (u_us > 2000.0f) u_us = 2000.0f;
+	
+	esc_pwm_write_us((uint16_t)(u_us + 0.5f));
+}
+
+/* =========================================================
+Helpers Fs
+========================================================= */
+static float   g_fs_requested_hz      = (float)TFMINI_FPS_DEFAULT;
+static uint8_t g_fs_apply_after_calib = 0u;
+static uint8_t g_fs_forcing_calib     = 0u;
+
+/* Aplica Fs al sensor y mantiene Ts coherente */
+static void apply_fs_now(float fs_hz)
+{
+	if (!(fs_hz > 0.0f)) return;
+	
+	uint16_t fps = (uint16_t)(fs_hz + 0.5f);
+	if (fps < 1u) fps = 1u;
+	if (fps > 1000u) fps = 1000u;
+	
+	if (tfmini_set_fps(fps)) {
+		control_set_sample_time(1.0f / (float)fps);
+	}
+}
+
+/* =========================================================
+Callbacks para UARTP -> TFMini
+========================================================= */
+static void my_sampling_enable(void)      { (void)tfmini_enable(); }
+static void my_sampling_disable(void)     { (void)tfmini_disable(); }
+static void my_sampling_clear_flags(void) { tfmini_clear_flags(); }
+
+/* Clave: durante autocal u0, forzamos 1000 Hz y pateamos el Fs real */
+static void my_sampling_change_fs(float fs_hz)
+{
+	if (!(fs_hz > 0.0f)) return;
+	
+	/* Guardar siempre el Fs pedido por el host */
+	g_fs_requested_hz = fs_hz;
+	
+	/* Si estamos calibrando u0 -> FORZAR 1000 Hz y aplicar después */
+	if (control_is_calibrating())
+	{
+		g_fs_apply_after_calib = 1u;
+		g_fs_forcing_calib     = 1u;
+		apply_fs_now(CALIB_FORCE_FS_HZ);
+		return;
+	}
+	
+	/* Si no estamos calibrando -> aplicar Fs real */
+	apply_fs_now(fs_hz);
+}
+
+/* =========================================================
+MAIN
+========================================================= */
+int main(void)
+{
+	CyGlobalIntEnable;
+	
+	/* UARTP usa timer_uart (si tu implementación lo requiere) */
+	timer_uart_Start();
+	
+	/* ===== ESC PWM ===== */
+	esc_pwm_init();
+	esc_pwm_write_us(1000u);  /* seguro al boot */
+	
+	/* ===== Control app =====
+	- sample_isr_cb = NULL porque el muestreo lo manejamos por polling de tfmini_pop_cm()
+	- write_u_cb = my_write_u
+	*/
+	control_register_io(NULL, my_write_u);
+	control_set_sample_time(1.0f / (float)TFMINI_FPS_DEFAULT);
+	
+	/* ===== TFMini ===== */
+	tfmini_init();
+	(void)tfmini_set_fps(TFMINI_FPS_DEFAULT);
+	(void)tfmini_enable();
+	
+	/* ===== UARTP ===== */
+	uartp_cfg_t cfg = {
+		.stop_step = control_stop_suave_step,
+		.start     = control_start,
+		.force_min = control_force_min,
+		.apply_tf  = control_apply_tf,
+		.apply_ss  = control_apply_ss,
+		
+		.sampling_enable      = my_sampling_enable,
+		.sampling_disable     = my_sampling_disable,
+		.sampling_change_fs   = my_sampling_change_fs,
+		.sampling_clear_flags = my_sampling_clear_flags
+	};
+	UARTP_Init(&cfg);
+	
+	for (;;)
+	{
+		switch (UARTP_SysMode)
+		{
+			case UARTP_SYS_COMMAND:
+			(void)UARTP_ProcessOnce();
+			break;
+			
+			case UARTP_SYS_CONTROL:
+			{
+				uint16_t y_cm;
+				
+				/* Consumimos una muestra nueva del sensor */
+				if (tfmini_pop_cm(&y_cm)) {
+					control_sample_isr_push((float)y_cm);
+				}
+				
+				/* Si hay muestra lista -> ejecutar control */
+				if (control_sample_pending) {
+					control_sample_pending = 0u;
+					control_step();
+				}
+				
+				/* Si veníamos forzando 1000 Hz por calibración y ya terminó -> aplicar Fs real */
+				if (g_fs_forcing_calib && !control_is_calibrating())
+				{
+					g_fs_forcing_calib = 0u;
+					
+					if (g_fs_apply_after_calib)
+					{
+						g_fs_apply_after_calib = 0u;
+						apply_fs_now(g_fs_requested_hz);
+					}
+				}
+				
+				UARTP_ControlTick();
+				break;
+			}
+			
+			default:
+			UARTP_EnterCommandMode();
+			break;
+		}
+	}
+}
+\end{lstlisting}

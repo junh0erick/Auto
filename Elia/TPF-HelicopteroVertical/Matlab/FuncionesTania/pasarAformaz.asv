@@ -1,0 +1,36 @@
+close all;
+
+Ts = 1;
+[num, den] = tfdata(c2d(plantaC,Ts,'zoh'),'v');
+
+n = length(num)-1;   % grado numerador
+m = length(den)-1;   % grado denominador
+k = max(n,m);
+
+num_z = [num zeros(1,k-n)];
+den_z = [den zeros(1,k-m)];
+
+Hz = tf(num_z, den_z, Ts, 'Variable','z');
+zpk(Hz)
+
+
+z = tf([1 0],1,Ts);
+a0 = Hz.Numerator{1}(4-0);
+a1 = Hz.Numerator{1}(4-1);
+a2 = Hz.Numerator{1}(4-2);
+
+K = 1/(a0+a1+a2);
+b1 = (a0+a1)/(a0+a1+a2);
+b0 = a0
+C = Hz^-1*(1/(z^3-1));
+
+figure(1);step(feedback(Hz*C,1));hold on;
+[ud,n] = step(feedback(C,Hz));
+uc = repelem(ud, 40);
+t = (0:Ts/40:(n(end))*Ts);
+dt = Ts/40;
+t  = (0:length(uc)-1)' * dt;     % mismo largo que uc
+[yc,t] = lsim(plantaC, uc, t);
+plot(t, yc);
+figure(2);
+stairs(n,ud);

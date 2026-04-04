@@ -1,0 +1,133 @@
+% ============================================================
+\section{Diagrama del Sistema}
+% ============================================================
+
+La Figura~\ref{fig:DiagramaControl} representa la arquitectura real del sistema de control implementado. El esquema refleja el flujo físico y computacional efectivo del sistema, integrando diseño en MATLAB, ejecución embebida en el PSoC, cadena de potencia y sensado.
+
+En operación normal en lazo cerrado, el flujo es:
+
+\begin{center}
+	MATLAB $\rightarrow$ PSoC $\rightarrow$ ESC $\rightarrow$ Motor $\rightarrow$ Planta $\rightarrow$ Sensor $\rightarrow$ PSoC $\rightarrow$ MATLAB
+\end{center}
+
+La referencia de altura es generada en MATLAB y transmitida al PSoC mediante el protocolo UARTP. Simultáneamente, el microcontrolador recibe la medición de altura proveniente del sensor TFMini Plus. Con esta información, el firmware ejecuta el algoritmo de control seleccionado y calcula el esfuerzo requerido.
+
+La señal de control se expresa como una variación relativa respecto al punto de hover estimado, generándose un comando PWM enviado al ESC. En esta etapa intervienen errores numéricos asociados a operaciones en punto flotante de 32 bits y su posterior conversión a formato entero para la generación del PWM.
+
+El ESC introduce su propia dinámica interna —no completamente modelada— asociada a la conmutación del puente trifásico, tiempos muertos y estrategias internas de protección. Esta etapa incorpora ruido de proceso eléctrico y dinámicas adicionales no ideales.
+
+El motor brushless convierte la excitación trifásica en velocidad angular, la cual genera empuje aerodinámico mediante la hélice. Esta conversión introduce dinámica electromecánica adicional y no linealidades dependientes del voltaje instantáneo de la batería.
+
+La planta impone su dinámica inercial vertical junto con efectos no modelados tales como:
+
+\begin{itemize}
+	\item pequeñas rotaciones y vibraciones transversales,
+	\item fricción no uniforme en las guías,
+	\item variaciones paramétricas asociadas a la descarga de batería,
+	\item saturaciones del actuador.
+\end{itemize}
+
+El sensor TFMini mide la altura real incorporando ruido de medición, cuantización y latencia. La señal es enviada nuevamente al PSoC, cerrando el lazo.
+
+Adicionalmente, el sistema implementa un canal de \textbf{telemetría en tiempo real}. El PSoC transmite a MATLAB el par de variables:
+
+\[
+[u_k,\; y_k]
+\]
+
+permitiendo visualizar en tiempo real tanto el esfuerzo aplicado como la altura medida, así como almacenar el historial para análisis posterior.
+
+Para evitar saturación del canal UART, se introduce un parámetro \(N\) configurable desde MATLAB que actúa como divisor de muestreo. Si la frecuencia de control es \(F_s\), la frecuencia efectiva de transmisión es:
+
+\[
+F_{\text{stream}} = \frac{F_s}{N}
+\]
+
+En caso de llenado del buffer UART, las muestras se descartan deliberadamente, priorizando la ejecución determinística del algoritmo de control por sobre la integridad del registro de datos.
+
+En el diagrama se indican explícitamente las fuentes de ruido tanto en la cadena de potencia como en la cadena de medición, reflejando las no idealidades presentes en el sistema físico real.
+
+\insertarfigura{img/Planta/Diagrama.png}{Diagrama de bloques del sistema de control implementado.}{fig:DiagramaControl}{1}
+
+% ============================================================
+\subsection{Rutina automática de estimación de hover}
+% ============================================================
+
+Antes de iniciar cualquier sesión de control en lazo cerrado, el sistema ejecuta automáticamente una rutina de estimación del punto de hover.
+
+Este procedimiento se diseñó para independizar el funcionamiento del controlador respecto al voltaje instantáneo de la batería, evitando la necesidad de medirla o modelar su descarga.
+
+La secuencia es la siguiente:
+
+\begin{enumerate}
+	\item Se fija temporalmente la frecuencia de muestreo en \(1000\,\text{Hz}\).
+	\item Se aplica una rampa creciente de PWM.
+	\item Se detectan vibraciones o desplazamientos mínimos sostenidos en la medición.
+	\item Se identifica el valor de PWM correspondiente al inicio de sustentación.
+\end{enumerate}
+
+Una vez detectado el hover, el sistema permite que el cuerpo móvil experimente el transitorio inicial de subida (del orden de \(30\) a \(50\,\text{cm}\)). Luego de que este transitorio se amortigua, se modifica la frecuencia de muestreo del sensor al valor previamente configurado y recién entonces comienza la ejecución del algoritmo de control seleccionado.
+
+Este mecanismo constituye una estrategia adicional para garantizar funcionamiento robusto frente a variaciones de batería y condiciones mecánicas sin necesidad de modelado explícito de dichos efectos.
+
+% ============================================================
+\subsection{Modos de operación}
+% ============================================================
+
+El firmware permite operar el sistema en seis modos diferenciados:
+
+\subsubsection*{1. Lazo abierto}
+
+MATLAB envía directamente un valor de PWM relativo al hover estimado. No se ejecuta ningún algoritmo de realimentación. Se utiliza para caracterización y validación experimental.
+
+\subsubsection*{2. Control por función de transferencia discreta (TF)}
+
+Se reciben coeficientes del numerador y denominador y se calcula el esfuerzo a partir del error interno.
+
+\subsubsection*{3. Espacio de estados con observador predictor}
+
+Estimación de estados mediante observador predictor, pues sólo se mide la altura.
+
+\subsubsection*{4. Espacio de estados con observador predictor e integrador}
+
+Extiende el modo anterior incorporando integración del error con el fin de eliminar el error en régimen permanente y mejorar la robustez frente a perturbaciones y variaciones paramétricas.
+
+\subsubsection*{5. Espacio de estados con observador actual}
+
+Estimación de estados mediante esquema actual con predicción y corrección de la misma.
+
+\subsubsection*{6. Espacio de estados con observador actual e integrador}
+
+Combina estimación actual con integración del error con el mismo objetivo que el modo 4.
+
+En todos los modos en espacio de estados se utiliza observador, dado que únicamente se dispone de medición directa de altura, no pudiendo implementar control sin Observadores.
+
+% ============================================================
+\subsection{Gestión de parada y seguridad}
+% ============================================================
+
+Cuando se recibe el comando STOP desde MATLAB, el sistema no se detiene abruptamente. Se ejecuta una rampa descendente de la señal relativa $\Delta u$ hasta un valor fijo por debajo del hover, dependiente del valor estimado en esa sesión.
+
+Este valor se mantiene durante un tiempo predeterminado, calculado a partir del tiempo estimado de caída libre desde la altura máxima del sistema multiplicado por un factor de seguridad. De esta manera se garantiza un descenso suave y controlado.
+
+Adicionalmente, el sistema incorpora un botón físico conectado al PSoC que deshabilita directamente el módulo PWM por hardware, cortando completamente la señal enviada al ESC. Este mecanismo actúa como freno de emergencia independiente del software.
+
+% ============================================================
+\subsection{Flujo de energía}
+% ============================================================
+
+\insertarfigura{img/Planta/Diagrama-Page-2.jpg}{Diagrama de implementación física y flujo energético.}{fig:Diagrama2}{1}
+
+La batería LiPo 3S constituye la fuente de energía primaria. Se opera en el rango aproximado:
+
+\[
+V \in [11{,}5,\;12{,}5]\,\text{V}
+\]
+
+para preservar la integridad química de las celdas.
+
+El ESC de 40 A convierte la tensión continua en señales trifásicas moduladas. Incorpora disipadores térmicos sobre los dispositivos de potencia, necesarios debido al régimen elevado de corriente.
+
+El tiempo de operación continua se limita típicamente a 2–3 minutos para evitar descargas profundas y sobrecalentamiento. El tiempo de recarga es aproximadamente \(1{,}5\,\text{h}\), lo que introduce restricciones prácticas en la repetición de ensayos.
+
+En esta etapa no se realiza acción de control, sino conversión y transferencia de energía hacia el actuador.

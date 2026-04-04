@@ -1,0 +1,143 @@
+\insertarfigura{img/Bode/bodeMat.png}
+{Respuesta en frecuencia del lazo abierto del sistema identificado sin compensación.}
+{fig:bodeMat}{1}
+
+Para el diseño del controlador basado en el método de respuesta en frecuencia se utilizó directamente el modelo discreto identificado de la planta \(G(z)\), obtenido mediante identificación experimental y presentado en secciones anteriores.
+
+El modelo fue incorporado al entorno \texttt{controlSystemDesigner} de MATLAB, lo que permitió analizar la respuesta en frecuencia del lazo abierto y ajustar el compensador de manera interactiva a partir de los diagramas de Bode.
+
+% ============================================================
+\subsubsection{Análisis del sistema sin compensar}
+% ============================================================
+
+En la Fig.~\ref{fig:bodeMatSinC} se presenta el diagrama de Bode correspondiente al lazo abierto conformado únicamente por la planta identificada.
+
+A partir del análisis en frecuencia se obtuvieron los siguientes márgenes iniciales:
+
+\begin{itemize}
+	\item Margen de ganancia: \(13\,\text{dB}\),
+	\item Margen de fase: \SI{61.7}{\degree}.
+\end{itemize}
+
+Si bien el sistema presenta margen de fase positivo, lo que implica estabilidad para ganancias moderadas, la frecuencia de cruce se encuentra relativamente baja, lo que se traduce en una respuesta temporal lenta.
+
+La pendiente del módulo en la región de cruce evidencia la influencia de múltiples polos dominantes, coherentes con la dinámica de orden superior asociada al conjunto motor--ESC--hélice.
+
+% ============================================================
+\subsubsection{Diseño del compensador proporcional}
+% ============================================================
+
+En este caso particular se optó por implementar un compensador puramente proporcional:
+
+\[
+C(z) = K_p, \qquad K_p = 1.308
+\]
+
+Por lo tanto, el lazo abierto queda:
+
+\[
+L(z) = K_p\,G(z)
+\]
+
+La acción del controlador proporcional consiste exclusivamente en escalar la magnitud del lazo abierto sin introducir polos ni ceros adicionales. Desde el punto de vista del diagrama de Bode, esto implica un desplazamiento vertical del módulo, modificando la frecuencia de cruce y, en consecuencia, los márgenes de estabilidad.
+
+El aumento de \(K_p\) incrementa la frecuencia de cruce, lo que produce:
+
+\begin{itemize}
+	\item Mayor ancho de banda del sistema.
+	\item Reducción del tiempo de subida.
+	\item Respuesta temporal más rápida.
+\end{itemize}
+
+Si bien no se introduce compensación dinámica de fase, el incremento de ganancia resulta suficiente para mejorar significativamente la rapidez de respuesta manteniendo márgenes aceptables.
+
+% ============================================================
+\subsubsection{Análisis del sistema compensado}
+% ============================================================
+
+En la Fig.~\ref{fig:bodeMatConC} se presenta el diagrama de Bode del sistema compensado.
+
+Los márgenes obtenidos fueron:
+
+\begin{itemize}
+	\item \textbf{Sistema sin compensación:}
+	\begin{itemize}
+		\item Margen de ganancia: \(13\,\text{dB}\),
+		\item Margen de fase: \SI{61.7}{\degree}.
+	\end{itemize}
+	\item \textbf{Sistema compensado:}
+	\begin{itemize}
+		\item Margen de ganancia: \(10.6\,\text{dB}\),
+		\item Margen de fase: \SI{52.9}{\degree}.
+	\end{itemize}
+\end{itemize}
+
+Se observa una reducción controlada del margen de fase como consecuencia del aumento de la frecuencia de cruce. No obstante, el sistema mantiene estabilidad relativa adecuada.
+\balance
+\onecolumn
+\insertarfigura{img/Bode/bode_C.png}
+{Diagrama de Bode y respuestas temporales del sistema con compensación.}
+{fig:bodeMatSinC}{1}
+
+\insertarfigura{img/Bode/bode_compensado.png}
+{Diagrama de Bode y respuestas temporales del sistema con compensación.}
+{fig:bodeMatConC}{1}
+\twocolumn
+
+La validación del diseño se realizó mediante la respuesta temporal en lazo cerrado. El sistema compensado presentó:
+
+\begin{itemize}
+	\item Reducción significativa del tiempo de subida.
+	\item Sobreimpulso moderado.
+	\item Esfuerzo dentro de límites aceptables.
+\end{itemize}
+
+% ============================================================
+\subsection{Práctica}
+% ============================================================
+
+\insertarfigura{img/Bode/bode_practica.png}
+{Respuesta experimental: altura y esfuerzo con el compensador proporcional.}
+{fig:B_practica}{0.8}
+
+Compensador utilizado:
+
+\[
+C_{Bode} = 1.3082
+\]
+
+Tiempo de muestreo:
+
+\[
+T_s = 0.0001\,\text{s}
+\]
+
+El sobreimpulso simulado fue aproximadamente \(20\%\).  
+En la implementación experimental se observó:
+
+\begin{itemize}
+	\item Primer levantamiento: \(\%OS = 55.55\%\),
+	\item Levantamiento posterior: \(\%OS \approx 37\%\),
+	\item Tendencia decreciente al aumentar la altura.
+\end{itemize}
+
+Esta variabilidad sugiere dependencia del punto de operación, condiciones iniciales y no linealidades del empuje.
+
+Se observa además que durante el primer levantamiento el esfuerzo aplicado es mayor al inicio, disminuyendo a medida que el sistema se aproxima al equilibrio dinámico.
+
+% ============================================================
+\subsubsection{Conclusión del método}
+% ============================================================
+
+El método basado en respuesta en frecuencia permitió evaluar de manera directa y sencilla la estabilidad relativa del sistema mediante los márgenes de fase y ganancia.
+
+A diferencia del Lugar de Raíces, donde la estabilidad se interpreta geométricamente en el plano Z, el método de Bode permite cuantificar cuánto margen de estabilidad se posee y cuánto puede sacrificarse en favor de mayor rapidez.
+
+El ajuste mediante un simple controlador proporcional demostró que, en este sistema particular, el aumento controlado de ganancia resulta suficiente para mejorar significativamente la respuesta temporal, incrementando el ancho de banda sin comprometer la estabilidad global.
+
+Sin embargo, el método presenta una limitación conceptual: al trabajar exclusivamente en el dominio de la frecuencia se pierde información geométrica directa sobre la ubicación de polos y su relación exacta con parámetros transitorios como \(\zeta\) y \(\omega_n\). Si bien existen aproximaciones que relacionan margen de fase y amortiguamiento, estas no son exactas.
+
+En la práctica, esta desventaja se ve mitigada por herramientas de simulación que permiten validar la respuesta temporal rápidamente, situando al método al mismo nivel práctico que los demás enfoques analizados.
+
+En síntesis, el diseño por respuesta en frecuencia resultó sencillo, intuitivo y efectivo, permitiendo mejorar la rapidez del sistema mediante un ajuste mínimo del controlador y manteniendo márgenes de estabilidad adecuados para la planta experimental desarrollada.
+\balance

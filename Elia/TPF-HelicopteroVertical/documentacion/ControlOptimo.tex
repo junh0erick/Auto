@@ -1,0 +1,209 @@
+% ============================================================
+
+Se diseñó un regulador óptimo discreto de tipo LQR a partir del modelo
+en espacio de estados discretizado mediante retención de orden cero (ZOH)
+con tiempo de muestreo:
+
+\[
+T_s = 0.01 \ \text{s}
+\]
+
+El objetivo del diseño es minimizar el funcional de costo cuadrático infinito:
+
+\[
+J=\sum_{k=0}^{\infty}(x_k^TQx_k+u_k^TRu_k)
+\]
+
+donde \(Q\succeq 0\) penaliza la energía de los estados y \(R\succ 0\) penaliza
+el esfuerzo de control.
+
+% ============================================================
+\paragraph{Matrices de ponderación}
+% ============================================================
+
+Se adoptó una sintonización práctica basada en escalas típicas del experimento:
+un cambio de referencia del orden de \(\Delta y \approx 20\) y una restricción del
+mando aproximadamente \(|u|\lesssim 300\) (en unidades del actuador).
+
+El diseño penaliza principalmente la salida mediante \(C^TC\), agregando un término
+pequeño para asegurar buena condición numérica:
+
+\[
+Q = w_y(C^TC) + 10^{-8}I_n,
+\qquad
+R = \frac{w_u}{u_{\max}}
+\]
+
+con \(w_y=20\), \(w_u=500\) y \(u_{\max}=300\).
+
+Para el modelo discretizado utilizado, las matrices resultantes fueron:
+
+\[
+Q=
+\begin{bmatrix}
+	6.8188\times 10^{-3} & -6.9883\times 10^{-3} &  7.0544\times 10^{-3}\\
+	-6.9883\times 10^{-3} &  7.1620\times 10^{-3} & -7.2298\times 10^{-3}\\
+	7.0544\times 10^{-3} & -7.2298\times 10^{-3} &  7.2982\times 10^{-3}
+\end{bmatrix}
+\]
+
+\[
+R = 1.6667
+\]
+
+% ============================================================
+\paragraph{Ecuación de Riccati discreta y ganancia óptima}
+% ============================================================
+
+La solución del problema se obtiene resolviendo la ecuación de Riccati discreta:
+
+\[
+P=A^TPA - A^TPB(R+B^TPB)^{-1}B^TPA + Q
+\]
+
+La ganancia óptima resulta:
+
+\[
+K=(R+B^TPB)^{-1}B^TPA
+\]
+
+Para el modelo discretizado se obtuvo:
+
+\[
+K=
+\begin{bmatrix}
+	0.5119095 & -0.4937470 & 0.4765571
+\end{bmatrix}
+\]
+
+% ============================================================
+\paragraph{Polos del sistema en lazo cerrado}
+% ============================================================
+
+La estabilidad se verifica mediante los polos del sistema:
+
+\[
+A_{\text{cl}} = A - BK
+\]
+
+Los polos obtenidos fueron:
+
+\[
+\lambda(A-BK)=
+\begin{aligned}
+	&0.9728458 + 0.0327300\,j\\
+	&0.9728458 - 0.0327300\,j\\
+	&0.9663930
+\end{aligned}
+\]
+
+Se observa que todos los polos se encuentran dentro del círculo unitario,
+garantizando estabilidad discreta.
+
+% ============================================================
+\subsubsection{Simulación del LQR con observador, saturación y ruido}
+% ============================================================
+
+Con el fin de aproximar el comportamiento del sistema real y evitar conclusiones
+optimistas, se implementó un entorno de simulación que contempla:
+
+\begin{itemize}
+	\item Observador de estados en dos variantes:
+	\begin{itemize}
+		\item Predictor: corrige usando \(y_k\).
+		\item Actual: corrige usando \(y_{k+1}\).
+	\end{itemize}
+	\item Prefiltro de referencia \(N_{\mathrm{bar}}\).
+	\item Saturación del actuador con límite \(\pm u_{\max}\).
+	\item Ruido de medición, ruido de actuador y ruido de proceso configurables.
+	\item Comparación doble precisión vs \texttt{float32}.
+\end{itemize}
+
+Los observadores se diseñaron mediante ubicación de polos:
+
+\[
+p_{\mathrm{obs}}=\{0.8\pm 0.25j,\ 0.9\}
+\]
+
+\[
+K_{e,\mathrm{pred}}=\mathrm{place}(A^T,C^T,p_{\mathrm{obs}})^T
+\qquad
+K_{e,\mathrm{act}}=\mathrm{place}(A^T,(CA)^T,p_{\mathrm{obs}})^T
+\]
+
+La estructura implementada fue:
+
+\[
+u_k = N_{\mathrm{bar}}\,r_k - K\,\hat{x}_k
+\]
+
+\insertarfigura{img/LQR/LQR_step.png}
+{Respuesta temporal simulada del sistema con regulador LQR y observador.}
+{fig:lqr_step_sim}{1}
+
+\insertarfigura{img/LQR/LQR_esfuerzo.png}
+{Esfuerzo de control simulado $u(k)$.}
+{fig:lqr_u_sim}{1}
+
+% ============================================================
+\subsubsection{Implementación experimental}
+% ============================================================
+
+\insertarfigura{img/LQR/LQR_pred_practico.png}
+{Respuesta experimental con observador predictor.}
+{fig:lqr_pred_prac}{1}
+
+\insertarfigura{img/LQR/LQR_act_practico.png}
+{Respuesta experimental con observador actual.}
+{fig:lqr_act_prac}{1}
+
+En simulación el tiempo de subida fue aproximadamente:
+
+\[
+t_r^{\text{sim}} \approx 0.75\,\text{s}
+\]
+
+sin sobreimpulso apreciable.
+
+Experimentalmente se observaron tiempos de subida del orden de
+\(0.55\,\text{s}\) a \(0.69\,\text{s}\) dependiendo del punto de operación,
+con error estacionario inferior a 1 cm.
+
+Se evidenció nuevamente la presencia de ruido significativo en el esfuerzo,
+más marcado en el observador predictor que en el actual.
+
+% ============================================================
+\subsubsection{Conclusión}
+% ============================================================
+
+A diferencia del método de ubicación arbitraria de polos, el regulador LQR
+no fija directamente las raíces del sistema en lazo cerrado, sino que
+determina la ganancia óptima a partir de la minimización explícita de un
+funcional de costo que pondera la energía de los estados y el esfuerzo
+de control.
+
+En este enfoque, los polos resultan consecuencia de los pesos definidos
+en \(Q\) y \(R\). Esto introduce un criterio sistemático basado en la
+relación esfuerzo–desempeño.
+
+En este trabajo, al utilizar un modelo identificado sin interpretación
+física directa de los estados, no fue posible penalizar estados
+individuales (como velocidad o inercia del motor). Por ello se penalizó la
+salida mediante \(C^TC\).
+
+En modelos físicos estructurados, el LQR permitiría penalizar estados
+específicos según objetivos de desempeño, lo que constituye una ventaja
+conceptual importante frente a la ubicación arbitraria de polos.
+
+La selección de \(Q\) y \(R\) requiere criterio ingenieril y ajustes
+iterativos. Sin embargo, una vez definidos adecuadamente, el método
+proporciona resultados consistentes y estructurados.
+
+Persiste la sensibilidad al ruido de medición introducida por el
+observador. Polos de estimación agresivos amplifican ruido; polos
+más lentos reducen este efecto pero enlentecen la convergencia.
+
+En conjunto, el regulador LQR mostró un desempeño experimental sólido,
+con seguimiento estable y transitorios coherentes con la simulación,
+constituyendo un enfoque más fundamentado que la simple ubicación
+arbitraria de polos.

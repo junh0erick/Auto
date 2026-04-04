@@ -1,0 +1,83 @@
+
+
+La implementación de métodos clásicos y modernos sobre una misma
+planta física permitió contrastar dos filosofías de diseño claramente
+diferenciadas: una basada en aproximaciones entrada–salida y otra
+basada en modelado estructural completo en espacio de estados.
+
+Los \textbf{métodos clásicos} demostraron ser progresivamente más
+sofisticados en análisis, pero mantienen una característica común:
+son esencialmente aproximativos y heurísticos.
+El PID ajusta directamente la respuesta observable;
+Lugar de Raíces y Bode aportan mayor estructura,
+pero continúan trabajando sobre simplificaciones
+(dinámicas dominantes, márgenes, aproximaciones de segundo orden).
+Incluso la Síntesis Directa, aunque analíticamente rigurosa,
+termina siendo extremadamente dependiente del modelo ideal.
+
+Su principal fortaleza es la robustez práctica:
+al no apoyarse completamente en la estructura interna del sistema,
+toleran mejor imprecisiones del modelo y variaciones paramétricas.
+Son, en esencia, más “plug and play” y requieren menor
+conocimiento profundo de la planta.
+
+En contraste, los \textbf{métodos modernos} trasladan el núcleo del diseño
+al modelo en espacio de estados.
+Aquí ya no se moldea únicamente la salida,
+sino la dinámica interna completa del sistema.
+Esto implica una dependencia mucho mayor del modelo:
+cualquier error de identificación se refleja directamente
+en el desempeño del lazo cerrado.
+
+Sin embargo, cuando el modelo es representativo,
+el salto cualitativo es evidente.
+La realimentación de estados permite ubicar dinámicas internas;
+el LQR elimina la arbitrariedad en la selección de polos,
+basando el diseño en un criterio óptimo explícito; y
+el Filtro de Kalman reduce sistemáticamente la contaminación del esfuerzo por ruido.
+
+La combinación:
+
+\[
+\text{LQR} + \text{Kalman} + \text{Integrador}
+\]
+
+representó el mejor desempeño global obtenido en el trabajo.
+Este salto no provino de “hacer más cálculos por hacerlos”,
+sino de incorporar estructura explícita (óptimo + estimación + rechazo de perturbaciones).
+Aun así, el costo computacional \textbf{sí cambia} respecto a los métodos clásicos:
+mientras un PID o un compensador discreto típico se implementan con unas pocas operaciones
+(una ecuación en diferencias de bajo orden),
+los métodos modernos requieren, por muestra,
+\textbf{propagación de estados} ($A\hat{x}$),
+\textbf{actualización del observador} (términos con $L$ y mediciones),
+y en el caso del integrador una \textbf{acumulación adicional}.
+
+En este trabajo, con $n=3$ y frecuencias de muestreo moderadas,
+esa carga adicional resultó completamente abordable,
+pero la comparación deja una lección general:
+en sistemas con estados grandes ($n$ alto),
+muestreos muy rápidos o microcontroladores muy limitados,
+este incremento puede volverse un \textit{dealbreaker} y empujar a soluciones clásicas
+más simples, aunque menos potentes.
+
+La diferencia fundamental entre ambas vertientes no es
+de implementación, sino de filosofía:
+los métodos clásicos aceptan la incertidumbre y compensan
+mediante ajustes progresivos;
+los métodos modernos intentan modelar y optimizar explícitamente
+la dinámica interna completa.
+
+El aprendizaje central radica en comprender que
+ningún método es universalmente superior.
+Los enfoques clásicos ofrecen rapidez y tolerancia a la imprecisión.
+Los enfoques modernos ofrecen mayor grado de libertad,
+mejor desempeño potencial y control explícito sobre
+ruido, esfuerzo y error estacionario,
+a costa de mayor dependencia del modelo y criterio en su formulación.
+
+En esta planta experimental,
+la arquitectura moderna completa mostró una ventaja clara,
+pero también evidenció que el éxito del diseño
+depende tanto de la calidad del modelo
+como del criterio ingenieril aplicado en su utilización.

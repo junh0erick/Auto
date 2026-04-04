@@ -1,0 +1,62 @@
+\clearpage
+\section{Evolución del diseño estructural de la planta}
+\label{app:estructura}
+
+Durante el desarrollo del trabajo práctico, la estructura física de la planta atravesó distintas etapas de diseño, las cuales permitieron identificar limitaciones mecánicas y realizar mejoras progresivas hasta alcanzar la configuración final utilizada en las prácticas experimentales. En este apéndice se describe la primera etapa de diseño de la estructura y se destacan las principales diferencias respecto de la versión final.
+
+\subsection{Primera etapa de diseño}
+
+La primera versión de la estructura fue concebida con una altura total aproximada de \(80\,\text{cm}\), utilizando la misma base y el mismo techo de madera que se mantienen en el diseño final. Debido a las dimensiones de estos elementos, la altura útil de movimiento del cuerpo móvil en esta etapa era de aproximadamente \(72\,\text{cm}\).
+
+En esta configuración inicial, el diseño mecánico del cuerpo móvil era diferente al actual, presentando dimensiones ligeramente mayores. El sistema no contaba con elementos de seguridad adicionales, tales como topes mecánicos, amortiguación ante caídas ni cuerda de seguridad, dado que el recorrido vertical era considerablemente menor y el riesgo asociado a caídas desde grandes alturas resultaba limitado.
+
+El guiado del cuerpo móvil se realizaba mediante vigas metálicas rectas y rígidas, las cuales no presentaban deformaciones apreciables. Debido a esta rigidez estructural, no fue necesario incorporar articulaciones pasivas tipo ``muñeca'' en las abrazaderas, ni estructuras auxiliares de madera para limitar deformaciones. En esta etapa, el contacto entre el cuerpo móvil y los rieles generaba fricción apreciable, la cual se manifestaba de forma consistente durante el movimiento vertical.
+
+Cabe destacar que este comportamiento friccional, observable en la primera versión de la estructura, no se presenta de la misma manera en el diseño final. La incorporación de vigas metálicas de mayor longitud, junto con las deformaciones inherentes a las mismas y la inclusión de articulaciones pasivas en las abrazaderas, redujo significativamente la fricción directa entre el cuerpo móvil y los rieles, modificando así las características mecánicas del sistema.
+
+En las figuras siguientes se presentan imágenes correspondientes a las primeras versiones de las piezas impresas en 3D utilizadas en esta etapa inicial del diseño, las cuales difieren de las empleadas en la configuración final de la planta.
+
+\insertarfigura{img/Disenos/cuerpo1.png}{Primer diseño del soporte superior del motor.}{fig:cuerpo1}{0.5}
+
+En la primera etapa de diseño, el soporte superior del cuerpo móvil presentaba una altura aproximada de \(3\,\text{cm}\) y un diámetro de \(4\,\text{cm}\). Las secciones sobresalientes destinadas al acople de los brazos contaban con una altura de aproximadamente \(1{,}5\,\text{cm}\). Dicho soporte incluía orificios dimensionados específicamente para el montaje del motor brushless, con un diámetro de \(3\,\text{mm}\), acorde al patrón de fijación del mismo.
+
+\insertarfigura{img/Disenos/brazo_y_base_1.png}{Primeros diseños del soporte inferior y de los brazos estructurales.}{fig:brazosybase1}{1}
+
+El soporte inferior del cuerpo móvil correspondía a una geometría espejo del soporte superior. En este componente se realizaba el encastre de los brazos estructurales, los cuales, en esta etapa inicial, presentaban dimensiones menores en comparación con el diseño final. Cada brazo tenía dimensiones aproximadas de \(1\,\text{cm} \times 1\,\text{cm} \times 20\,\text{cm}\).
+
+El sistema de agarre de los brazos difería del implementado en la versión final de la planta. Inicialmente, el agarre no contaba con movilidad angular, aunque permitía un ajuste manual respecto a la posición de la viga metálica, lo que condicionaba el guiado del cuerpo móvil y su interacción con los rieles.
+
+\subsection{Segunda etapa de diseño}
+
+En la segunda etapa de diseño, el componente que presentó mayores modificaciones fue el brazo estructural. A partir de la experiencia obtenida en la etapa inicial, se introdujeron variaciones geométricas en el diseño del brazo, incorporando curvaturas con el objetivo de mejorar el encastre y la interacción con la estructura de guiado.
+
+En esta versión, el brazo y el sistema de agarre fueron integrados en una única pieza impresa en 3D, eliminando la separación entre ambos componentes. Dado que en esta etapa las vigas metálicas utilizadas como rieles presentaban una geometría recta y una rigidez suficiente, no fue necesaria la incorporación de articulaciones pasivas tipo ``muñeca''. En consecuencia, el guiado del cuerpo móvil se realizaba mediante un agarre rígido, sin movilidad angular.
+
+Cabe destacar que, durante esta etapa, el diseño del cuerpo móvil se mantuvo sin modificaciones significativas respecto a la versión anterior. Las mejoras se concentraron exclusivamente en el diseño de los brazos y del sistema de agarre, manteniendo constante la geometría general del conjunto móvil.
+
+
+\insertarfigura{img/Disenos/brazo2.png}{Segundo diseño de brazo.}{fig:brazo2}{1}
+
+\subsection{Tercera etapa de diseño}
+
+En la tercera etapa de diseño se introdujo una modificación significativa en la estructura general de la planta, extendiendo su altura máxima hasta aproximadamente \(160\,\text{cm}\). Esta ampliación respondió a la necesidad de disponer de un mayor recorrido vertical para la realización de las prácticas de control, lo cual implicó nuevas exigencias mecánicas sobre el conjunto estructural y el cuerpo móvil.
+
+Como consecuencia del aumento de altura de la estructura, el diseño de los brazos del cuerpo móvil volvió a ser modificado. En esta etapa, los brazos fueron rediseñados con mayor grosor y mayor altura, con el objetivo de incrementar su rigidez y capacidad de carga. Asimismo, se incorporaron aberturas longitudinales en los brazos, destinadas a permitir la inserción de elementos metálicos, con el fin de reforzar la estructura y mejorar su resistencia mecánica frente a esfuerzos y vibraciones.
+
+El cuerpo móvil mantuvo su configuración general respecto a las etapas anteriores; sin embargo, el rediseño de los brazos resultó fundamental para adaptar el conjunto a las nuevas condiciones estructurales impuestas por la mayor altura de la planta.
+
+\insertarfigura{img/Disenos/cuerpo3.jpeg}{Tercer diseño de brazos.}{fig:cuerpo3}{1}
+
+\subsection{Cuarta etapa de diseño: configuración final}
+
+La cuarta etapa de diseño corresponde a la configuración final de la estructura y del cuerpo móvil utilizada en las prácticas experimentales del trabajo. En esta etapa se introdujeron modificaciones orientadas principalmente a mejorar el guiado mecánico del cuerpo móvil y a reducir la masa total del conjunto.
+
+Debido a que las vigas metálicas empleadas como rieles presentan deformaciones asociadas a su longitud, se incorporaron articulaciones pasivas tipo ``muñeca'' en el sistema de guiado. Estas articulaciones permiten un movimiento angular relativo entre el cuerpo móvil y los rieles, mejorando el desplazamiento vertical y evitando atascamientos o esfuerzos indeseados durante el recorrido.
+
+Con el objetivo de reducir la masa del cuerpo móvil, se redimensionaron los soportes principales. El soporte superior, que en versiones anteriores presentaba una altura de \(3\,\text{cm}\), fue reducido a aproximadamente \(1{,}5\,\text{cm}\), mientras que el soporte inferior pasó de \(2\,\text{cm}\) a \(0{,}5\,\text{cm}\). A pesar de esta reducción dimensional, se conservó el sistema de encastre tanto en el soporte superior como en el inferior, asegurando la rigidez estructural del conjunto.
+
+Adicionalmente, se incorporó un soporte específico para la batería, integrado al cuerpo móvil. En dicho soporte se colocaron almohadillas internas con el fin de proteger la batería frente a vibraciones e impactos durante el funcionamiento del sistema.
+
+Estas modificaciones permitieron obtener un diseño final más liviano, adaptable a las deformaciones estructurales de los rieles y adecuado para la implementación de las distintas estrategias de control desarrolladas en el presente trabajo.
+
+\insertarfigura{img/Disenos/cuerpo3.jpeg}{Tercer diseño de brazos.}{fig:cuerpo3}{1}

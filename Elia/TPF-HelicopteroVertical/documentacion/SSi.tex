@@ -1,0 +1,287 @@
+En esta sección se implementa el procedimiento propuesto en Ogata (Ec. 6.19) \cite{Ogata1996}
+para incorporar acción integral al sistema en espacio de estados, utilizando
+únicamente un integrador externo y realimentación de estados estimados.
+
+La planta discreta utilizada (orden $n=3$) se obtuvo mediante discretización
+por ZOH con período de muestreo:
+
+\[
+T_s = 0.02\ \text{s}
+\qquad (50\ \text{Hz})
+\]
+
+% ============================================================
+\paragraph{Sistema aumentado con integrador}
+% ============================================================
+
+Para eliminar el error en régimen permanente frente a referencias constantes,
+se define el estado integral:
+
+\[
+v_{k+1} = v_k + (r_k - y_k)
+\]
+
+donde $y_k = Cx_k$.
+
+Siguiendo el desarrollo de Ogata, se construye el sistema aumentado
+(planta + integrador) en forma estructural:
+
+\[
+\hat{A} =
+\begin{bmatrix}
+	A & B \\
+	0 & 0
+\end{bmatrix},
+\qquad
+\hat{B} =
+\begin{bmatrix}
+	0 \\
+	1
+\end{bmatrix}
+\]
+
+Se seleccionaron los polos deseados del sistema aumentado como:
+
+\[
+p_{\text{ctrl}} =
+\{0.95 \pm 0.15j,\; 0.98\},
+\qquad
+p_i = 0.96
+\]
+
+La determinación de las ganancias se realizó a partir de la relación:
+
+\[
+\text{Aux} =
+\begin{bmatrix}
+	A - I & B \\
+	C A   & C B
+\end{bmatrix}
+\]
+
+\[
+K_{2,1} =
+\frac{K_{\text{hat}} + [\,0\;\; 0\;\; 0\;\; 1\,]}{\text{Aux}}
+\]
+
+obteniéndose las ganancias equivalentes:
+
+\[
+K_2 =
+\begin{bmatrix}
+	0.7820721 & -0.5678709 & 0.3779423
+\end{bmatrix}
+\]
+
+\[
+K_1 = 0.1469358
+\]
+
+donde:
+
+\begin{itemize}
+	\item $K_2$ actúa sobre el estado estimado $\hat{x}_k$.
+	\item $K_1$ actúa sobre el estado integral $v_k$.
+\end{itemize}
+
+La ley de control implementada es:
+
+\[
+u_k = K_1 v_k - K_2 \hat{x}_k
+\]
+
+% ============================================================
+\paragraph{Diseño del observador}
+% ============================================================
+
+Dado que únicamente se mide la altura, el resto de estados debe estimarse.
+Se diseñaron dos variantes de observador con los mismos polos deseados:
+
+\[
+p_{\text{obs}} =
+\{0.8 \pm 0.25j,\; 0.9\}
+\]
+
+\paragraph{Observador predictor}
+
+\[
+\hat{x}_{k+1}
+=
+A\hat{x}_k + Bu_k + L_{\text{pred}}\big(y_k - C\hat{x}_k\big)
+\]
+
+Dinámica del error:
+
+\[
+e_{k+1} = (A - L_{\text{pred}} C)\,e_k
+\]
+
+Ganancia obtenida:
+
+\[
+L_{\text{pred}} =
+\begin{bmatrix}
+	167.3535 \\
+	253.6822 \\
+	86.0310
+\end{bmatrix}
+\]
+
+\paragraph{Observador actual}
+
+\[
+z_{k+1} = A\hat{x}_k + Bu_k
+\]
+
+\[
+\hat{x}_{k+1} =
+z_{k+1}
++
+L_{\text{act}}
+\big(
+y_{k+1} - C z_{k+1}
+\big)
+\]
+
+Dinámica del error:
+
+\[
+e_{k+1} = (A - L_{\text{act}} C A)\,e_k
+\]
+
+Ganancia obtenida:
+
+\[
+L_{\text{act}} =
+\begin{bmatrix}
+	126.8411 \\
+	172.0621 \\
+	45.1301
+\end{bmatrix}
+\]
+
+% ============================================================
+\paragraph{Sistema aumentado cerrado}
+% ============================================================
+
+Para analizar explícitamente la dinámica cerrada (planta + integrador),
+se construyó el sistema aumentado:
+
+\[
+A_{\text{aug}} =
+\begin{bmatrix}
+	A & B \\
+	K_2 - K_2 A - K_1 C A & 1 - K_2 B - K_1 C B
+\end{bmatrix}
+\]
+
+\[
+C_{\text{aug}} =
+\begin{bmatrix}
+	C & 0
+\end{bmatrix}
+\]
+
+lo que permite visualizar el mapa polo–cero del sistema completo.
+
+% ============================================================
+\subsubsection{Resultados de simulación}
+% ============================================================
+
+\insertarfigura{img/SSi/SSi_step.png}
+{Respuesta temporal $y(t)$ con integrador — comparación predictor vs actual.}
+{fig:ssi_step}{1}
+
+\insertarfigura{img/SSi/SSi_esfuerzo.png}
+{Esfuerzo de control $u(t)$ con integrador.}
+{fig:ssi_esfuerzo}{1}
+
+\insertarfigura{img/SSi/SSi_pzmap.png}
+{Mapa de polos: planta, sistema aumentado y dinámica del observador.}
+{fig:ssi_pzmap}{1}
+
+En simulación se observa ausencia de sobreimpulso y un tiempo de subida
+aproximado de:
+
+\[
+t_r^{\text{sim}} \approx 2.6\ \text{s}
+\]
+
+tanto para el observador predictor como para el actual.
+
+% ============================================================
+\subsubsection{Resultados experimentales}
+% ============================================================
+
+\insertarfigura{img/SSi/SSi_practico_pred.png}
+{Resultado experimental con observador predictor.}
+{fig:ssi_practico_pred}{1}
+
+\insertarfigura{img/SSi/SSi_practico_act.png}
+{Resultado experimental con observador actual.}
+{fig:ssi_practico_act}{1}
+
+Experimentalmente se obtuvo:
+
+\[
+t_r^{\text{exp}} = 2.02\ \text{s} \quad (\text{predictor})
+\]
+
+\[
+t_r^{\text{exp}} = 2.36\ \text{s} \quad (\text{actual})
+\]
+
+Se observa buena concordancia cualitativa con la simulación,
+aunque el sistema real presenta mayor rapidez que la predicha por
+el modelo lineal.
+
+A diferencia de implementaciones sin acción integral,
+no se observaron derivas estacionarias sostenidas.
+El sistema converge naturalmente a la referencia.
+
+El predictor mostró picos de esfuerzo más continuos,
+consistentes con mayor sensibilidad al ruido de medición.
+El observador actual presentó un esfuerzo más progresivo
+y menos errático, atribuido al filtrado implícito de la planta
+entre $u_k$ y $y_{k+1}$.
+
+% ============================================================
+\subsubsection{Discusión}
+% ============================================================
+
+La incorporación de acción integral permitió eliminar el error en régimen
+permanente de forma estructural, superando limitaciones observadas cuando
+se utilizaba únicamente $N_{\text{bar}}$.
+
+En particular:
+
+\begin{itemize}
+	\item El sistema alcanza la referencia incluso ante variaciones
+	de batería o pequeñas perturbaciones constantes.
+	\item La respuesta práctica se aproxima notablemente a la simulada.
+	\item La estabilidad discreta se mantiene, con polos dentro del
+	círculo unitario.
+\end{itemize}
+
+Persisten efectos tipo derivativos asociados al observador,
+producto de una ubicación de polos subóptima que amplifica ruido.
+Este aspecto constituye un punto claro de mejora futura.
+
+% ============================================================
+\subsubsection{Conclusión}
+% ============================================================
+
+El método de Ogata con acción integral demostró ser
+estructuralmente más robusto frente a variaciones reales de la planta
+que los enfoques sin integración.
+
+Si bien depende del modelo identificado, la inclusión del estado
+integral introduce una propiedad correctiva que compensa
+desajustes moderados y elimina el error estacionario
+sin necesidad de correcciones adicionales por software.
+
+
+En conjunto, la realimentación de estados con acción integral
+proporcionó el mejor compromiso entre estabilidad, eliminación
+de error permanente y coherencia entre simulación y práctica
+dentro de los métodos en espacio de estados evaluados.

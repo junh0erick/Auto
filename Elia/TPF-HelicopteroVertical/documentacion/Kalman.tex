@@ -1,0 +1,279 @@
+% ============================================================
+\subsubsection{Modelo con Ruido}
+% ============================================================
+
+Para incorporar incertidumbre y modelar explícitamente la presencia de
+perturbaciones no modeladas y ruido del sensor, se adopta la siguiente
+representación estocástica discreta:
+
+\[
+x_{k+1} = A x_k + B u_k + w_k
+\]
+
+\[
+y_k = C x_k + v_k
+\]
+
+donde:
+
+\begin{itemize}
+	\item $w_k \sim \mathcal{N}(0,Q)$ representa el ruido de proceso,
+	asociado a dinámica no modelada, perturbaciones aerodinámicas
+	y simplificaciones del modelo identificado.
+	\item $v_k \sim \mathcal{N}(0,R)$ representa el ruido de medición,
+	proveniente del sensor láser de distancia.
+\end{itemize}
+
+% ============================================================
+\paragraph{Estimación de $R$ (ruido de medición)}
+% ============================================================
+
+La varianza del ruido de medición se obtuvo mediante ensayos empíricos,
+midiendo la dispersión de la señal del sensor con la planta en reposo.
+Siendo $\sigma_v$ la desviación estándar medida (en cm), se adopta:
+
+\[
+R = \sigma_v^2
+\]
+
+En los ensayos realizados se obtuvo:
+
+\[
+\sigma_v = 2.043\ \text{cm}
+\qquad\Longrightarrow\qquad
+R = 4.174\ \text{cm}^2
+\]
+
+% ============================================================
+\paragraph{Parametrización y sintonización de $Q$ (ruido de proceso)}
+% ============================================================
+
+La matriz de covarianza del ruido de proceso se parametrizó como:
+
+\[
+Q = q\,I_n
+\]
+
+donde $q$ es un escalar positivo ajustable e $I_n$ es la matriz identidad
+de dimensión $n$. El valor de $q$ se determinó mediante consistencia
+estadística de la innovación normalizada (ver Apéndice~\ref{ap:kalman_tuning}).
+
+El valor óptimo obtenido fue:
+
+\[
+q = 50.8022\times 10^{-3}
+\qquad\Longrightarrow\qquad
+Q = q\,I_n
+\]
+
+% ============================================================
+\subsubsection{Filtro de Kalman en régimen permanente}
+% ============================================================
+
+Se utilizó un estimador de Kalman discreto en su variante \textit{current estimator}
+(\texttt{kalman(...,'current')}). La ganancia en régimen permanente \(L\) se obtiene
+a partir de la solución estacionaria \(P\) de la ecuación de Riccati discreta:
+
+\[
+P = A P A^T - A P C^T \left(C P C^T + R\right)^{-1} C P A^T + Q
+\]
+
+y la ganancia queda:
+
+\[
+L = A P C^T \left(C P C^T + R\right)^{-1}
+\]
+
+La ganancia obtenida en MATLAB para el modelo discretizado fue:
+
+\[
+L =
+\begin{bmatrix}
+	97.4968\\
+	192.3014\\
+	94.7820
+\end{bmatrix}
+\]
+
+% ============================================================
+\paragraph{Polos del observador}
+% ============================================================
+
+Para el \textit{current estimator}, la dinámica del error queda
+determinada por \(A - LCA\). Los polos obtenidos fueron:
+
+\[
+\lambda(A - LCA) =
+\begin{aligned}
+	&0.9730274 + 0.0308455\,j \\
+	&0.9730274 - 0.0308455\,j \\
+	&0.9694430
+\end{aligned}
+\]
+
+Todos los polos se ubican dentro del círculo unitario,
+garantizando estabilidad del estimador.
+
+% ============================================================
+\subsubsection{Control integral y realimentación de estados (LQGI)}
+% ============================================================
+
+Con el objetivo de eliminar el error en régimen permanente ante referencias tipo escalón,
+se incorporó un integrador de error. Definiendo el estado integral \(\xi_k\):
+
+\[
+\xi_{k+1} = \xi_k + \left(r_k - y_k\right)
+\]
+
+Se diseñó una ley de control tipo LQI:
+
+\[
+u_k = -K_x\,\hat{x}_k + K_i\,\xi_k
+\]
+
+donde \(\hat{x}_k\) proviene del estimador de Kalman.
+
+Los valores obtenidos mediante \texttt{dlqr} fueron:
+
+\[
+K_x =
+\begin{bmatrix}
+	16.5343 & -15.8046 & 15.1271
+\end{bmatrix}
+\]
+
+\[
+K_i = 3.2067
+\]
+
+% ============================================================
+\paragraph{Polos de la planta y del lazo cerrado}
+% ============================================================
+
+Los polos de la planta discretizada (sin control) fueron:
+
+\[
+\lambda(A) =
+\begin{aligned}
+	&0.9999972 \\
+	&0.9720409 + 0.0241158\,j \\
+	&0.9720409 - 0.0241158\,j
+\end{aligned}
+\]
+
+Los polos del lazo cerrado del sistema aumentado (planta + integrador + control) fueron:
+
+\[
+\lambda(A_{\text{cl}}) =
+\begin{aligned}
+	&0.9735939 + 0.0318308\,j \\
+	&0.9735939 - 0.0318308\,j \\
+	&0.9671966 \\
+	&0
+\end{aligned}
+\]
+
+Se verifica estabilidad discreta y presencia del polo en cero
+asociado a la acción integral.
+
+% ============================================================
+\subsubsection{Sistema aumentado usado para \texttt{pzmap}}
+% ============================================================
+
+En el script de validación se construyó explícitamente el sistema aumentado:
+
+\[
+A_{\text{aug}} =
+\begin{bmatrix}
+	A & B \\
+	K_x - K_xA - K_iCA & 1 - K_xB - K_iCB
+\end{bmatrix}
+\]
+
+\[
+B_{\text{aug}} =
+\begin{bmatrix}
+	0\\
+	0\\
+	0\\
+	K_i
+\end{bmatrix}
+\]
+
+\[
+C_{\text{aug}} =
+\begin{bmatrix}
+	C & 0
+\end{bmatrix}
+\qquad
+D_{\text{aug}} = 0
+\]
+
+Construyéndose el modelo:
+
+\[
+\texttt{sysDaug = ss(Aaug,Baug,Caug,0,Ts)}
+\]
+
+y visualizando los polos mediante \texttt{pzmap(sysDaug)}.
+
+
+\insertarfigura{img/LQGi/LQGi_step_ruido.png}
+{Respuesta temporal en presencia de ruido.}
+{fig:lqgi_step_ruido}{1}
+
+\insertarfigura{img/LQGi/LQGi_esfuerzo_ruido.png}
+{Esfuerzo de control en presencia de ruido.}
+{fig:lqgi_esfuerzo_ruido}{1}
+
+\insertarfigura{img/LQGi/LQGi_practico.png}
+{Resultado experimental sobre la planta real.}
+{fig:lqgi_practico}{1}
+
+\insertarfigura{img/LQGi/LQGi_pzmap_NaranajaOBS_AzulPLANTA.png}
+{Mapa de polos: observador (naranja) y sistema (azul).}
+{fig:lqgi_pzmap}{1}
+
+% ============================================================
+\subsubsection{Discusión}
+% ============================================================
+
+En régimen dinámico, el tiempo de subida experimental fue aproximadamente
+\(t_r^{\text{exp}} \approx 0.65\,\text{s}\), con sobreimpulso reducido
+(del orden del 10\% o menor en la mayoría de los ensayos).
+La simulación con ruido predijo \(t_r^{\text{sim}} \approx 0.5\,\text{s}\)
+y sobreimpulso cercano al 8\%, mostrando buena concordancia.
+
+El esfuerzo de control en simulación presenta ciertos picos,
+producto de la inyección explícita de ruido gaussiano. En la práctica,
+los picos resultaron más consistentes y de menor amplitud relativa,
+especialmente en comparación con implementaciones anteriores sin Kalman, cumpliendo de muy buena manera su objetivo.
+
+Un aspecto destacable es que, gracias a la acción integral,
+el error en régimen permanente converge sistemáticamente a cero,
+a diferencia de prácticas previas donde persistían derivas
+incluso utilizando prefiltros o compensaciones adicionales.
+
+% ============================================================
+\subsubsection{Conclusión}
+% ============================================================
+
+El esquema LQGI (LQR + Kalman + Integrador) constituye la síntesis más
+completa implementada en este trabajo.
+
+A diferencia de la simple ubicación arbitraria de polos, aquí los polos
+del lazo cerrado resultan de una optimización basada en criterios
+energéticos bien definidos por el ingeniero.
+
+Aunque la selección de \(Q\) y \(R\) no es intuitiva y requiere
+criterio y ajuste iterativo, una vez correctamente definidos,
+el método produce resultados consistentes, robustos y coherentes
+con el modelo.
+
+La incorporación del filtro de Kalman permitió seleccionar las ganancias
+del observador de forma óptima en presencia de ruido, reduciendo la
+amplificación observada en enfoques anteriores.
+
+Finalmente, la inclusión del integrador garantizó eliminación del error
+estacionario y otorgó el mejor desempeño global entre todas las técnicas
+implementadas, tanto en simulación como en la planta real.
