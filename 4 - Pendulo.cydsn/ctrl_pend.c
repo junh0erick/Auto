@@ -325,6 +325,16 @@ void ctrl_stop(void)
 }
 
 /* ============================================================
+   ctrl_update_ref()
+   Updates inner-loop reference without resetting state.
+   Safe to call from CTRL mode between control ticks.
+   ============================================================ */
+void ctrl_update_ref(float ref_inner)
+{
+    g_lp[PLANT_INNER].ref = ref_inner;
+}
+
+/* ============================================================
    ctrl_step()   — call once per g_flag_control tick
    ============================================================ */
 void ctrl_step(void)

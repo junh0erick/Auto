@@ -664,7 +664,7 @@ END GROUP
                 0x00000800                ee_size = (CY_APPL_LOADABLE && ! (CY_EE_IN_BTLDR))?(CY_EE_SIZE / CY_APPL_MAX):CY_EE_SIZE
                 [!provide]                PROVIDE (CY_ECC_OFFSET, ecc_offset)
 
-.text           0x00000000     0x1e8a
+.text           0x00000000     0x1f0a
  CREATE_OBJECT_SYMBOLS
                 0x00000000                PROVIDE (__cy_interrupt_vector, RomVectors)
  *(.romvectors)
@@ -681,468 +681,471 @@ END GROUP
                 0x00000001                ASSERT ((((appl_start + .) <= 0x10000) || 0x1), DMA Init must be within the first 64k of flash)
  *(.text .text.* .gnu.linkonce.t.*)
  .text          0x00000028       0x5c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
- .text.main     0x00000084       0xf8 .\CortexM3\ARM_GCC_541\Debug\main.o
+ .text.main     0x00000084      0x16c .\CortexM3\ARM_GCC_541\Debug\main.o
                 0x00000084                main
  .text.Motor_Control
-                0x0000017c       0x60 .\CortexM3\ARM_GCC_541\Debug\motor.o
-                0x0000017c                Motor_Control
+                0x000001f0       0x60 .\CortexM3\ARM_GCC_541\Debug\motor.o
+                0x000001f0                Motor_Control
  .text.Motor_Free
-                0x000001dc       0x18 .\CortexM3\ARM_GCC_541\Debug\motor.o
-                0x000001dc                Motor_Free
+                0x00000250       0x18 .\CortexM3\ARM_GCC_541\Debug\motor.o
+                0x00000250                Motor_Free
  .text.Control_Timer_ISR
-                0x000001f4       0x14 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
-                0x000001f4                Control_Timer_ISR
+                0x00000268       0x14 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+                0x00000268                Control_Timer_ISR
  .text.pendulo_init
-                0x00000208       0x34 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
-                0x00000208                pendulo_init
+                0x0000027c       0x34 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+                0x0000027c                pendulo_init
  .text.pendulo_read
-                0x0000023c       0x38 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
-                0x0000023c                pendulo_read
- .text.satf     0x00000274       0x28 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .text.mode_ss  0x0000029c       0x10 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000002b0       0x38 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+                0x000002b0                pendulo_read
+ .text.satf     0x000002e8       0x28 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .text.mode_ss  0x00000310       0x10 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.mode_has_i
-                0x000002ac       0x10 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .text.tf_step  0x000002bc       0xcc .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .text.ss_yhat  0x00000388       0x38 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000320       0x10 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .text.tf_step  0x00000330       0xcc .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .text.ss_yhat  0x000003fc       0x38 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ss_predict
-                0x000003c0       0x6c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000434       0x6c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ss_u_cmd
-                0x0000042c       0x50 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000004a0       0x50 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ss_obs_pred
-                0x0000047c       0x5c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000004f0       0x5c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ss_obs_act_correct
-                0x000004d8       0x48 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x0000054c       0x48 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ss_obs_act_predict
-                0x00000520       0x24 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000594       0x24 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.run_step
-                0x00000544       0xc0 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000005b8       0xc0 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .text.ctrl_init
-                0x00000604       0x40 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x00000604                ctrl_init
+                0x00000678       0x40 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000678                ctrl_init
  .text.ctrl_set_mode
-                0x00000644       0x1c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x00000644                ctrl_set_mode
+                0x000006b8       0x1c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000006b8                ctrl_set_mode
  .text.ctrl_apply_coeffs
-                0x00000660      0x1ec .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x00000660                ctrl_apply_coeffs
+                0x000006d4      0x1ec .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000006d4                ctrl_apply_coeffs
  .text.ctrl_start
-                0x0000084c       0x74 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x0000084c                ctrl_start
+                0x000008c0       0x74 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000008c0                ctrl_start
  .text.ctrl_stop
-                0x000008c0        0x8 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x000008c0                ctrl_stop
+                0x00000934        0x8 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000934                ctrl_stop
+ .text.ctrl_update_ref
+                0x0000093c        0xc .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x0000093c                ctrl_update_ref
  .text.ctrl_step
-                0x000008c8      0x104 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                0x000008c8                ctrl_step
+                0x00000948      0x104 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x00000948                ctrl_step
  .text.ll_flush
-                0x000009cc       0x14 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .text.ll_wait  0x000009e0       0x28 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .text.ll_put   0x00000a08        0x8 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .text.rx_word  0x00000a10       0x90 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000a4c       0x14 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .text.ll_wait  0x00000a60       0x28 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .text.ll_put   0x00000a88        0x8 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .text.rx_word  0x00000a90       0x90 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .text.recv_payload
-                0x00000aa0       0x70 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000b20       0x70 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .text.handle_setmode
-                0x00000b10       0x34 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000b90       0x34 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .text.handle_coeffs
-                0x00000b44       0x40 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000bc4       0x40 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .text.handle_start
-                0x00000b84       0x40 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000c04       0x40 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .text.UARTP2_Init
-                0x00000bc4       0x18 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
-                0x00000bc4                UARTP2_Init
+                0x00000c44       0x18 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000c44                UARTP2_Init
  .text.UARTP2_ProcessOnce
-                0x00000bdc       0xb8 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
-                0x00000bdc                UARTP2_ProcessOnce
+                0x00000c5c       0xb8 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x00000c5c                UARTP2_ProcessOnce
  .text.CyClockStartupError
-                0x00000c94        0x4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000d14        0x4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.cfg_write_bytes32
-                0x00000c98       0x34 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000d18       0x34 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.AnalogSetDefault
-                0x00000ccc       0x28 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000d4c       0x28 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.CYMEMZERO
-                0x00000cf4        0xc .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000d74        0xc .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.ClockSetup
-                0x00000d00       0xc4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000d80       0xc4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.CYCONFIGCPY
-                0x00000dc4        0x8 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000e44        0x8 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .text.cyfitter_cfg
-                0x00000dcc      0x140 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
-                0x00000dcc                cyfitter_cfg
+                0x00000e4c      0x140 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000e4c                cyfitter_cfg
  .text.IntDefaultHandler
-                0x00000f0c       0x10 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
-                0x00000f0c                IntDefaultHandler
- .text.Start_c  0x00000f1c       0x4c .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
-                0x00000f1c                Start_c
+                0x00000f8c       0x10 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+                0x00000f8c                IntDefaultHandler
+ .text.Start_c  0x00000f9c       0x4c .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+                0x00000f9c                Start_c
  .text.initialize_psoc
-                0x00000f68       0x68 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
-                0x00000f68                initialize_psoc
+                0x00000fe8       0x68 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+                0x00000fe8                initialize_psoc
  .text.Timer_1_Enable
-                0x00000fd0       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00000fd0                Timer_1_Enable
+                0x00001050       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x00001050                Timer_1_Enable
  .text.Timer_1_SetInterruptMode
-                0x00000fe0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00000fe0                Timer_1_SetInterruptMode
+                0x00001060        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x00001060                Timer_1_SetInterruptMode
  .text.Timer_1_ReadStatusRegister
-                0x00000fec        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00000fec                Timer_1_ReadStatusRegister
+                0x0000106c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x0000106c                Timer_1_ReadStatusRegister
  .text.Timer_1_WritePeriod
-                0x00000ff8       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00000ff8                Timer_1_WritePeriod
+                0x00001078       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x00001078                Timer_1_WritePeriod
  .text.Timer_1_ReadCapture
-                0x00001008       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00001008                Timer_1_ReadCapture
+                0x00001088       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x00001088                Timer_1_ReadCapture
  .text.Timer_1_WriteCounter
-                0x00001018       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00001018                Timer_1_WriteCounter
+                0x00001098       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x00001098                Timer_1_WriteCounter
  .text.Timer_1_ClearFIFO
-                0x00001028       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00001028                Timer_1_ClearFIFO
+                0x000010a8       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x000010a8                Timer_1_ClearFIFO
  .text.Timer_1_Init
-                0x0000103c       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x0000103c                Timer_1_Init
+                0x000010bc       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x000010bc                Timer_1_Init
  .text.Timer_1_Start
-                0x00001074       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
-                0x00001074                Timer_1_Start
+                0x000010f4       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x000010f4                Timer_1_Start
  .text.QuadDec_1_Init
-                0x00001090       0x24 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x00001090                QuadDec_1_Init
+                0x00001110       0x24 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00001110                QuadDec_1_Init
  .text.QuadDec_1_GetCounter
-                0x000010b4       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x000010b4                QuadDec_1_GetCounter
+                0x00001134       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00001134                QuadDec_1_GetCounter
  .text.QuadDec_1_GetEvents
-                0x000010e0       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x000010e0                QuadDec_1_GetEvents
+                0x00001160       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00001160                QuadDec_1_GetEvents
  .text.QuadDec_1_SetInterruptMask
-                0x000010f0       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x000010f0                QuadDec_1_SetInterruptMask
+                0x00001170       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00001170                QuadDec_1_SetInterruptMask
  .text.QuadDec_1_Enable
-                0x00001100       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x00001100                QuadDec_1_Enable
+                0x00001180       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00001180                QuadDec_1_Enable
  .text.QuadDec_1_Start
-                0x00001130       0x34 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
-                0x00001130                QuadDec_1_Start
+                0x000011b0       0x34 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x000011b0                QuadDec_1_Start
  .text.QuadDec_1_ISR
-                0x00001164       0x40 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
-                0x00001164                QuadDec_1_ISR
+                0x000011e4       0x40 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+                0x000011e4                QuadDec_1_ISR
  .text.isr_1_SetVector
-                0x000011a4        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
-                0x000011a4                isr_1_SetVector
+                0x00001224        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x00001224                isr_1_SetVector
  .text.isr_1_SetPriority
-                0x000011b0       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
-                0x000011b0                isr_1_SetPriority
+                0x00001230       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x00001230                isr_1_SetPriority
  .text.isr_1_Enable
-                0x000011c0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
-                0x000011c0                isr_1_Enable
+                0x00001240        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x00001240                isr_1_Enable
  .text.isr_1_Disable
-                0x000011cc        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
-                0x000011cc                isr_1_Disable
+                0x0000124c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x0000124c                isr_1_Disable
  .text.isr_1_StartEx
-                0x000011d8       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
-                0x000011d8                isr_1_StartEx
+                0x00001258       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x00001258                isr_1_StartEx
  .text.QuadDec_2_Init
-                0x000011f4       0x24 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x000011f4                QuadDec_2_Init
+                0x00001274       0x24 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x00001274                QuadDec_2_Init
  .text.QuadDec_2_GetCounter
-                0x00001218       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x00001218                QuadDec_2_GetCounter
+                0x00001298       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x00001298                QuadDec_2_GetCounter
  .text.QuadDec_2_GetEvents
-                0x00001244       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x00001244                QuadDec_2_GetEvents
+                0x000012c4       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x000012c4                QuadDec_2_GetEvents
  .text.QuadDec_2_SetInterruptMask
-                0x00001254       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x00001254                QuadDec_2_SetInterruptMask
+                0x000012d4       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x000012d4                QuadDec_2_SetInterruptMask
  .text.QuadDec_2_Enable
-                0x00001264       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x00001264                QuadDec_2_Enable
+                0x000012e4       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x000012e4                QuadDec_2_Enable
  .text.QuadDec_2_Start
-                0x00001294       0x34 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
-                0x00001294                QuadDec_2_Start
+                0x00001314       0x34 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x00001314                QuadDec_2_Start
  .text.QuadDec_2_ISR
-                0x000012c8       0x40 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
-                0x000012c8                QuadDec_2_ISR
+                0x00001348       0x40 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+                0x00001348                QuadDec_2_ISR
  .text.QuadDec_1_Cnt16_Enable
-                0x00001308       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001308                QuadDec_1_Cnt16_Enable
+                0x00001388       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x00001388                QuadDec_1_Cnt16_Enable
  .text.QuadDec_1_Cnt16_SetInterruptMode
-                0x00001318        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001318                QuadDec_1_Cnt16_SetInterruptMode
+                0x00001398        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x00001398                QuadDec_1_Cnt16_SetInterruptMode
  .text.QuadDec_1_Cnt16_ReadStatusRegister
-                0x00001324        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001324                QuadDec_1_Cnt16_ReadStatusRegister
+                0x000013a4        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013a4                QuadDec_1_Cnt16_ReadStatusRegister
  .text.QuadDec_1_Cnt16_WriteCounter
-                0x00001330        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001330                QuadDec_1_Cnt16_WriteCounter
+                0x000013b0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013b0                QuadDec_1_Cnt16_WriteCounter
  .text.QuadDec_1_Cnt16_ReadCounter
-                0x0000133c       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x0000133c                QuadDec_1_Cnt16_ReadCounter
+                0x000013bc       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013bc                QuadDec_1_Cnt16_ReadCounter
  .text.QuadDec_1_Cnt16_ReadCapture
-                0x00001350        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001350                QuadDec_1_Cnt16_ReadCapture
+                0x000013d0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013d0                QuadDec_1_Cnt16_ReadCapture
  .text.QuadDec_1_Cnt16_WritePeriod
-                0x0000135c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x0000135c                QuadDec_1_Cnt16_WritePeriod
+                0x000013dc        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013dc                QuadDec_1_Cnt16_WritePeriod
  .text.QuadDec_1_Cnt16_WriteCompare
-                0x00001368        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001368                QuadDec_1_Cnt16_WriteCompare
+                0x000013e8        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013e8                QuadDec_1_Cnt16_WriteCompare
  .text.QuadDec_1_Cnt16_ClearFIFO
-                0x00001374       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001374                QuadDec_1_Cnt16_ClearFIFO
+                0x000013f4       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000013f4                QuadDec_1_Cnt16_ClearFIFO
  .text.QuadDec_1_Cnt16_Init
-                0x00001388       0x58 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x00001388                QuadDec_1_Cnt16_Init
+                0x00001408       0x58 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x00001408                QuadDec_1_Cnt16_Init
  .text.QuadDec_1_Cnt16_Start
-                0x000013e0       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
-                0x000013e0                QuadDec_1_Cnt16_Start
+                0x00001460       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x00001460                QuadDec_1_Cnt16_Start
  .text.QuadDec_2_Cnt16_Enable
-                0x000013fc       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x000013fc                QuadDec_2_Cnt16_Enable
+                0x0000147c       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x0000147c                QuadDec_2_Cnt16_Enable
  .text.QuadDec_2_Cnt16_SetInterruptMode
-                0x0000140c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x0000140c                QuadDec_2_Cnt16_SetInterruptMode
+                0x0000148c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x0000148c                QuadDec_2_Cnt16_SetInterruptMode
  .text.QuadDec_2_Cnt16_ReadStatusRegister
-                0x00001418        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001418                QuadDec_2_Cnt16_ReadStatusRegister
+                0x00001498        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x00001498                QuadDec_2_Cnt16_ReadStatusRegister
  .text.QuadDec_2_Cnt16_WriteCounter
-                0x00001424        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001424                QuadDec_2_Cnt16_WriteCounter
+                0x000014a4        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014a4                QuadDec_2_Cnt16_WriteCounter
  .text.QuadDec_2_Cnt16_ReadCounter
-                0x00001430       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001430                QuadDec_2_Cnt16_ReadCounter
+                0x000014b0       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014b0                QuadDec_2_Cnt16_ReadCounter
  .text.QuadDec_2_Cnt16_ReadCapture
-                0x00001444        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001444                QuadDec_2_Cnt16_ReadCapture
+                0x000014c4        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014c4                QuadDec_2_Cnt16_ReadCapture
  .text.QuadDec_2_Cnt16_WritePeriod
-                0x00001450        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001450                QuadDec_2_Cnt16_WritePeriod
+                0x000014d0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014d0                QuadDec_2_Cnt16_WritePeriod
  .text.QuadDec_2_Cnt16_WriteCompare
-                0x0000145c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x0000145c                QuadDec_2_Cnt16_WriteCompare
+                0x000014dc        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014dc                QuadDec_2_Cnt16_WriteCompare
  .text.QuadDec_2_Cnt16_ClearFIFO
-                0x00001468       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x00001468                QuadDec_2_Cnt16_ClearFIFO
+                0x000014e8       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014e8                QuadDec_2_Cnt16_ClearFIFO
  .text.QuadDec_2_Cnt16_Init
-                0x0000147c       0x58 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x0000147c                QuadDec_2_Cnt16_Init
+                0x000014fc       0x58 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x000014fc                QuadDec_2_Cnt16_Init
  .text.QuadDec_2_Cnt16_Start
-                0x000014d4       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
-                0x000014d4                QuadDec_2_Cnt16_Start
- .text.CyHalt   0x000014f0        0x4 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
-                0x000014f0                CyHalt
- .text.CyDelay  0x000014f4       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
-                0x000014f4                CyDelay
+                0x00001554       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x00001554                QuadDec_2_Cnt16_Start
+ .text.CyHalt   0x00001570        0x4 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+                0x00001570                CyHalt
+ .text.CyDelay  0x00001574       0x2c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+                0x00001574                CyDelay
  .text.CyIntSetVector
-                0x00001520       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
-                0x00001520                CyIntSetVector
+                0x000015a0       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+                0x000015a0                CyIntSetVector
  .text.CyIntSetPriority
-                0x00001548       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
-                0x00001548                CyIntSetPriority
+                0x000015c8       0x30 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+                0x000015c8                CyIntSetPriority
  .text.CySetReg24
-                0x00001578       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
-                0x00001578                CySetReg24
+                0x000015f8       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+                0x000015f8                CySetReg24
  .text.PWM_Motor_Enable
-                0x0000158c       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x0000158c                PWM_Motor_Enable
+                0x0000160c       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x0000160c                PWM_Motor_Enable
  .text.PWM_Motor_WriteCounter
-                0x0000159c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x0000159c                PWM_Motor_WriteCounter
+                0x0000161c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x0000161c                PWM_Motor_WriteCounter
  .text.PWM_Motor_WritePeriod
-                0x000015a8        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015a8                PWM_Motor_WritePeriod
+                0x00001628        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001628                PWM_Motor_WritePeriod
  .text.PWM_Motor_WriteCompare
-                0x000015b4        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015b4                PWM_Motor_WriteCompare
+                0x00001634        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001634                PWM_Motor_WriteCompare
  .text.PWM_Motor_SetInterruptMode
-                0x000015c0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015c0                PWM_Motor_SetInterruptMode
+                0x00001640        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001640                PWM_Motor_SetInterruptMode
  .text.PWM_Motor_ReadStatusRegister
-                0x000015cc        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015cc                PWM_Motor_ReadStatusRegister
+                0x0000164c        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x0000164c                PWM_Motor_ReadStatusRegister
  .text.PWM_Motor_ReadCapture
-                0x000015d8        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015d8                PWM_Motor_ReadCapture
+                0x00001658        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001658                PWM_Motor_ReadCapture
  .text.PWM_Motor_ClearFIFO
-                0x000015e4       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015e4                PWM_Motor_ClearFIFO
+                0x00001664       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001664                PWM_Motor_ClearFIFO
  .text.PWM_Motor_Init
-                0x000015f8       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x000015f8                PWM_Motor_Init
+                0x00001678       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00001678                PWM_Motor_Init
  .text.PWM_Motor_Start
-                0x00001658       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
-                0x00001658                PWM_Motor_Start
+                0x000016d8       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x000016d8                PWM_Motor_Start
  .text.Pin_IN1_Write
-                0x00001674       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
-                0x00001674                Pin_IN1_Write
+                0x000016f4       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+                0x000016f4                Pin_IN1_Write
  .text.Pin_IN2_Write
-                0x0000168c       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
-                0x0000168c                Pin_IN2_Write
+                0x0000170c       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+                0x0000170c                Pin_IN2_Write
  .text.UART_1_Init
-                0x000016a4       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x000016a4                UART_1_Init
+                0x00001724       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x00001724                UART_1_Init
  .text.UART_1_Enable
-                0x000016cc       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x000016cc                UART_1_Enable
+                0x0000174c       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x0000174c                UART_1_Enable
  .text.UART_1_Start
-                0x00001704       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x00001704                UART_1_Start
+                0x00001784       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x00001784                UART_1_Start
  .text.UART_1_ReadRxData
-                0x00001720        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x00001720                UART_1_ReadRxData
+                0x000017a0        0xc .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x000017a0                UART_1_ReadRxData
  .text.UART_1_GetRxBufferSize
-                0x0000172c       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x0000172c                UART_1_GetRxBufferSize
+                0x000017ac       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x000017ac                UART_1_GetRxBufferSize
  .text.UART_1_WriteTxData
-                0x00001744       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x00001744                UART_1_WriteTxData
+                0x000017c4       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x000017c4                UART_1_WriteTxData
  .text.UART_1_PutChar
-                0x00001758       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x00001758                UART_1_PutChar
+                0x000017d8       0x18 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x000017d8                UART_1_PutChar
  .text.UART_1_PutArray
-                0x00001770       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
-                0x00001770                UART_1_PutArray
+                0x000017f0       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x000017f0                UART_1_PutArray
  .text.UART_1_IntClock_Start
-                0x00001798       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
-                0x00001798                UART_1_IntClock_Start
- *fill*         0x000017b4        0x4 
- .text          0x000017b8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
-                0x000017b8                CyDelayCycles
-                0x000017c8                CyEnterCriticalSection
-                0x000017d0                CyExitCriticalSection
- .text          0x000017d8      0x21c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_addsubsf3.o)
-                0x000017d8                __aeabi_frsub
-                0x000017e0                __subsf3
-                0x000017e0                __aeabi_fsub
-                0x000017e4                __aeabi_fadd
-                0x000017e4                __addsf3
-                0x00001944                __aeabi_ui2f
-                0x00001944                __floatunsisf
-                0x0000194c                __aeabi_i2f
-                0x0000194c                __floatsisf
-                0x00001968                __aeabi_ul2f
-                0x00001968                __floatundisf
-                0x00001978                __aeabi_l2f
-                0x00001978                __floatdisf
- .text          0x000019f4      0x2a0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_muldivsf3.o)
-                0x000019f4                __mulsf3
-                0x000019f4                __aeabi_fmul
-                0x00001b5c                __aeabi_fdiv
-                0x00001b5c                __divsf3
- .text          0x00001c94       0xec d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_cmpsf2.o)
-                0x00001c94                __gesf2
-                0x00001c94                __gtsf2
-                0x00001c9c                __lesf2
-                0x00001c9c                __ltsf2
-                0x00001ca4                __nesf2
-                0x00001ca4                __eqsf2
-                0x00001ca4                __cmpsf2
-                0x00001d04                __aeabi_cfrcmple
-                0x00001d0c                __aeabi_cfcmpeq
-                0x00001d0c                __aeabi_cfcmple
-                0x00001d1c                __aeabi_fcmpeq
-                0x00001d30                __aeabi_fcmplt
-                0x00001d44                __aeabi_fcmple
-                0x00001d58                __aeabi_fcmpge
-                0x00001d6c                __aeabi_fcmpgt
- .text          0x00001d80       0x4c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_fixsfsi.o)
-                0x00001d80                __aeabi_f2iz
-                0x00001d80                __fixsfsi
- .text          0x00001dcc       0x40 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_fixunssfsi.o)
-                0x00001dcc                __fixunssfsi
-                0x00001dcc                __aeabi_f2uiz
- .text.__errno  0x00001e0c        0xc d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-errno.o)
-                0x00001e0c                __errno
+                0x00001818       0x1c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+                0x00001818                UART_1_IntClock_Start
+ *fill*         0x00001834        0x4 
+ .text          0x00001838       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
+                0x00001838                CyDelayCycles
+                0x00001848                CyEnterCriticalSection
+                0x00001850                CyExitCriticalSection
+ .text          0x00001858      0x21c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_addsubsf3.o)
+                0x00001858                __aeabi_frsub
+                0x00001860                __subsf3
+                0x00001860                __aeabi_fsub
+                0x00001864                __aeabi_fadd
+                0x00001864                __addsf3
+                0x000019c4                __aeabi_ui2f
+                0x000019c4                __floatunsisf
+                0x000019cc                __aeabi_i2f
+                0x000019cc                __floatsisf
+                0x000019e8                __aeabi_ul2f
+                0x000019e8                __floatundisf
+                0x000019f8                __aeabi_l2f
+                0x000019f8                __floatdisf
+ .text          0x00001a74      0x2a0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_muldivsf3.o)
+                0x00001a74                __mulsf3
+                0x00001a74                __aeabi_fmul
+                0x00001bdc                __aeabi_fdiv
+                0x00001bdc                __divsf3
+ .text          0x00001d14       0xec d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_cmpsf2.o)
+                0x00001d14                __gesf2
+                0x00001d14                __gtsf2
+                0x00001d1c                __lesf2
+                0x00001d1c                __ltsf2
+                0x00001d24                __nesf2
+                0x00001d24                __eqsf2
+                0x00001d24                __cmpsf2
+                0x00001d84                __aeabi_cfrcmple
+                0x00001d8c                __aeabi_cfcmpeq
+                0x00001d8c                __aeabi_cfcmple
+                0x00001d9c                __aeabi_fcmpeq
+                0x00001db0                __aeabi_fcmplt
+                0x00001dc4                __aeabi_fcmple
+                0x00001dd8                __aeabi_fcmpge
+                0x00001dec                __aeabi_fcmpgt
+ .text          0x00001e00       0x4c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_fixsfsi.o)
+                0x00001e00                __aeabi_f2iz
+                0x00001e00                __fixsfsi
+ .text          0x00001e4c       0x40 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m\libgcc.a(_arm_fixunssfsi.o)
+                0x00001e4c                __fixunssfsi
+                0x00001e4c                __aeabi_f2uiz
+ .text.__errno  0x00001e8c        0xc d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-errno.o)
+                0x00001e8c                __errno
  .text.__libc_init_array
-                0x00001e18       0x4c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-init.o)
-                0x00001e18                __libc_init_array
- .text.memcpy   0x00001e64       0x16 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memcpy-stub.o)
-                0x00001e64                memcpy
- .text.memset   0x00001e7a       0x10 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memset.o)
-                0x00001e7a                memset
+                0x00001e98       0x4c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-init.o)
+                0x00001e98                __libc_init_array
+ .text.memcpy   0x00001ee4       0x16 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memcpy-stub.o)
+                0x00001ee4                memcpy
+ .text.memset   0x00001efa       0x10 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memset.o)
+                0x00001efa                memset
  *(.plt)
  *(.gnu.warning)
  *(.glue_7t)
- .glue_7t       0x00001e8a        0x0 linker stubs
+ .glue_7t       0x00001f0a        0x0 linker stubs
  *(.glue_7)
- .glue_7        0x00001e8a        0x0 linker stubs
+ .glue_7        0x00001f0a        0x0 linker stubs
  *(.vfp11_veneer)
- .vfp11_veneer  0x00001e8a        0x0 linker stubs
+ .vfp11_veneer  0x00001f0a        0x0 linker stubs
  *(.bootloader)
  *(.ARM.extab* .gnu.linkonce.armextab.*)
  *(.gcc_except_table)
 
-.v4_bx          0x00001e8c        0x0
- .v4_bx         0x00001e8c        0x0 linker stubs
+.v4_bx          0x00001f0c        0x0
+ .v4_bx         0x00001f0c        0x0 linker stubs
 
-.iplt           0x00001e8c        0x0
- .iplt          0x00001e8c        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
+.iplt           0x00001f0c        0x0
+ .iplt          0x00001f0c        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
 
 .eh_frame_hdr
  *(.eh_frame_hdr)
 
-.eh_frame       0x00001e8c        0x4
+.eh_frame       0x00001f0c        0x4
  *(.eh_frame)
- .eh_frame      0x00001e8c        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
- .eh_frame      0x00001e8c        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtend.o
+ .eh_frame      0x00001f0c        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
+ .eh_frame      0x00001f0c        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtend.o
                 [!provide]                PROVIDE (__exidx_start, .)
 
 .ARM.exidx
  *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-                0x00001e90                __exidx_end = .
+                0x00001f10                __exidx_end = .
 
-.rodata         0x00001e90       0x78
+.rodata         0x00001f10       0x78
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata        0x00001e90       0x40 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .rodata        0x00001f10       0x40 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .rodata.str1.1
-                0x00001ed0        0x2 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-impure.o)
-                0x00001ed4                . = ALIGN (0x4)
- *fill*         0x00001ed2        0x2 
+                0x00001f50        0x2 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-impure.o)
+                0x00001f54                . = ALIGN (0x4)
+ *fill*         0x00001f52        0x2 
  *(.init)
- .init          0x00001ed4        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crti.o
-                0x00001ed4                _init
- .init          0x00001ed8        0x8 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtn.o
-                0x00001ee0                . = ALIGN (0x4)
-                0x00001ee0                __preinit_array_start = .
+ .init          0x00001f54        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crti.o
+                0x00001f54                _init
+ .init          0x00001f58        0x8 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtn.o
+                0x00001f60                . = ALIGN (0x4)
+                0x00001f60                __preinit_array_start = .
  *(.preinit_array)
-                0x00001ee0                __preinit_array_end = .
-                0x00001ee0                . = ALIGN (0x4)
-                0x00001ee0                __init_array_start = .
+                0x00001f60                __preinit_array_end = .
+                0x00001f60                . = ALIGN (0x4)
+                0x00001f60                __init_array_start = .
  *(SORT(.init_array.*))
  *(.init_array)
- .init_array    0x00001ee0        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
- .init_array    0x00001ee4        0x4 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
-                0x00001ee8                __init_array_end = .
-                0x00001ee8                . = ALIGN (0x4)
+ .init_array    0x00001f60        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
+ .init_array    0x00001f64        0x4 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+                0x00001f68                __init_array_end = .
+                0x00001f68                . = ALIGN (0x4)
  *(.fini)
- .fini          0x00001ee8        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crti.o
-                0x00001ee8                _fini
- .fini          0x00001eec        0x8 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtn.o
-                0x00001ef4                . = ALIGN (0x4)
-                0x00001ef4                __fini_array_start = .
+ .fini          0x00001f68        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crti.o
+                0x00001f68                _fini
+ .fini          0x00001f6c        0x8 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtn.o
+                0x00001f74                . = ALIGN (0x4)
+                0x00001f74                __fini_array_start = .
  *(.fini_array)
- .fini_array    0x00001ef4        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
+ .fini_array    0x00001f74        0x4 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
  *(SORT(.fini_array.*))
-                0x00001ef8                __fini_array_end = .
-                0x00001ef8                . = ALIGN (0x4)
+                0x00001f78                __fini_array_end = .
+                0x00001f78                . = ALIGN (0x4)
  *crtbegin.o(.ctors)
  *(EXCLUDE_FILE(*crtend.o) .ctors)
  *(SORT(.ctors.*))
  *crtend.o(.ctors)
-                0x00001ef8                . = ALIGN (0x4)
+                0x00001f78                . = ALIGN (0x4)
  *crtbegin.o(.dtors)
  *(EXCLUDE_FILE(*crtend.o) .dtors)
  *(SORT(.dtors.*))
  *crtend.o(.dtors)
-                0x00001ef8                . = ALIGN (0x4)
-                0x00001ef8                __cy_regions = .
-                0x00001ef8        0x4 LONG 0x1f08 __cy_region_init_ram
-                0x00001efc        0x4 LONG 0x1fff80c8 __cy_region_start_data
-                0x00001f00        0x4 LONG 0x80 __cy_region_init_size_ram
-                0x00001f04        0x4 LONG 0x198 __cy_region_zero_size_ram
-                0x00001f08                __cy_regions_end = .
-                0x00001f08                . = ALIGN (0x8)
-                0x00001f08                _etext = .
+                0x00001f78                . = ALIGN (0x4)
+                0x00001f78                __cy_regions = .
+                0x00001f78        0x4 LONG 0x1f88 __cy_region_init_ram
+                0x00001f7c        0x4 LONG 0x1fff80c8 __cy_region_start_data
+                0x00001f80        0x4 LONG 0x80 __cy_region_init_size_ram
+                0x00001f84        0x4 LONG 0x198 __cy_region_zero_size_ram
+                0x00001f88                __cy_regions_end = .
+                0x00001f88                . = ALIGN (0x8)
+                0x00001f88                _etext = .
 
 .cy_checksum_exclude
-                0x00001f08        0x0
+                0x00001f88        0x0
  *(.cy_checksum_exclude)
 
 .ramvectors     0x1fff8000       0xc0
@@ -1156,7 +1159,7 @@ END GROUP
  .noinit        0x1fff80c0        0x1 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
                 0x1fff80c0                CyResetStatus
 
-.data           0x1fff80c8       0x80 load address 0x00001f08
+.data           0x1fff80c8       0x80 load address 0x00001f88
                 0x1fff80c8                __cy_region_start_data = .
  *(.jcr)
  .jcr           0x1fff80c8        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
@@ -1181,10 +1184,10 @@ END GROUP
  *(.ram)
                 0x1fff8148                _edata = .
 
-.igot.plt       0x1fff8148        0x0 load address 0x00001f88
+.igot.plt       0x1fff8148        0x0 load address 0x00002008
  .igot.plt      0x1fff8148        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
 
-.bss            0x1fff8148      0x198 load address 0x00001f88
+.bss            0x1fff8148      0x198 load address 0x00002008
                 0x1fff8148                PROVIDE (__bss_start__, .)
  *(.shbss)
  *(.bss .bss.* .gnu.linkonce.b.*)
@@ -1232,11 +1235,11 @@ END GROUP
                 0x1fff82e0                __end = .
                 0x1fff82e0                PROVIDE (end, .)
                 0x1fff82e0                PROVIDE (__bss_end__, .)
-                0x00001f08                __cy_region_init_ram = LOADADDR (.data)
+                0x00001f88                __cy_region_init_ram = LOADADDR (.data)
                 0x00000080                __cy_region_init_size_ram = (_edata - ADDR (.data))
                 0x00000198                __cy_region_zero_size_ram = (_end - _edata)
 
-.heap           0x1fff82e0       0x80 load address 0x00001f88
+.heap           0x1fff82e0       0x80 load address 0x00002008
                 0x1fff82e0                . = _end
                 0x1fff8360                . = (. + 0x80)
  *fill*         0x1fff82e0       0x80 
@@ -1287,8 +1290,8 @@ END GROUP
  .cymeta        0x90500000        0xc .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
                 0x90500000                cy_metadata
 
-.rel.dyn        0x00001f88        0x0 load address 0x9050000c
- .rel.iplt      0x00001f88        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
+.rel.dyn        0x00002008        0x0 load address 0x9050000c
+ .rel.iplt      0x00002008        0x0 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/armv7-m/crtbegin.o
 
 .stab
  *(.stab)
@@ -1308,7 +1311,7 @@ END GROUP
 .debug_sfnames
  *(.debug_sfnames)
 
-.debug_aranges  0x00000000      0xce0
+.debug_aranges  0x00000000      0xce8
  *(.debug_aranges)
  .debug_aranges
                 0x00000000       0x20 .\CortexM3\ARM_GCC_541\Debug\main.o
@@ -1321,309 +1324,309 @@ END GROUP
  .debug_aranges
                 0x000000b0       0x48 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
  .debug_aranges
-                0x000000f8       0xa0 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                0x000000f8       0xa8 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
  .debug_aranges
-                0x00000198       0x68 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+                0x000001a0       0x68 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
  .debug_aranges
-                0x00000200       0x58 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+                0x00000208       0x58 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
  .debug_aranges
-                0x00000258       0x18 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
+                0x00000260       0x18 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
  .debug_aranges
-                0x00000270       0x48 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+                0x00000278       0x48 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
  .debug_aranges
-                0x000002b8       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+                0x000002c0       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
  .debug_aranges
-                0x00000348       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+                0x00000350       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
  .debug_aranges
-                0x000003a8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+                0x000003b0       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
  .debug_aranges
-                0x000003c8       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+                0x000003d0       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
  .debug_aranges
-                0x00000448       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+                0x00000450       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
  .debug_aranges
-                0x000004a8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+                0x000004b0       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
  .debug_aranges
-                0x000004c8       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+                0x000004d0       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
  .debug_aranges
-                0x00000560       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+                0x00000568       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
  .debug_aranges
-                0x000005f8      0x2a0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+                0x00000600      0x2a0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
  .debug_aranges
-                0x00000898       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+                0x000008a0       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
  .debug_aranges
-                0x00000930       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+                0x00000938       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
  .debug_aranges
-                0x00000950       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+                0x00000958       0x98 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
  .debug_aranges
-                0x000009e8       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+                0x000009f0       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
  .debug_aranges
-                0x00000a20       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+                0x00000a28       0x38 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
  .debug_aranges
-                0x00000a58       0xf0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+                0x00000a60       0xf0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
  .debug_aranges
-                0x00000b48       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+                0x00000b50       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
  .debug_aranges
-                0x00000bb8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
+                0x00000bc0       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
  .debug_aranges
-                0x00000bd8       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+                0x00000be0       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
  .debug_aranges
-                0x00000c60       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+                0x00000c68       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000     0x78d3
+.debug_info     0x00000000     0x79cb
  *(.debug_info .gnu.linkonce.wi.*)
- .debug_info    0x00000000      0x35a .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_info    0x0000035a      0x256 .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_info    0x000005b0      0x1c7 .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_info    0x00000777      0x2bf .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_info    0x00000a36      0x48a .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_info    0x00000ec0      0xa57 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_info    0x00001917      0x6cf .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_info    0x00001fe6      0x603 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_info    0x000025e9      0x139 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
- .debug_info    0x00002722      0x3bb .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_info    0x00002add      0x332 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_info    0x00002e0f      0x357 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_info    0x00003166       0xf3 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_info    0x00003259      0x2d2 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_info    0x0000352b      0x357 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_info    0x00003882       0xf3 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_info    0x00003975      0x348 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_info    0x00003cbd      0x348 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_info    0x00004005     0x1374 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_info    0x00005379      0xa2a .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_info    0x00005da3       0xee .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_info    0x00005e91      0x352 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_info    0x000061e3      0x11f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_info    0x00006302      0x11f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_info    0x00006421      0x60c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_info    0x00006a2d      0x283 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_info    0x00006cb0       0x86 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
- .debug_info    0x00006d36      0x64d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_info    0x00007383      0x550 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_info    0x00000000      0x42d .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_info    0x0000042d      0x256 .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_info    0x00000683      0x1c7 .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_info    0x0000084a      0x2bf .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_info    0x00000b09      0x48a .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_info    0x00000f93      0xa7c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_info    0x00001a0f      0x6cf .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_info    0x000020de      0x603 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_info    0x000026e1      0x139 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
+ .debug_info    0x0000281a      0x3bb .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_info    0x00002bd5      0x332 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_info    0x00002f07      0x357 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_info    0x0000325e       0xf3 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_info    0x00003351      0x2d2 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_info    0x00003623      0x357 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_info    0x0000397a       0xf3 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_info    0x00003a6d      0x348 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_info    0x00003db5      0x348 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_info    0x000040fd     0x1374 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_info    0x00005471      0xa2a .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_info    0x00005e9b       0xee .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_info    0x00005f89      0x352 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_info    0x000062db      0x11f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_info    0x000063fa      0x11f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_info    0x00006519      0x60c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_info    0x00006b25      0x283 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_info    0x00006da8       0x86 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
+ .debug_info    0x00006e2e      0x64d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_info    0x0000747b      0x550 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
-.debug_abbrev   0x00000000     0x231e
+.debug_abbrev   0x00000000     0x2351
  *(.debug_abbrev)
- .debug_abbrev  0x00000000      0x11c .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_abbrev  0x0000011c       0xba .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_abbrev  0x000001d6       0xf5 .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_abbrev  0x000002cb      0x10a .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_abbrev  0x000003d5      0x197 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_abbrev  0x0000056c      0x29a .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_abbrev  0x00000806      0x1a3 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_abbrev  0x000009a9      0x20d .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_abbrev  0x00000bb6       0x77 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
- .debug_abbrev  0x00000c2d      0x1e8 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_abbrev  0x00000e15      0x14b .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_abbrev  0x00000f60      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_abbrev  0x00001088       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_abbrev  0x00001100      0x173 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_abbrev  0x00001273      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_abbrev  0x0000139b       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_abbrev  0x00001413      0x117 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_abbrev  0x0000152a      0x117 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_abbrev  0x00001641      0x254 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_abbrev  0x00001895      0x1ab .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_abbrev  0x00001a40       0x8e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_abbrev  0x00001ace      0x133 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_abbrev  0x00001c01       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_abbrev  0x00001c91       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_abbrev  0x00001d21      0x175 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_abbrev  0x00001e96      0x139 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_abbrev  0x00001fcf       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
- .debug_abbrev  0x00001fe3      0x1a7 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_abbrev  0x0000218a      0x194 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_abbrev  0x00000000      0x14f .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_abbrev  0x0000014f       0xba .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_abbrev  0x00000209       0xf5 .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_abbrev  0x000002fe      0x10a .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_abbrev  0x00000408      0x197 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_abbrev  0x0000059f      0x29a .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_abbrev  0x00000839      0x1a3 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_abbrev  0x000009dc      0x20d .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_abbrev  0x00000be9       0x77 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
+ .debug_abbrev  0x00000c60      0x1e8 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_abbrev  0x00000e48      0x14b .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_abbrev  0x00000f93      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_abbrev  0x000010bb       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_abbrev  0x00001133      0x173 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_abbrev  0x000012a6      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_abbrev  0x000013ce       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_abbrev  0x00001446      0x117 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_abbrev  0x0000155d      0x117 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_abbrev  0x00001674      0x254 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_abbrev  0x000018c8      0x1ab .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_abbrev  0x00001a73       0x8e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_abbrev  0x00001b01      0x133 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_abbrev  0x00001c34       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_abbrev  0x00001cc4       0x90 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_abbrev  0x00001d54      0x175 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_abbrev  0x00001ec9      0x139 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_abbrev  0x00002002       0x14 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
+ .debug_abbrev  0x00002016      0x1a7 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_abbrev  0x000021bd      0x194 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
-.debug_line     0x00000000     0x3481
+.debug_line     0x00000000     0x34b1
  *(.debug_line)
- .debug_line    0x00000000      0x1a7 .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_line    0x000001a7      0x192 .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_line    0x00000339      0x15b .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_line    0x00000494      0x1cf .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_line    0x00000663      0x231 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_line    0x00000894      0x38a .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_line    0x00000c1e      0x2a6 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_line    0x00000ec4      0x1e1 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_line    0x000010a5      0x113 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
- .debug_line    0x000011b8      0x206 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_line    0x000013be      0x172 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_line    0x00001530      0x13d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_line    0x0000166d       0x6c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_line    0x000016d9      0x132 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_line    0x0000180b      0x13d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_line    0x00001948       0x6c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_line    0x000019b4      0x18f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_line    0x00001b43      0x18f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_line    0x00001cd2      0x816 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_line    0x000024e8      0x367 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_line    0x0000284f       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_line    0x000028af      0x18c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_line    0x00002a3b       0x94 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_line    0x00002acf       0x94 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_line    0x00002b63      0x2c0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_line    0x00002e23      0x17e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_line    0x00002fa1       0x66 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
- .debug_line    0x00003007      0x21a .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_line    0x00003221      0x260 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_line    0x00000000      0x1c6 .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_line    0x000001c6      0x192 .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_line    0x00000358      0x15b .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_line    0x000004b3      0x1cf .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_line    0x00000682      0x231 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_line    0x000008b3      0x39b .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_line    0x00000c4e      0x2a6 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_line    0x00000ef4      0x1e1 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_line    0x000010d5      0x113 .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
+ .debug_line    0x000011e8      0x206 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_line    0x000013ee      0x172 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_line    0x00001560      0x13d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_line    0x0000169d       0x6c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_line    0x00001709      0x132 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_line    0x0000183b      0x13d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_line    0x00001978       0x6c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_line    0x000019e4      0x18f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_line    0x00001b73      0x18f .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_line    0x00001d02      0x816 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_line    0x00002518      0x367 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_line    0x0000287f       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_line    0x000028df      0x18c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_line    0x00002a6b       0x94 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_line    0x00002aff       0x94 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_line    0x00002b93      0x2c0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_line    0x00002e53      0x17e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_line    0x00002fd1       0x66 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyBootAsmGnu.o)
+ .debug_line    0x00003037      0x21a .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_line    0x00003251      0x260 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
-.debug_frame    0x00000000     0x204c
+.debug_frame    0x00000000     0x2064
  *(.debug_frame)
- .debug_frame   0x00000000       0x2c .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_frame   0x0000002c       0x64 .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_frame   0x00000090       0x4c .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_frame   0x000000dc       0x84 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_frame   0x00000160       0xcc .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_frame   0x0000022c      0x24c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_frame   0x00000478      0x154 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_frame   0x000005cc       0xe4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_frame   0x000006b0       0xb8 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_frame   0x00000768      0x13c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_frame   0x000008a4       0xec .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_frame   0x00000990       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_frame   0x000009b0      0x104 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_frame   0x00000ab4       0xec .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_frame   0x00000ba0       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_frame   0x00000bc0      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_frame   0x00000cf4      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_frame   0x00000e28      0x738 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_frame   0x00001560      0x1f8 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_frame   0x00001758       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_frame   0x00001778      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_frame   0x000018ac       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_frame   0x000018fc       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_frame   0x0000194c      0x250 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_frame   0x00001b9c       0xe0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_frame   0x00001c7c      0x194 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_frame   0x00001e10      0x180 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
- .debug_frame   0x00001f90       0x20 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-errno.o)
- .debug_frame   0x00001fb0       0x28 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-exit.o)
- .debug_frame   0x00001fd8       0x2c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-init.o)
- .debug_frame   0x00002004       0x28 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memcpy-stub.o)
- .debug_frame   0x0000202c       0x20 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memset.o)
+ .debug_frame   0x00000000       0x34 .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_frame   0x00000034       0x64 .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_frame   0x00000098       0x4c .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_frame   0x000000e4       0x84 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_frame   0x00000168       0xcc .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_frame   0x00000234      0x25c .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_frame   0x00000490      0x154 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_frame   0x000005e4       0xe4 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_frame   0x000006c8       0xb8 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_frame   0x00000780      0x13c .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_frame   0x000008bc       0xec .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_frame   0x000009a8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_frame   0x000009c8      0x104 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_frame   0x00000acc       0xec .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_frame   0x00000bb8       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_frame   0x00000bd8      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_frame   0x00000d0c      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_frame   0x00000e40      0x738 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_frame   0x00001578      0x1f8 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_frame   0x00001770       0x20 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_frame   0x00001790      0x134 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_frame   0x000018c4       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_frame   0x00001914       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_frame   0x00001964      0x250 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_frame   0x00001bb4       0xe0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_frame   0x00001c94      0x194 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_frame   0x00001e28      0x180 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_frame   0x00001fa8       0x20 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-errno.o)
+ .debug_frame   0x00001fc8       0x28 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-exit.o)
+ .debug_frame   0x00001ff0       0x2c d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-init.o)
+ .debug_frame   0x0000201c       0x28 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memcpy-stub.o)
+ .debug_frame   0x00002044       0x20 d:/psoc/psoc creator/4.4/psoc creator/import/gnu/arm/5.4.1/bin/../lib/gcc/arm-none-eabi/5.4.1/../../../../arm-none-eabi/lib/armv7-m\libg_nano.a(lib_a-memset.o)
 
-.debug_str      0x00000000     0x2841
+.debug_str      0x00000000     0x2859
  *(.debug_str)
- .debug_str     0x00000000      0x2ec .\CortexM3\ARM_GCC_541\Debug\main.o
-                                0x334 (size before relaxing)
- .debug_str     0x000002ec       0x71 .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_str     0x00000000      0x30c .\CortexM3\ARM_GCC_541\Debug\main.o
+                                0x354 (size before relaxing)
+ .debug_str     0x0000030c       0x71 .\CortexM3\ARM_GCC_541\Debug\motor.o
                                 0x207 (size before relaxing)
- .debug_str     0x0000035d       0x6f .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_str     0x0000037d       0x6f .\CortexM3\ARM_GCC_541\Debug\pid.o
                                 0x205 (size before relaxing)
- .debug_str     0x000003cc      0x133 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_str     0x000003ec      0x133 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
                                 0x317 (size before relaxing)
- .debug_str     0x000004ff       0xef .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_str     0x0000051f       0xe7 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
                                 0x319 (size before relaxing)
- .debug_str     0x000005ee      0x139 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
-                                0x3e0 (size before relaxing)
- .debug_str     0x00000727       0x85 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_str     0x00000606      0x139 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+                                0x3f0 (size before relaxing)
+ .debug_str     0x0000073f       0x85 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
                                 0x314 (size before relaxing)
- .debug_str     0x000007ac      0x19a .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_str     0x000007c4      0x19a .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
                                 0x340 (size before relaxing)
- .debug_str     0x00000946       0x7f .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
+ .debug_str     0x0000095e       0x7f .\CortexM3\ARM_GCC_541\Debug\cymetadata.o
                                 0x1da (size before relaxing)
- .debug_str     0x000009c5      0x132 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_str     0x000009dd      0x132 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
                                 0x300 (size before relaxing)
- .debug_str     0x00000af7      0x15e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_str     0x00000b0f      0x15e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
                                 0x360 (size before relaxing)
- .debug_str     0x00000c55      0x186 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_str     0x00000c6d      0x186 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
                                 0x380 (size before relaxing)
- .debug_str     0x00000ddb       0x48 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_str     0x00000df3       0x48 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
                                 0x1e4 (size before relaxing)
- .debug_str     0x00000e23       0xf0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_str     0x00000e3b       0xf0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
                                 0x29c (size before relaxing)
- .debug_str     0x00000f13      0x141 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_str     0x00000f2b      0x141 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
                                 0x380 (size before relaxing)
- .debug_str     0x00001054       0x48 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_str     0x0000106c       0x48 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
                                 0x1e4 (size before relaxing)
- .debug_str     0x0000109c      0x1db .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_str     0x000010b4      0x1db .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
                                 0x40c (size before relaxing)
- .debug_str     0x00001277      0x1bf .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_str     0x0000128f      0x1bf .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
                                 0x40c (size before relaxing)
- .debug_str     0x00001436      0x7bd .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_str     0x0000144e      0x7bd .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
                                 0xa3d (size before relaxing)
- .debug_str     0x00001bf3      0x365 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_str     0x00001c0b      0x365 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
                                 0x729 (size before relaxing)
- .debug_str     0x00001f58       0x2e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_str     0x00001f70       0x2e .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
                                 0x1a8 (size before relaxing)
- .debug_str     0x00001f86      0x191 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_str     0x00001f9e      0x191 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
                                 0x3a0 (size before relaxing)
- .debug_str     0x00002117       0x62 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_str     0x0000212f       0x62 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
                                 0x1e2 (size before relaxing)
- .debug_str     0x00002179       0x57 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_str     0x00002191       0x57 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
                                 0x1e2 (size before relaxing)
- .debug_str     0x000021d0      0x273 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_str     0x000021e8      0x273 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
                                 0x4a9 (size before relaxing)
- .debug_str     0x00002443      0x197 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_str     0x0000245b      0x197 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
                                 0x344 (size before relaxing)
- .debug_str     0x000025da      0x1bb .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_str     0x000025f2      0x1bb .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
                                 0x3b6 (size before relaxing)
- .debug_str     0x00002795       0xac .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_str     0x000027ad       0xac .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
                                 0x32e (size before relaxing)
 
-.debug_loc      0x00000000     0x2fcb
+.debug_loc      0x00000000     0x305b
  *(.debug_loc)
- .debug_loc     0x00000000       0x26 .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_loc     0x00000026       0x1e .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_loc     0x00000044      0x116 .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_loc     0x0000015a       0xa9 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_loc     0x00000203      0x152 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_loc     0x00000355      0x8b9 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_loc     0x00000c0e      0x227 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_loc     0x00000e35      0x288 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_loc     0x000010bd      0x144 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_loc     0x00001201       0x6b .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_loc     0x0000126c       0xb9 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_loc     0x00001325       0x13 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_loc     0x00001338       0x56 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_loc     0x0000138e       0xb9 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_loc     0x00001447       0x13 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_loc     0x0000145a       0x3d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_loc     0x00001497       0x3d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_loc     0x000014d4      0xa11 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_loc     0x00001ee5      0x1e4 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_loc     0x000020c9       0x21 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_loc     0x000020ea       0x26 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_loc     0x00002110       0x42 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_loc     0x00002152       0x42 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_loc     0x00002194      0x258 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_loc     0x000023ec      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_loc     0x00002514      0x3b2 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_loc     0x000028c6      0x705 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_loc     0x00000000       0xb6 .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_loc     0x000000b6       0x1e .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_loc     0x000000d4      0x116 .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_loc     0x000001ea       0xa9 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_loc     0x00000293      0x152 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_loc     0x000003e5      0x8b9 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_loc     0x00000c9e      0x227 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_loc     0x00000ec5      0x288 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_loc     0x0000114d      0x144 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_loc     0x00001291       0x6b .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_loc     0x000012fc       0xb9 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_loc     0x000013b5       0x13 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_loc     0x000013c8       0x56 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_loc     0x0000141e       0xb9 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_loc     0x000014d7       0x13 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_loc     0x000014ea       0x3d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_loc     0x00001527       0x3d .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_loc     0x00001564      0xa11 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_loc     0x00001f75      0x1e4 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_loc     0x00002159       0x21 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_loc     0x0000217a       0x26 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_loc     0x000021a0       0x42 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_loc     0x000021e2       0x42 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_loc     0x00002224      0x258 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_loc     0x0000247c      0x128 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_loc     0x000025a4      0x3b2 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_loc     0x00002956      0x705 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
 .debug_macinfo
  *(.debug_macinfo)
 
-.debug_ranges   0x00000000      0xb40
+.debug_ranges   0x00000000      0xb60
  *(.debug_ranges)
- .debug_ranges  0x00000000       0x10 .\CortexM3\ARM_GCC_541\Debug\main.o
- .debug_ranges  0x00000010       0x20 .\CortexM3\ARM_GCC_541\Debug\motor.o
- .debug_ranges  0x00000030       0x18 .\CortexM3\ARM_GCC_541\Debug\pid.o
- .debug_ranges  0x00000048       0x28 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
- .debug_ranges  0x00000070       0x38 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
- .debug_ranges  0x000000a8       0xc0 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
- .debug_ranges  0x00000168       0x70 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
- .debug_ranges  0x000001d8       0x48 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
- .debug_ranges  0x00000220       0x38 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
- .debug_ranges  0x00000258       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
- .debug_ranges  0x000002d8       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
- .debug_ranges  0x00000328       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
- .debug_ranges  0x00000338       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
- .debug_ranges  0x000003a8       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
- .debug_ranges  0x000003f8       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
- .debug_ranges  0x00000408       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
- .debug_ranges  0x00000490       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
- .debug_ranges  0x00000518      0x290 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
- .debug_ranges  0x000007a8       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
- .debug_ranges  0x00000830       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
- .debug_ranges  0x00000840       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
- .debug_ranges  0x000008c8       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
- .debug_ranges  0x000008f0       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
- .debug_ranges  0x00000918       0xe0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
- .debug_ranges  0x000009f8       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
- .debug_ranges  0x00000a58       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
- .debug_ranges  0x00000ad0       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
+ .debug_ranges  0x00000000       0x28 .\CortexM3\ARM_GCC_541\Debug\main.o
+ .debug_ranges  0x00000028       0x20 .\CortexM3\ARM_GCC_541\Debug\motor.o
+ .debug_ranges  0x00000048       0x18 .\CortexM3\ARM_GCC_541\Debug\pid.o
+ .debug_ranges  0x00000060       0x28 .\CortexM3\ARM_GCC_541\Debug\pendulo.o
+ .debug_ranges  0x00000088       0x38 .\CortexM3\ARM_GCC_541\Debug\uartp_pend.o
+ .debug_ranges  0x000000c0       0xc8 .\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o
+ .debug_ranges  0x00000188       0x70 .\CortexM3\ARM_GCC_541\Debug\uartp2.o
+ .debug_ranges  0x000001f8       0x48 .\CortexM3\ARM_GCC_541\Debug\cyfitter_cfg.o
+ .debug_ranges  0x00000240       0x38 .\CortexM3\ARM_GCC_541\Debug\Cm3Start.o
+ .debug_ranges  0x00000278       0x80 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Timer_1.o)
+ .debug_ranges  0x000002f8       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1.o)
+ .debug_ranges  0x00000348       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_INT.o)
+ .debug_ranges  0x00000358       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(isr_1.o)
+ .debug_ranges  0x000003c8       0x50 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2.o)
+ .debug_ranges  0x00000418       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_INT.o)
+ .debug_ranges  0x00000428       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_1_Cnt16.o)
+ .debug_ranges  0x000004b0       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(QuadDec_2_Cnt16.o)
+ .debug_ranges  0x00000538      0x290 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyLib.o)
+ .debug_ranges  0x000007c8       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyPm.o)
+ .debug_ranges  0x00000850       0x10 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(cyutils.o)
+ .debug_ranges  0x00000860       0x88 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(PWM_Motor.o)
+ .debug_ranges  0x000008e8       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN1.o)
+ .debug_ranges  0x00000910       0x28 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(Pin_IN2.o)
+ .debug_ranges  0x00000938       0xe0 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1.o)
+ .debug_ranges  0x00000a18       0x60 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(UART_1_IntClock.o)
+ .debug_ranges  0x00000a78       0x78 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CyFlash.o)
+ .debug_ranges  0x00000af0       0x70 .\CortexM3\ARM_GCC_541\Debug\4 - Pendulo.a(CySpc.o)
 
 .comment        0x00000000       0x6e
  .comment       0x00000000       0x6e .\CortexM3\ARM_GCC_541\Debug\main.o

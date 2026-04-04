@@ -48,8 +48,9 @@ extern volatile uint32 ctrl_period_ticks;   /* = desired_period - 1 */
 void ctrl_init(void);
 void ctrl_set_mode(uint8 plant_id, uint8 mode);
 void ctrl_apply_coeffs(uint8 plant_id, const float* c, uint16 n);
-void ctrl_start(float ref_inner);   /* ref_inner: initial ω ref or OL u */
+void ctrl_start(float ref_inner);       /* ref_inner: initial ω ref or OL u */
 void ctrl_stop(void);
-void ctrl_step(void);               /* call once per g_flag_control tick  */
+void ctrl_step(void);                   /* call once per g_flag_control tick  */
+void ctrl_update_ref(float ref_inner);  /* live inner reference update (CTRL mode) */
 
 #endif /* CTRL_PEND_H */
