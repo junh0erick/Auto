@@ -17,11 +17,7 @@ volatile int16  g_last_u_pwm       = 0;
    Dispara cada Ts_inner = 1 / Fs_inner.
    SOLO levanta la bandera — todo el trabajo se hace en main.
    ============================================================ */
-CY_ISR(Control_Timer_ISR)
-{
-    Timer_1_ReadStatusRegister();   /* limpia la bandera del timer */
-    g_flag_control = 1u;
-}
+
 
 /* ============================================================
    pendulo_init()
@@ -39,11 +35,8 @@ void pendulo_init(void)
     QuadDec_2_Start();
     g_prev_motor_count = (int32)QuadDec_1_GetCounter();
 
-    /* ---- Timer de control (periodo por defecto: 5 ms @ 24 MHz) ---- */
-    Timer_1_Start();
-    isr_1_StartEx(Control_Timer_ISR);
-
     /* ---- Estado inicial ---- */
+    /* Timer no se usa en v5: el timing lo maneja MATLAB con solicitudes 'g' */
     g_flag_control = 0u;
     g_last_u_pwm   = 0;
 }
@@ -77,16 +70,3 @@ void pendulo_read(int32 *theta_counts, int16 *delta_omega_counts)
    Recalcula y escribe el periodo del Timer_1.
    Timer_1 debe estar configurado con Clock = 24 MHz en PSoC Creator.
    ============================================================ */
-void pendulo_timer_set_fs(float fs_inner_hz)
-{
-    uint32 period;
-
-    if (!(fs_inner_hz > 0.0f)) return;
-    if (fs_inner_hz > 10000.0f) fs_inner_hz = 10000.0f; /* máx 10 kHz */
-
-    period = (uint32)((float)TIMER_CLOCK_HZ / fs_inner_hz);
-    if (period < 2u) period = 2u;   /* mínimo 2 cuentas */
-
-    /* Timer_1_WritePeriod toma (period - 1) en PSoC 5LP */
-    Timer_1_WritePeriod(period - 1u);
-}

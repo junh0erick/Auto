@@ -18,16 +18,11 @@
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\cyfitteriar.inc" value="HEADER;;;;;" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\cyfitter.h" value="HEADER;;;;;" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\cydisabledsheets.h" value="HEADER;;;;;" />
-  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\Timer_1.c" value="SOURCE_C;CortexM3;;;;Timer_1" />
-  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\Timer_1.h" value="HEADER;;;;;Timer_1" />
-  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\Timer_1_PM.c" value="SOURCE_C;CortexM3;;;;Timer_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1.c" value="SOURCE_C;CortexM3;;;;QuadDec_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1.h" value="HEADER;;;;;QuadDec_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_INT.c" value="SOURCE_C;CortexM3;;;;QuadDec_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_PM.c" value="SOURCE_C;CortexM3;;;;QuadDec_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_PVT.h" value="HEADER;;;;;QuadDec_1" />
-  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\isr_1.c" value="SOURCE_C;CortexM3;;;;isr_1" />
-  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\isr_1.h" value="HEADER;;;;;isr_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_2.c" value="SOURCE_C;CortexM3;;;;QuadDec_2" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_2.h" value="HEADER;;;;;QuadDec_2" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_2_INT.c" value="SOURCE_C;CortexM3;;;;QuadDec_2" />

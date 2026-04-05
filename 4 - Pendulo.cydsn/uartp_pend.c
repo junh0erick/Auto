@@ -135,7 +135,6 @@ void UARTP_ProcessCommand(void)
                 pf    = (uint8*)&fs_hz;
                 pf[0] = payload[0]; pf[1] = payload[1];
                 pf[2] = payload[2]; pf[3] = payload[3];
-                pendulo_timer_set_fs(fs_hz);
                 ll_putchar((uint8)'K');
             }
             else

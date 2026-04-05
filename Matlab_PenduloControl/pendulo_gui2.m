@@ -1,114 +1,96 @@
 function pendulo_gui2()
-%PENDULO_GUI2  GUI Péndulo Invertido PSoC 5LP — v4
+%PENDULO_GUI2  GUI Péndulo Invertido PSoC 5LP — v5
 %  MATLAB calcula todo el control (double precision). PSoC = sensor/actuador.
+%  Protocolo v5: MATLAB→'g'→PSoC→6B medición→MATLAB→2B u (sin timer)
 %
-%  Protocolo uartp_pend:
-%    CMD: 'r'→K  'f'→R→[Fs f32 handshake]→K  'i'→K  's'→K
-%    CTRL: PSoC→[theta int32 LE (4B)][delta_om int16 LE (2B)] 6B
-%           MATLAB→[u_pwm int16 LE] 2B  |  [0,0,'s'] para stop
-%
-%  modos ctrl: 0=TF  1=SS-Pred-NoI  2=SS-Act-NoI  3=SS-Pred-I
-%              4=SS-Act-I  5=Open-loop  6=Off
+%  Planta 1 (inner): Motor / ω → u_pwm
+%  Planta 2 (outer): Péndulo / θ → ref_inner (decimado por N)
 
-%% ═══ FÍSICA Y PROTOCOLO ══════════════════════════════════════════════════════
-FRAME_SZ      = 6;        % bytes por trama PSoC→MATLAB
-STREAM_PERIOD = 0.005;    % 5 ms — periodo del timer de lectura
-MAX_PTS       = 500000;   % máx puntos en memoria
-STEP_TMO      = 0.8;      % timeout por paso handshake [s]
-MAX_RETRIES   = 50;       % reintentos handshake
+%% ═══ CONSTANTES FÍSICAS Y PROTOCOLO ═════════════════════════════════════════
+FRAME_SZ    = 6;        % bytes por trama PSoC→MATLAB
+MAX_PTS     = 500000;   % máx muestras en memoria
+STEP_TMO    = 0.8;      % timeout handshake [s]
+MAX_RETRIES = 50;       % reintentos handshake
 
-MOTOR_CPR   = 1040.0;     % cuentas/rev encoder motor   (QuadDec x4)
-PENDULO_CPR = 10000.0;    % cuentas/rev encoder péndulo (QuadDec x4)
+MOTOR_CPR   = 1040.0;
+PENDULO_CPR = 10000.0;
 
 MODE_NAMES = {'TF','SS','Open-loop','Off'};
 
-%% ═══ GEOMETRÍA — EDITAR AQUÍ PARA AJUSTAR LA INTERFAZ ══════════════════════
-%  Todos los números importantes están en esta sección.
-%  Regla: posiciones y=... son siempre desde el borde INFERIOR del contenedor.
+%% ═══ GEOMETRÍA — editar aquí para ajustar la interfaz ═══════════════════════
+FIG_W  = 1500;  FIG_H  = 720;
 
-% ── Figura ────────────────────────────────────────────────────────────────────
-FIG_W     = 1500;   % ancho figura  [px]
-FIG_H     = 720;    % alto figura   [px]
+AX_X   = 8;     AX_W   = 892;
+AX_BOT = 10;    AX_H   = 170;   AX_GAP = 4;
 
-% ── Ejes (columna izquierda) ──────────────────────────────────────────────────
-AX_X      = 8;      % margen izquierdo
-AX_W      = 892;    % ancho de cada eje
-AX_BOT    = 10;     % y del eje más inferior
-AX_H      = 170;    % alto de cada eje (los 4 son iguales)
-AX_GAP    = 4;      % separación vertical entre ejes consecutivos
+RX     = 908;   RW     = 585;   RGAP   = 4;
 
-% ── Columna derecha: paneles ──────────────────────────────────────────────────
-RX        = 908;    % borde izquierdo de la columna derecha
-RW        = 585;    % ancho de todos los paneles derechos
-RGAP      = 4;      % espacio entre paneles
+H_LOG   = 86;
+H_VIZ   = 80;
+H_DATA  = 44;
+H_CTRL  = 100;
+H_PLANT = 165;
+H_CONN  = 35;
 
-% ── Alturas de los paneles derechos ──────────────────────────────────────────
-H_LOG     = 86;     % textarea de log
-H_VIZ     = 80;     % panel visualización (checkboxes señales)
-H_DATA    = 79;     % panel datos (export, borrar, scalers)
-H_CTRL    = 100;    % panel control (ref, start, stop, sat)
-H_PLANT   = 145;    % panel planta (compacto — coefs van en popup)
-H_CONN    = 35;     % panel conexión
+Y_LOG    = 5;
+Y_VIZ    = Y_LOG    + H_LOG    + RGAP;
+Y_DATA   = Y_VIZ    + H_VIZ    + RGAP;
+Y_CTRL   = Y_DATA   + H_DATA   + RGAP;
+Y_PLANT0 = Y_CTRL   + H_CTRL   + RGAP;
+Y_PLANT1 = Y_PLANT0 + H_PLANT  + RGAP;
+Y_CONN   = Y_PLANT1 + H_PLANT  + RGAP;
 
-% ── Posiciones Y de paneles (de abajo hacia arriba, automáticas) ──────────────
-Y_LOG     = 5;
-Y_VIZ     = Y_LOG   + H_LOG   + RGAP;
-Y_DATA    = Y_VIZ   + H_VIZ   + RGAP;
-Y_CTRL    = Y_DATA  + H_DATA  + RGAP;
-Y_PLANT0  = Y_CTRL  + H_CTRL  + RGAP;
-Y_PLANT1  = Y_PLANT0 + H_PLANT + RGAP;
-Y_CONN    = Y_PLANT1 + H_PLANT + RGAP;
+PP_PX  = 8;     % margen horizontal
+PP_RH  = 24;    % alto fila estándar
+PP_RG  = 4;     % gap entre filas
 
-% ── Padding interno de paneles ────────────────────────────────────────────────
-PP_PX     = 8;      % margen horizontal izquierdo dentro del panel
-PP_RH     = 24;     % alto de fila estándar
-PP_RG     = 4;      % gap entre filas
+PP_Y1  = 6;                           % fila 1: botones popup
+PP_Y2  = PP_Y1 + PP_RH + PP_RG;      % fila 2: Fs o N
+PP_Y3  = PP_Y2 + PP_RH + PP_RG;      % fila 3: Modo/Obs/Int
+PP_Y4  = PP_Y3 + PP_RH + PP_RG;      % fila 4: cfg status label
+PP_Y5  = PP_Y4 + 18    + PP_RG;      % fila 5: RMS error label
 
-% Y de filas dentro de pPlant (desde el fondo del panel, 4 filas)
-PP_Y1     = 6;                        % fila más baja: botones
-PP_Y2     = PP_Y1 + PP_RH + PP_RG;   % N / Fs
-PP_Y3     = PP_Y2 + PP_RH + PP_RG;   % Modo / Obs / Integrador
-PP_Y4     = PP_Y3 + PP_RH + PP_RG;   % label status
-
-% ── Helper para posición y de los ejes ───────────────────────────────────────
-%  k=0 → eje inferior (y2),  k=3 → eje superior (u1)
 ax_y = @(k) AX_BOT + k * (AX_H + AX_GAP);
 
-%% ═══ ESTADO PRINCIPAL S ══════════════════════════════════════════════════════
+%% ═══ ESTADO PRINCIPAL S ═════════════════════════════════════════════════════
 S = struct();
-S.sp = []; S.isConnected = false;
-S.streamTimer = []; S.rxBuf = uint8([]);
-S.streamOn = false; S.inTxn = false;
+S.sp = [];  S.isConnected = false;
+S.streamOn = false;  S.inLoop = false;
 
-% ── Vectores de telemetría (todos crecen en sincronía, mismo índice n) ────────
 S.nVec        = zeros(0,1);
-S.u1Vec       = zeros(0,1);   % u1 saturado
-S.u1unsat_Vec = zeros(0,1);   % u1 sin saturar
-S.y1Vec       = zeros(0,1);   % ω motor [rad/s]
-S.u2Vec       = zeros(0,1);   % R inner = salida outer = ref del lazo inner
-S.y2Vec       = zeros(0,1);   % θ péndulo [rad]
-S.x1iVec      = zeros(0,1);   % x̂₁ inner
-S.x2iVec      = zeros(0,1);   % x̂₂ inner
-S.x1oVec      = zeros(0,1);   % x̂₁ outer
-S.x2oVec      = zeros(0,1);   % x̂₂ outer
-S.ySimVec1    = zeros(0,1);   % ŷ simulado planta inner  (NaN si sim OFF)
-S.ySimVec2    = zeros(0,1);   % ŷ simulado planta outer  (NaN si sim OFF)
+S.u1Vec       = zeros(0,1);
+S.u1unsat_Vec = zeros(0,1);
+S.y1Vec       = zeros(0,1);
+S.u2Vec       = zeros(0,1);   % R inner = referencia lazo inner
+S.y2Vec       = zeros(0,1);
+S.x1iVec      = zeros(0,1);
+S.x2iVec      = zeros(0,1);
+S.x1oVec      = zeros(0,1);
+S.x2oVec      = zeros(0,1);
+S.ySimVec1    = zeros(0,1);
+S.ySimVec2    = zeros(0,1);
 S.framesTotal = 0;
 
-S.autoStopEn = false; S.autoStopN = 0; S.autoStopArmed = false;
+S.rms1_sum2 = 0;  S.rms1_n = 0;   % error RMS Planta 1
+S.rms2_sum2 = 0;  S.rms2_n = 0;   % error RMS Planta 2
+
+S.autoStopEn = false;  S.autoStopN = 0;  S.autoStopArmed = false;
 S.ctrl = ctrl_state_default();
 
-% ── Configuraciones de planta (fuente de verdad — save/load usa esto) ─────────
-S.cfg(1) = cfg_default();   % inner (Planta 0, motor/ω)
-S.cfg(2) = cfg_default();   % outer (Planta 1, péndulo/θ)
-S.cfg(1).Fs = 200;          % Fs inner default [Hz]
+S.scalers = struct('su1',1,'su2',1,'sy1',1,'sy2',1,...
+                   'sysim1',1,'sysim2',1,'sr',1,...
+                   'sx1i',1,'sx2i',1,'sx1o',1,'sx2o',1);
 
-% ── Handles de ventanas emergentes ────────────────────────────────────────────
-S.ctrl_popup_fig = {[], []};
-S.sim_popup_fig  = {[], []};
+S.cfg(1) = cfg_default();  % inner (Planta 1)
+S.cfg(2) = cfg_default();  % outer (Planta 2)
+S.cfg(1).Fs = 200;
+
+S.ctrl_popup_fig   = {[], []};
+S.sim_popup_fig    = {[], []};
+S.scaler_popup_fig = [];
 
 %% ═══ FIGURA ══════════════════════════════════════════════════════════════════
-fig = uifigure('Name','Péndulo Invertido — Control v4',...
+fig = uifigure('Name','Péndulo Invertido — Control v5',...
                'Position',[20 40 FIG_W FIG_H]);
 fig.CloseRequestFcn = @onClose;
 
@@ -120,70 +102,76 @@ ax_u1 = uiaxes(fig,'Position',[AX_X ax_y(3) AX_W AX_H]);
 
 setupAx(ax_u1,'u₁ [PWM]  esfuerzo motor + R referencia','u₁');
 setupAx(ax_y1,'y₁ = ω motor [rad/s]  /  x̂ inner  /  ŷ sim','ω');
-setupAx(ax_u2,'u₂ = R inner  (salida outer = referencia lazo inner)','u₂');
+setupAx(ax_u2,'u₂ = R inner  (salida outer → referencia lazo inner)','u₂');
 setupAx(ax_y2,'y₂ = θ péndulo [rad]  /  x̂ outer  /  ŷ sim','θ');
 
 hold(ax_u1,'on');
 hU1sat   = stairs(ax_u1,nan,nan,'b-', 'LineWidth',1.5,'DisplayName','u₁ sat');
 hU1unsat = stairs(ax_u1,nan,nan,'b--','LineWidth',0.8,'DisplayName','u₁ unsat');
 hR1      = stairs(ax_u1,nan,nan,'r-', 'LineWidth',1.2,'DisplayName','R (ref inner)');
-hold(ax_u1,'off'); legend(ax_u1,'show');
+hold(ax_u1,'off');  legend(ax_u1,'show');
 
 hold(ax_y1,'on');
 hY1    = plot(ax_y1,nan,nan,'b-', 'LineWidth',1.5,'DisplayName','ω meas');
 hY1sim = plot(ax_y1,nan,nan,'c--','LineWidth',1.2,'DisplayName','ω sim');
-hX1i   = plot(ax_y1,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ i');
-hX2i   = plot(ax_y1,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ i');
-hold(ax_y1,'off'); legend(ax_y1,'show');
+hX1i   = plot(ax_y1,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ᵢ');
+hX2i   = plot(ax_y1,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ᵢ');
+hold(ax_y1,'off');  legend(ax_y1,'show');
 
 hold(ax_u2,'on');
 hU2 = stairs(ax_u2,nan,nan,'r-','LineWidth',1.5,'DisplayName','R inner');
-hold(ax_u2,'off'); legend(ax_u2,'show');
+hold(ax_u2,'off');  legend(ax_u2,'show');
 
 hold(ax_y2,'on');
 hY2    = plot(ax_y2,nan,nan,'r-', 'LineWidth',1.5,'DisplayName','θ meas');
 hY2sim = plot(ax_y2,nan,nan,'c--','LineWidth',1.2,'DisplayName','θ sim');
-hX1o   = plot(ax_y2,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ o');
-hX2o   = plot(ax_y2,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ o');
-hold(ax_y2,'off'); legend(ax_y2,'show');
+hX1o   = plot(ax_y2,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ₒ');
+hX2o   = plot(ax_y2,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ₒ');
+hold(ax_y2,'off');  legend(ax_y2,'show');
 
 %% ═══ PANEL DERECHO ═══════════════════════════════════════════════════════════
 
 % ── 1. Conexión ───────────────────────────────────────────────────────────────
 pConn = uipanel(fig,'Title','Conexión','Position',[RX Y_CONN RW H_CONN]);
-uilabel(pConn,'Text','Puerto:','Position',[ PP_PX    5 45 22]);
-edtCom  = uieditfield(pConn,'text','Value','COM4', 'Position',[PP_PX+47  5 64 22]);
-uilabel(pConn,'Text','Baud:',  'Position',[PP_PX+116 5 36 22]);
+uilabel(pConn,'Text','Puerto:','Position',[PP_PX      5 45 22]);
+edtCom  = uieditfield(pConn,'text','Value','COM4','Position',[PP_PX+47  5 64 22]);
+uilabel(pConn,'Text','Baud:',  'Position',[PP_PX+116  5 36 22]);
 edtBaud = uieditfield(pConn,'numeric','Value',115200,'Limits',[1200 4e6],...
           'Position',[PP_PX+154 5 84 22]);
 btnConn = uibutton(pConn,'Text','Conectar','Position',[PP_PX+244 4 98 24],...
           'BackgroundColor',[0.2 0.62 0.2],'FontColor','w',...
           'ButtonPushedFcn',@onConnToggle);
 lblStat = uilabel(pConn,'Text','Desconectado','Position',[PP_PX+348 5 108 22]);
-btnSave = uibutton(pConn,'Text','Guardar','Position',[PP_PX+460 4 56 24],...
-          'ButtonPushedFcn',@onSaveSession);
-btnLoad = uibutton(pConn,'Text','Cargar', 'Position',[PP_PX+520 4 52 24],...
-          'ButtonPushedFcn',@onLoadSession);
+uibutton(pConn,'Text','Guardar','Position',[PP_PX+460 4 56 24],...
+         'ButtonPushedFcn',@onSaveSession);
+uibutton(pConn,'Text','Cargar', 'Position',[PP_PX+520 4 52 24],...
+         'ButtonPushedFcn',@onLoadSession);
 
-% ── 2 & 3. Paneles de planta (compactos) ──────────────────────────────────────
+% ── 2 & 3. Paneles de planta (compactos) ─────────────────────────────────────
 PLANT_Y   = [Y_PLANT0, Y_PLANT1];
-PLANT_LBL = {'Planta 0 — Motor / ω  (inner)','Planta 1 — Péndulo / θ  (outer)'};
+PLANT_LBL = {'Planta 1 — Motor / ω  (inner)','Planta 2 — Péndulo / θ  (outer)'};
 
 ddMode     = gobjects(2,1);
 ddObs      = gobjects(2,1);
 cbInt      = gobjects(2,1);
-edtN       = gobjects(2,1);
-edtFs      = gobjects(2,1);
+edtN       = gobjects(2,1);   % solo pp=2 visible
+edtFs      = gobjects(2,1);   % solo pp=1 visible
 lblCfgStat = gobjects(2,1);
+lblRMS     = gobjects(2,1);
 cbSimEn    = gobjects(2,1);
 
 for pp = 1:2
     pP = uipanel(fig,'Title',PLANT_LBL{pp},...
          'Position',[RX PLANT_Y(pp) RW H_PLANT]);
 
-    % Fila 4 (más alta): label estado configuración actual
+    % Fila 5: RMS error simulación
+    lblRMS(pp) = uilabel(pP,'Text','— sin sim —',...
+        'Position',[PP_PX PP_Y5 RW-PP_PX*2 16],...
+        'FontColor',[0.15 0.5 0.15],'FontSize',9);
+
+    % Fila 4: resumen configuración
     lblCfgStat(pp) = uilabel(pP,'Text','— sin configurar —',...
-        'Position',[PP_PX PP_Y4 RW-PP_PX*2 PP_RH],...
+        'Position',[PP_PX PP_Y4 RW-PP_PX*2 18],...
         'FontColor',[0.35 0.35 0.35],'FontSize',9);
 
     % Fila 3: Modo / Obs / Integrador
@@ -199,120 +187,101 @@ for pp = 1:2
         'Position',[PP_PX+286 PP_Y3 90 22],...
         'ValueChangedFcn',@(~,~) onIntChange(pp));
 
-    % Fila 2: N o M, Fs (solo planta 0)
+    % Fila 2: Fs (Planta 1) o N decimación (Planta 2)
     if pp == 1
-        uilabel(pP,'Text','M:','Position',[PP_PX PP_Y2 22 22]);
-    else
-        uilabel(pP,'Text','N:','Position',[PP_PX PP_Y2 22 22]);
-    end
-    edtN(pp) = uieditfield(pP,'numeric','Value',1,'Limits',[1 1e6],...
-        'RoundFractionalValues','on','Position',[PP_PX+24 PP_Y2 58 22],...
-        'ValueChangedFcn',@(~,~) onNChange(pp));
-    if pp == 1
-        uilabel(pP,'Text','Fs (Hz):','Position',[PP_PX+88 PP_Y2 54 22]);
+        uilabel(pP,'Text','Fs (Hz):','Position',[PP_PX PP_Y2 54 22]);
         edtFs(pp) = uieditfield(pP,'numeric','Value',200,'Limits',[0.1 10000],...
-            'Position',[PP_PX+144 PP_Y2 78 22],...
+            'Position',[PP_PX+56 PP_Y2 84 22],...
             'ValueChangedFcn',@(~,~) onFsChange());
+        edtN(pp) = uieditfield(pP,'numeric','Value',1,'Limits',[1 1e6],...
+            'RoundFractionalValues','on','Visible','off',...
+            'Position',[PP_PX+24 PP_Y2 58 22]);
     else
-        uilabel(pP,'Text','(N = decimación entera de Fs_inner)',...
-            'Position',[PP_PX+88 PP_Y2 270 22],...
-            'FontColor',[0.5 0.5 0.5],'FontSize',9);
+        uilabel(pP,'Text','N decim:','Position',[PP_PX PP_Y2 58 22]);
+        edtN(pp) = uieditfield(pP,'numeric','Value',1,'Limits',[1 1e6],...
+            'RoundFractionalValues','on','Position',[PP_PX+62 PP_Y2 62 22],...
+            'ValueChangedFcn',@(~,~) onNChange(pp));
         edtFs(pp) = uieditfield(pP,'numeric','Value',0,'Limits',[0 10000],...
             'Visible','off','Position',[PP_PX+144 PP_Y2 78 22]);
     end
 
-    % Fila 1 (inferior): botones popup
+    % Fila 1: botones popup
     uibutton(pP,'Text','⚙ Cargar controlador',...
         'Position',[PP_PX PP_Y1 158 PP_RH],...
         'ButtonPushedFcn',@(~,~) openCtrlPopup(pp));
     cbSimEn(pp) = uicheckbox(pP,'Text','Simular',...
-        'Position',[PP_PX+166 PP_Y1 70 PP_RH],...
+        'Position',[PP_PX+166 PP_Y1 68 PP_RH],...
         'ValueChangedFcn',@(~,~) onSimToggle(pp));
     uibutton(pP,'Text','📈 Cargar modelo',...
-        'Position',[PP_PX+242 PP_Y1 148 PP_RH],...
+        'Position',[PP_PX+240 PP_Y1 148 PP_RH],...
         'ButtonPushedFcn',@(~,~) openSimPopup(pp));
 end
-onModeChange(1); onModeChange(2);
+onModeChange(1);  onModeChange(2);
 
 % ── 4. Control ────────────────────────────────────────────────────────────────
 pCtrl = uipanel(fig,'Title','Control','Position',[RX Y_CTRL RW H_CTRL]);
-yC1 = H_CTRL - 20 - PP_RH;      % primera fila desde arriba
+yC1 = H_CTRL - 20 - PP_RH;
 yC2 = yC1 - PP_RH - PP_RG;
 yC3 = yC2 - PP_RH - PP_RG;
+
 uilabel(pCtrl,'Text','Ref:','Position',[PP_PX yC1 30 22]);
 edtRef = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e6 1e6],...
          'Position',[PP_PX+32 yC1 66 22]);
-uibutton(pCtrl,'Text','Aplicar ref','Position',[PP_PX+104 yC1-1 86 PP_RH],...
-         'ButtonPushedFcn',@onApplyRef);
-btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+196 yC1-1 98 PP_RH],...
+btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+104 yC1-1 98 PP_RH],...
            'BackgroundColor',[0.12 0.62 0.12],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStart);
-btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+300 yC1-1 90 PP_RH],...
+btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+208 yC1-1 88 PP_RH],...
            'BackgroundColor',[0.78 0.1 0.1],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStop);
-lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+396 yC1 160 26],...
+lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+302 yC1 155 26],...
            'FontWeight','bold');
+
 uilabel(pCtrl,'Text','u_min:','Position',[PP_PX yC2 42 22]);
 edtSatMin = uieditfield(pCtrl,'numeric','Value',-1264,'Limits',[-1e6 0],...
             'Position',[PP_PX+44 yC2 66 22]);
 uilabel(pCtrl,'Text','u_max:','Position',[PP_PX+116 yC2 42 22]);
 edtSatMax = uieditfield(pCtrl,'numeric','Value', 1264,'Limits',[0 1e6],...
             'Position',[PP_PX+160 yC2 66 22]);
+lblRTT = uilabel(pCtrl,'Text','RTT — ms','Position',[PP_PX+240 yC2 300 22],...
+         'FontColor',[0.25 0.25 0.7]);
+
 cbAutoStop = uicheckbox(pCtrl,'Text','Auto-stop en frames:','Value',false,...
              'Position',[PP_PX yC3 148 22],'ValueChangedFcn',@onAutoStopToggle);
 edtAutoN   = uieditfield(pCtrl,'numeric','Value',2000,'Limits',[1 1e9],...
              'RoundFractionalValues','on','Position',[PP_PX+152 yC3 78 22]);
-lblDataInf = uilabel(pCtrl,'Text','n=0','Position',[PP_PX+236 yC3 130 22]);
+lblDataInf = uilabel(pCtrl,'Text','n=0','Position',[PP_PX+236 yC3 140 22]);
 
 % ── 5. Datos ──────────────────────────────────────────────────────────────────
 pData = uipanel(fig,'Title','Datos','Position',[RX Y_DATA RW H_DATA]);
 yD1 = H_DATA - 20 - PP_RH;
-yD2 = yD1 - PP_RH - PP_RG;
-uibutton(pData,'Text','Exportar .mat','Position',[PP_PX yD2 128 PP_RH],...
+uibutton(pData,'Text','Exportar .mat', 'Position',[PP_PX      yD1 130 PP_RH],...
          'ButtonPushedFcn',@onExport);
-uibutton(pData,'Text','Borrar datos', 'Position',[PP_PX+134 yD2 118 PP_RH],...
+uibutton(pData,'Text','Borrar datos',  'Position',[PP_PX+136  yD1 118 PP_RH],...
          'ButtonPushedFcn',@onClear);
-uilabel(pData,'Text','u1×:','Position',[PP_PX+266 yD1+2 28 18]);
-edtSU1 = uieditfield(pData,'numeric','Value',1,'Limits',[-1e9 1e9],...
-         'Position',[PP_PX+296 yD1 52 22],'ValueChangedFcn',@updatePlots);
-uilabel(pData,'Text','u2×:','Position',[PP_PX+354 yD1+2 28 18]);
-edtSU2 = uieditfield(pData,'numeric','Value',1,'Limits',[-1e9 1e9],...
-         'Position',[PP_PX+384 yD1 52 22],'ValueChangedFcn',@updatePlots);
-uilabel(pData,'Text','y1×:','Position',[PP_PX+266 yD2+2 28 18]);
-edtSY1 = uieditfield(pData,'numeric','Value',1,'Limits',[-1e9 1e9],...
-         'Position',[PP_PX+296 yD2 52 22],'ValueChangedFcn',@updatePlots);
-uilabel(pData,'Text','y2×:','Position',[PP_PX+354 yD2+2 28 18]);
-edtSY2 = uieditfield(pData,'numeric','Value',1,'Limits',[-1e9 1e9],...
-         'Position',[PP_PX+384 yD2 52 22],'ValueChangedFcn',@updatePlots);
+uibutton(pData,'Text','⚙ Escaladores','Position',[PP_PX+260  yD1 142 PP_RH],...
+         'ButtonPushedFcn',@(~,~) openScalerPopup());
 
 % ── 6. Visualización ──────────────────────────────────────────────────────────
 pViz = uipanel(fig,'Title','Visualización','Position',[RX Y_VIZ RW H_VIZ]);
 yV1 = H_VIZ - 20 - PP_RH;
 yV2 = yV1 - PP_RH - PP_RG;
-yV3 = yV2 - PP_RH - PP_RG;
-% Señales principales
-uilabel(pViz,'Text','Señales:','Position',[PP_PX yV1+2 54 18]);
-cbSigU      = uicheckbox(pViz,'Text','u sat',  'Value',true, 'Position',[PP_PX+ 58 yV1 58 22],'ValueChangedFcn',@updatePlots);
-cbSigUunsat = uicheckbox(pViz,'Text','u unsat','Value',true, 'Position',[PP_PX+118 yV1 68 22],'ValueChangedFcn',@updatePlots);
-cbSigR      = uicheckbox(pViz,'Text','R',      'Value',true, 'Position',[PP_PX+188 yV1 34 22],'ValueChangedFcn',@updatePlots);
-cbSigY      = uicheckbox(pViz,'Text','y',      'Value',true, 'Position',[PP_PX+224 yV1 34 22],'ValueChangedFcn',@updatePlots);
-cbSigSim    = uicheckbox(pViz,'Text','ŷ sim',  'Value',true, 'Position',[PP_PX+260 yV1 60 22],'ValueChangedFcn',@updatePlots);
-% Estados SS
+
+% Fila 1: señales
+uilabel(pViz,'Text','Señales:','Position',[PP_PX yV1+2 52 18]);
+cbSigU     = uicheckbox(pViz,'Text','u sat',  'Value',true, 'Position',[PP_PX+ 56 yV1 58 22],'ValueChangedFcn',@updatePlots);
+cbSigUnsat = uicheckbox(pViz,'Text','u unsat','Value',true, 'Position',[PP_PX+116 yV1 70 22],'ValueChangedFcn',@updatePlots);
+cbSigR     = uicheckbox(pViz,'Text','R',      'Value',true, 'Position',[PP_PX+190 yV1 34 22],'ValueChangedFcn',@updatePlots);
+cbSigY1    = uicheckbox(pViz,'Text','y₁',    'Value',true, 'Position',[PP_PX+226 yV1 40 22],'ValueChangedFcn',@updatePlots);
+cbSigY2    = uicheckbox(pViz,'Text','y₂',    'Value',true, 'Position',[PP_PX+268 yV1 40 22],'ValueChangedFcn',@updatePlots);
+cbSigSim1  = uicheckbox(pViz,'Text','ŷ₁',   'Value',true, 'Position',[PP_PX+310 yV1 44 22],'ValueChangedFcn',@updatePlots);
+cbSigSim2  = uicheckbox(pViz,'Text','ŷ₂',   'Value',true, 'Position',[PP_PX+356 yV1 44 22],'ValueChangedFcn',@updatePlots);
+
+% Fila 2: SS estados
 uilabel(pViz,'Text','SS x̂:','Position',[PP_PX yV2+2 44 18]);
-cbX1i = uicheckbox(pViz,'Text','x̂₁ᵢ','Value',false,'Position',[PP_PX+ 50 yV2 48 22],'ValueChangedFcn',@updatePlots);
-cbX2i = uicheckbox(pViz,'Text','x̂₂ᵢ','Value',false,'Position',[PP_PX+100 yV2 48 22],'ValueChangedFcn',@updatePlots);
-cbX1o = uicheckbox(pViz,'Text','x̂₁ₒ','Value',false,'Position',[PP_PX+150 yV2 48 22],'ValueChangedFcn',@updatePlots);
-cbX2o = uicheckbox(pViz,'Text','x̂₂ₒ','Value',false,'Position',[PP_PX+200 yV2 48 22],'ValueChangedFcn',@updatePlots);
-% Escaladores de estados
-uilabel(pViz,'Text','Esc×:','Position',[PP_PX yV3+2 42 18]);
-uilabel(pViz,'Text','x1ᵢ','Position',[PP_PX+ 48 yV3+2 24 18]);
-edtSX1i = uieditfield(pViz,'numeric','Value',1,'Limits',[-1e9 1e9],'Position',[PP_PX+ 74 yV3 44 22],'ValueChangedFcn',@updatePlots);
-uilabel(pViz,'Text','x2ᵢ','Position',[PP_PX+124 yV3+2 24 18]);
-edtSX2i = uieditfield(pViz,'numeric','Value',1,'Limits',[-1e9 1e9],'Position',[PP_PX+150 yV3 44 22],'ValueChangedFcn',@updatePlots);
-uilabel(pViz,'Text','x1ₒ','Position',[PP_PX+200 yV3+2 24 18]);
-edtSX1o = uieditfield(pViz,'numeric','Value',1,'Limits',[-1e9 1e9],'Position',[PP_PX+226 yV3 44 22],'ValueChangedFcn',@updatePlots);
-uilabel(pViz,'Text','x2ₒ','Position',[PP_PX+276 yV3+2 24 18]);
-edtSX2o = uieditfield(pViz,'numeric','Value',1,'Limits',[-1e9 1e9],'Position',[PP_PX+302 yV3 44 22],'ValueChangedFcn',@updatePlots);
+cbX1i = uicheckbox(pViz,'Text','x̂₁ᵢ','Value',false,'Position',[PP_PX+ 50 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX2i = uicheckbox(pViz,'Text','x̂₂ᵢ','Value',false,'Position',[PP_PX+104 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX1o = uicheckbox(pViz,'Text','x̂₁ₒ','Value',false,'Position',[PP_PX+158 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX2o = uicheckbox(pViz,'Text','x̂₂ₒ','Value',false,'Position',[PP_PX+212 yV2 52 22],'ValueChangedFcn',@updatePlots);
 
 % ── 7. Log ────────────────────────────────────────────────────────────────────
 txtLog = uitextarea(fig,'Editable','off','Position',[RX Y_LOG RW H_LOG],...
@@ -337,15 +306,14 @@ txtLog.Value = strings(0,1);
     end
 
     function setupAx(ax, ttl, yl)
-        ax.XGrid = 'on'; ax.YGrid = 'on';
-        ax.Title.String = ttl;
+        ax.XGrid = 'on';  ax.YGrid = 'on';
+        ax.Title.String  = ttl;
         ax.XLabel.String = 'frame';
         ax.YLabel.String = yl;
         ax.YLimMode = 'auto';
         ax.XLimMode = 'auto';
     end
 
-    % campo de texto para entrar un escalar SS en un popup
     function ef = ssEdt(parent, x, y, val)
         ef = uieditfield(parent,'text','Value',num2str(val),...
              'Position',[x y 62 22]);
@@ -360,7 +328,7 @@ txtLog.Value = strings(0,1);
         if isfinite(v) && v ~= 0, s = v; else, s = 1; end
     end
 
-%% ═══ CALLBACKS DE PANELES DE PLANTA (actualizan S.cfg) ══════════════════════
+%% ═══ CALLBACKS DE PANELES DE PLANTA ══════════════════════════════════════════
 
     function onModeChange(pp)
         mn = ddMode(pp).Value;
@@ -368,7 +336,7 @@ txtLog.Value = strings(0,1);
         isSS = strcmp(mn,'SS');
         ddObs(pp).Enable = isSS;
         cbInt(pp).Enable = isSS;
-        if ~isSS, cbInt(pp).Value = false; S.cfg(pp).has_int = false; end
+        if ~isSS, cbInt(pp).Value = false;  S.cfg(pp).has_int = false; end
         updateAxesLayout();
         updateCfgStatus(pp);
     end
@@ -393,7 +361,6 @@ txtLog.Value = strings(0,1);
     function onSimToggle(pp)
         S.cfg(pp).sim_enabled = cbSimEn(pp).Value;
         if ~cbSimEn(pp).Value
-            % apagar sim → reemplazar datos con NaN para que no se grafiquen
             if pp == 1
                 S.ySimVec1 = nan(size(S.ySimVec1));
             else
@@ -409,21 +376,33 @@ txtLog.Value = strings(0,1);
             case 'SS'
                 obs_str = c.obs(1:4);
                 int_str = ''; if c.has_int, int_str = '+∫'; end
-                lblCfgStat(pp).Text = sprintf('SS [%s%s]  N=%d', obs_str, int_str, c.N);
+                if pp == 2
+                    lblCfgStat(pp).Text = sprintf('SS [%s%s]  N=%d', obs_str, int_str, c.N);
+                else
+                    lblCfgStat(pp).Text = sprintf('SS [%s%s]', obs_str, int_str);
+                end
             case 'TF'
-                lblCfgStat(pp).Text = sprintf('TF  ord=%d  N=%d', c.tf_ord, c.N);
+                if pp == 2
+                    lblCfgStat(pp).Text = sprintf('TF  ord=%d  N=%d', c.tf_ord, c.N);
+                else
+                    lblCfgStat(pp).Text = sprintf('TF  ord=%d', c.tf_ord);
+                end
             otherwise
-                lblCfgStat(pp).Text = sprintf('%s  N=%d', c.mode, c.N);
+                if pp == 2
+                    lblCfgStat(pp).Text = sprintf('%s  N=%d', c.mode, c.N);
+                else
+                    lblCfgStat(pp).Text = string(c.mode);
+                end
         end
     end
 
     function updateAxesLayout()
         inn = ~strcmp(ddMode(1).Value,'Off');
         out = ~strcmp(ddMode(2).Value,'Off');
-        AH2 = 2*AX_H + AX_GAP;  % altura doble cuando solo hay una planta
+        AH2 = 2*AX_H + AX_GAP;
         if inn && out
-            ax_u1.Visible='on'; ax_y1.Visible='on';
-            ax_u2.Visible='on'; ax_y2.Visible='on';
+            ax_u1.Visible='on';  ax_y1.Visible='on';
+            ax_u2.Visible='on';  ax_y2.Visible='on';
             ax_u1.Position = [AX_X ax_y(3) AX_W AX_H];
             ax_y1.Position = [AX_X ax_y(2) AX_W AX_H];
             ax_u2.Position = [AX_X ax_y(1) AX_W AX_H];
@@ -445,30 +424,28 @@ txtLog.Value = strings(0,1);
     end
 
     function updatePlots(~,~)
-        % Limpiar todos los handles
-        hAll = [hU1sat, hU1unsat, hR1, hY1, hY1sim, hX1i, hX2i,...
-                hU2, hY2, hY2sim, hX1o, hX2o];
-        for h = hAll
-            set(h,'XData',nan,'YData',nan);
-        end
+        hAll = [hU1sat,hU1unsat,hR1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
+        for h = hAll, set(h,'XData',nan,'YData',nan); end
         if isempty(S.nVec), return; end
 
-        n   = S.nVec;
-        su1 = safeS(edtSU1.Value); su2 = safeS(edtSU2.Value);
-        sy1 = safeS(edtSY1.Value); sy2 = safeS(edtSY2.Value);
-        sx1i= safeS(edtSX1i.Value); sx2i= safeS(edtSX2i.Value);
-        sx1o= safeS(edtSX1o.Value); sx2o= safeS(edtSX2o.Value);
+        n    = S.nVec;
+        su1  = safeS(S.scalers.su1);   su2  = safeS(S.scalers.su2);
+        sy1  = safeS(S.scalers.sy1);   sy2  = safeS(S.scalers.sy2);
+        sr   = safeS(S.scalers.sr);
+        ss1  = safeS(S.scalers.sysim1);ss2  = safeS(S.scalers.sysim2);
+        sx1i = safeS(S.scalers.sx1i);  sx2i = safeS(S.scalers.sx2i);
+        sx1o = safeS(S.scalers.sx1o);  sx2o = safeS(S.scalers.sx2o);
 
         inn = ~strcmp(ddMode(1).Value,'Off');
         out = ~strcmp(ddMode(2).Value,'Off');
 
         if inn
-            if cbSigU.Value,      set(hU1sat,  'XData',n,'YData',S.u1Vec*su1);        end
-            if cbSigUunsat.Value, set(hU1unsat,'XData',n,'YData',S.u1unsat_Vec*su1);  end
-            if cbSigR.Value,      set(hR1,     'XData',n,'YData',S.u2Vec*su2);        end
-            if cbSigY.Value,      set(hY1,     'XData',n,'YData',S.y1Vec*sy1);        end
-            if cbSigSim.Value && numel(S.ySimVec1)==numel(n)
-                set(hY1sim,'XData',n,'YData',S.ySimVec1*sy1);
+            if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',S.u1Vec*su1);       end
+            if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',S.u1unsat_Vec*su1); end
+            if cbSigR.Value,     set(hR1,     'XData',n,'YData',S.u2Vec*sr);        end
+            if cbSigY1.Value,    set(hY1,     'XData',n,'YData',S.y1Vec*sy1);       end
+            if cbSigSim1.Value && numel(S.ySimVec1)==numel(n)
+                set(hY1sim,'XData',n,'YData',S.ySimVec1*ss1);
             end
             if cbX1i.Value && numel(S.x1iVec)==numel(n)
                 set(hX1i,'XData',n,'YData',S.x1iVec*sx1i);
@@ -479,9 +456,9 @@ txtLog.Value = strings(0,1);
         end
         if out
             if cbSigU.Value,  set(hU2, 'XData',n,'YData',S.u2Vec*su2);  end
-            if cbSigY.Value,  set(hY2, 'XData',n,'YData',S.y2Vec*sy2);  end
-            if cbSigSim.Value && numel(S.ySimVec2)==numel(n)
-                set(hY2sim,'XData',n,'YData',S.ySimVec2*sy2);
+            if cbSigY2.Value, set(hY2, 'XData',n,'YData',S.y2Vec*sy2);  end
+            if cbSigSim2.Value && numel(S.ySimVec2)==numel(n)
+                set(hY2sim,'XData',n,'YData',S.ySimVec2*ss2);
             end
             if cbX1o.Value && numel(S.x1oVec)==numel(n)
                 set(hX1o,'XData',n,'YData',S.x1oVec*sx1o);
@@ -491,13 +468,39 @@ txtLog.Value = strings(0,1);
             end
         end
 
-        % Forzar auto-escala (arregla el bug de ejes fijos tras cambios de modo)
-        for axh = [ax_u1, ax_y1, ax_u2, ax_y2]
-            if strcmp(axh.Visible,'on')
-                axis(axh,'auto');
-            end
+        for axh = [ax_u1,ax_y1,ax_u2,ax_y2]
+            if strcmp(axh.Visible,'on'), axis(axh,'auto'); end
         end
         drawnow;
+    end
+
+    function updateRmsLabels()
+        for pp2 = 1:2
+            try
+                if pp2 == 1
+                    n_s = S.rms1_n;  ss = S.rms1_sum2;  yv = S.y1Vec;
+                else
+                    n_s = S.rms2_n;  ss = S.rms2_sum2;  yv = S.y2Vec;
+                end
+                if n_s > 0
+                    rms_e = sqrt(ss / n_s);
+                    yv_ok = yv(isfinite(yv));
+                    if ~isempty(yv_ok)
+                        ymag = sqrt(mean(yv_ok.^2));
+                    else
+                        ymag = 0;
+                    end
+                    if ymag > 1e-9
+                        pct = rms_e / ymag * 100;
+                        lblRMS(pp2).Text = sprintf('sim err RMS: %.4g  (%.1f%%)', rms_e, pct);
+                    else
+                        lblRMS(pp2).Text = sprintf('sim err RMS: %.4g', rms_e);
+                    end
+                else
+                    lblRMS(pp2).Text = '— sin sim —';
+                end
+            catch, end
+        end
     end
 
     function updateDataInfo()
@@ -532,14 +535,14 @@ txtLog.Value = strings(0,1);
     end
 
     function lp = ctrl_reset_states(lp)
-        lp.tf_w = zeros(5,1); lp.xhat = zeros(2,1); lp.zhat = zeros(2,1);
-        lp.vint = 0; lp.u_prev = 0; lp.cnt = 0;
+        lp.tf_w = zeros(5,1);  lp.xhat = zeros(2,1);  lp.zhat = zeros(2,1);
+        lp.vint = 0;  lp.u_prev = 0;  lp.cnt = 0;
     end
 
 %% ═══ ALGORITMOS DE CONTROL (double precision) ════════════════════════════════
 
     function [y, lp] = tf_step(lp, x)
-        b=lp.tf_b; a=lp.tf_a; w=lp.tf_w;
+        b = lp.tf_b;  a = lp.tf_a;  w = lp.tf_w;
         y    =  b(1)*x + w(1);
         w(1) =  w(2) + b(2)*x - a(2)*y;
         w(2) =  w(3) + b(3)*x - a(3)*y;
@@ -553,8 +556,8 @@ txtLog.Value = strings(0,1);
         has_i = (lp.mode==3)||(lp.mode==4);
         up = lp.u_prev;
         if has_i, lp.vint = lp.vint + (lp.ref - y)*Ts; end
-        if has_i, extra = lp.Ki*lp.vint; else, extra = lp.Nbar*lp.ref; end
-        u = extra - lp.K*lp.xhat;
+        if has_i, extra = lp.Ki*lp.vint;  else, extra = lp.Nbar*lp.ref; end
+        u     = extra - lp.K*lp.xhat;
         innov = y - (lp.C*lp.xhat + lp.D*up);
         lp.xhat = lp.A*lp.xhat + lp.B*u + lp.L*innov;
         lp.u_prev = u;
@@ -563,10 +566,10 @@ txtLog.Value = strings(0,1);
     function [u, lp] = ss_act_step(lp, y, Ts)
         has_i = (lp.mode==3)||(lp.mode==4);
         up = lp.u_prev;
-        innov = y - (lp.C*lp.zhat + lp.D*up);
+        innov  = y - (lp.C*lp.zhat + lp.D*up);
         lp.xhat = lp.zhat + lp.L*innov;
         if has_i, lp.vint = lp.vint + (lp.ref - y)*Ts; end
-        if has_i, extra = lp.Ki*lp.vint; else, extra = lp.Nbar*lp.ref; end
+        if has_i, extra = lp.Ki*lp.vint;  else, extra = lp.Nbar*lp.ref; end
         u = extra - lp.K*lp.xhat;
         lp.zhat = lp.A*lp.xhat + lp.B*u;
         lp.u_prev = u;
@@ -584,7 +587,7 @@ txtLog.Value = strings(0,1);
     end
 
     function [u_sat,u_unsat,x1i,x2i,x1o,x2o,ctrl] = run_control(ctrl, y1, y2)
-        inner = ctrl.inner; outer = ctrl.outer; Ts = ctrl.Ts;
+        inner = ctrl.inner;  outer = ctrl.outer;  Ts = ctrl.Ts;
         if outer.mode ~= 6
             outer.cnt = outer.cnt + 1;
             if outer.cnt >= outer.N
@@ -600,21 +603,21 @@ txtLog.Value = strings(0,1);
             u_unsat = outer.u_prev;
         end
         u_sat = max(ctrl.sat_min, min(ctrl.sat_max, u_unsat));
-        x1i = inner.xhat(1); x2i = inner.xhat(2);
-        x1o = outer.xhat(1); x2o = outer.xhat(2);
-        ctrl.inner = inner; ctrl.outer = outer;
+        x1i = inner.xhat(1);  x2i = inner.xhat(2);
+        x1o = outer.xhat(1);  x2o = outer.xhat(2);
+        ctrl.inner = inner;  ctrl.outer = outer;
     end
 
 %% ═══ GUI → STRUCT CONTROLADOR ════════════════════════════════════════════════
 
     function mv = cfg_to_mode_val(c)
         switch c.mode
-            case 'TF',       mv = 0;
+            case 'TF',        mv = 0;
             case 'SS'
-                if     ~strcmp(c.obs,'Actual') && ~c.has_int, mv=1;
-                elseif  strcmp(c.obs,'Actual') && ~c.has_int, mv=2;
-                elseif ~strcmp(c.obs,'Actual') &&  c.has_int, mv=3;
-                else,                                          mv=4; end
+                if     ~strcmp(c.obs,'Actual') && ~c.has_int, mv = 1;
+                elseif  strcmp(c.obs,'Actual') && ~c.has_int, mv = 2;
+                elseif ~strcmp(c.obs,'Actual') &&  c.has_int, mv = 3;
+                else,                                          mv = 4; end
             case 'Open-loop', mv = 5;
             otherwise,        mv = 6;
         end
@@ -624,11 +627,11 @@ txtLog.Value = strings(0,1);
         lp = ctrl_loop_default();
         lp.mode = cfg_to_mode_val(c);
         lp.N    = max(1, round(c.N));
-        lp.tf_b = c.tf_b(:); lp.tf_a = c.tf_a(:);
-        lp.A = c.ss_A; lp.B = c.ss_B;
-        lp.C = c.ss_C; lp.D = c.ss_D;
-        lp.L = c.ss_L; lp.K = c.ss_K;
-        lp.Ki = c.ss_Ki; lp.Nbar = c.ss_Nbar;
+        lp.tf_b = c.tf_b(:);  lp.tf_a = c.tf_a(:);
+        lp.A    = c.ss_A;     lp.B    = c.ss_B;
+        lp.C    = c.ss_C;     lp.D    = c.ss_D;
+        lp.L    = c.ss_L;     lp.K    = c.ss_K;
+        lp.Ki   = c.ss_Ki;    lp.Nbar = c.ss_Nbar;
     end
 
     function onApplyCtrl(pp)
@@ -636,7 +639,6 @@ txtLog.Value = strings(0,1);
         lp = cfg_to_ctrl_loop(c);
         if pp == 1
             if S.streamOn
-                % Preservar estados dinámicos para evitar discontinuidades
                 lp.tf_w   = S.ctrl.inner.tf_w;
                 lp.xhat   = S.ctrl.inner.xhat;
                 lp.zhat   = S.ctrl.inner.zhat;
@@ -663,26 +665,27 @@ txtLog.Value = strings(0,1);
             S.ctrl.outer = lp;
         end
         updateCfgStatus(pp);
-        logMsg(sprintf('P%d: ctrl aplicado. modo=%d  N=%d', pp-1, lp.mode, lp.N));
+        logMsg(sprintf('Planta %d: ctrl aplicado. modo=%d  N=%d', pp, lp.mode, lp.N));
     end
 
 %% ═══ POPUP — CONTROLADOR ════════════════════════════════════════════════════
 
     function openCtrlPopup(pp)
         if ~isempty(S.ctrl_popup_fig{pp}) && isvalid(S.ctrl_popup_fig{pp})
-            figure(S.ctrl_popup_fig{pp}); return;
+            figure(S.ctrl_popup_fig{pp});  return;
         end
-        PW = 670; PH = 520;
-        pf = uifigure('Name',sprintf('Controlador — Planta %d',pp-1),...
+        PW = 670;  PH = 520;
+        pf = uifigure('Name',sprintf('Controlador — Planta %d', pp),...
              'Position',[200+pp*30 140 PW PH],'Resize','off');
         S.ctrl_popup_fig{pp} = pf;
         pf.DeleteFcn = @(~,~) popCtrlClosed(pp);
 
-        c = S.cfg(pp);   % config actual para pre-poblar
-
-        % ── Fila superior ─────────────────────────────────────────────────────
+        c    = S.cfg(pp);
         TOP  = PH - 48;
-        uilabel(pf,'Text','Modo:', 'Position',[8  TOP 42 22]);
+        pd_n = [];    % declarado antes del condicional (pp=1 no tiene campo N)
+        has_N = (pp == 2);
+
+        uilabel(pf,'Text','Modo:','Position',[8 TOP 42 22]);
         pd_m = uidropdown(pf,'Items',MODE_NAMES,'Value',c.mode,...
                'Position',[52 TOP 110 22],'ValueChangedFcn',@pRefresh);
         uilabel(pf,'Text','Obs:','Position',[170 TOP 30 22]);
@@ -691,60 +694,42 @@ txtLog.Value = strings(0,1);
         pc_i = uicheckbox(pf,'Text','Integrador','Value',c.has_int,...
                'Position',[312 TOP 90 22],...
                'ValueChangedFcn',@(~,~) pSyncKiNbar());
-        if pp == 1
-            uilabel(pf,'Text','M:','Position',[412 TOP 20 22]);
-        else
+        if has_N
             uilabel(pf,'Text','N:','Position',[412 TOP 20 22]);
+            pd_n = uieditfield(pf,'numeric','Value',c.N,'Limits',[1 1e6],...
+                   'RoundFractionalValues','on','Position',[434 TOP 66 22]);
         end
-        pd_n = uieditfield(pf,'numeric','Value',c.N,'Limits',[1 1e6],...
-               'RoundFractionalValues','on','Position',[434 TOP 66 22]);
 
-        % ── Dimensiones de paneles de contenido ───────────────────────────────
         BTN_Y  = 10;
-        BODY_Y = BTN_Y + 34;                 % panel empieza aquí
-        BODY_H = TOP - 8 - BODY_Y;           % altura disponible para paneles
+        BODY_Y = BTN_Y + 34;
+        BODY_H = TOP - 8 - BODY_Y;
         PTF_W  = 320;
         PSS_W  = PW - PTF_W - 20;
 
-        % ── Sub-panel TF ──────────────────────────────────────────────────────
-        p_TF = uipanel(pf,'Title','TF — b(z)/a(z)  orden 0..5 (b(1) = coef z^orden)',...
+        p_TF = uipanel(pf,'Title','TF — b(z)/a(z)  (coef desde z^0 a z^5)',...
                'Position',[5 BODY_Y PTF_W BODY_H]);
-        tdata = [c.tf_b, c.tf_a];
-        p_tbl = uitable(p_TF,'Data',tdata,...
+        tdata  = [c.tf_b, c.tf_a];
+        p_tbl  = uitable(p_TF,'Data',tdata,...
                 'ColumnName',{'b','a'},'RowName',{'0','1','2','3','4','5'},...
                 'ColumnEditable',[true true],...
                 'Position',[6 34 250 BODY_H-60]);
         uilabel(p_TF,'Text','Orden (0..5):','Position',[6 10 88 18]);
-        p_ord = uieditfield(p_TF,'numeric','Value',c.tf_ord,'Limits',[0 5],...
-                'RoundFractionalValues','on','Position',[96 8 50 22]);
+        p_ord  = uieditfield(p_TF,'numeric','Value',c.tf_ord,'Limits',[0 5],...
+                 'RoundFractionalValues','on','Position',[96 8 50 22]);
 
-        % ── Sub-panel SS ──────────────────────────────────────────────────────
-        p_SS = uipanel(pf,'Title','SS — matrices (A 2×2, B 2×1, C 1×2, D escalar)',...
+        p_SS = uipanel(pf,'Title','SS — matrices A(2×2) B(2×1) C(1×2) D',...
                'Position',[PTF_W+10 BODY_Y PSS_W BODY_H]);
 
-        % Layout interno SS — columnas y filas claramente nombrados
-        FW = 60; GAP = 4; GCOL = 12;
-        xA  = 8;
-        xA2 = xA  + FW + GAP;
-        xB  = xA2 + FW + GCOL;
-        xC  = xB  + FW + GCOL;
-        xKi = xB;
-        xNb = xC;
+        FW = 60;  GAP = 4;  GCOL = 12;
+        xA  = 8;  xA2 = xA+FW+GAP;  xB = xA2+FW+GCOL;  xC = xB+FW+GCOL;
+        BASE = BODY_H - 22;
+        yHdr1 = BASE-22;  yR1 = yHdr1-26;  yR2 = yR1-28;
+        yR_D  = yR2-36;   yHdr2 = yR_D-32;
+        yR3   = yHdr2-26; yR4 = yR3-28;
 
-        % Filas desde arriba del panel (y desde fondo, BODY_H-titulo-offset)
-        BASE = BODY_H - 22;  % alto disponible dentro del panel
-        yHdr1 = BASE - 22;
-        yR1   = yHdr1 - 26;
-        yR2   = yR1   - 28;
-        yR_D  = yR2   - 36;
-        yHdr2 = yR_D  - 32;
-        yR3   = yHdr2 - 26;
-        yR4   = yR3   - 28;
-
-        uilabel(p_SS,'Text','A (2×2)','Position',[xA yHdr1 70 18],'FontWeight','bold');
-        uilabel(p_SS,'Text','B (2×1)','Position',[xB yHdr1 60 18],'FontWeight','bold');
-        uilabel(p_SS,'Text','C (1×2)','Position',[xC yHdr1 60 18],'FontWeight','bold');
-
+        uilabel(p_SS,'Text','A (2×2)','Position',[xA  yHdr1 70 18],'FontWeight','bold');
+        uilabel(p_SS,'Text','B (2×1)','Position',[xB  yHdr1 60 18],'FontWeight','bold');
+        uilabel(p_SS,'Text','C (1×2)','Position',[xC  yHdr1 60 18],'FontWeight','bold');
         p_A11 = ssEdt(p_SS,xA, yR1, c.ss_A(1,1));
         p_A12 = ssEdt(p_SS,xA2,yR1, c.ss_A(1,2));
         p_A21 = ssEdt(p_SS,xA, yR2, c.ss_A(2,1));
@@ -753,24 +738,21 @@ txtLog.Value = strings(0,1);
         p_B2  = ssEdt(p_SS,xB, yR2, c.ss_B(2));
         p_C1  = ssEdt(p_SS,xC, yR1, c.ss_C(1));
         p_C2  = ssEdt(p_SS,xC, yR2, c.ss_C(2));
-
         uilabel(p_SS,'Text','D:','Position',[xA yR_D+2 18 18]);
-        p_D  = ssEdt(p_SS,xA+20,yR_D, c.ss_D);
+        p_D   = ssEdt(p_SS,xA+20,yR_D, c.ss_D);
 
         uilabel(p_SS,'Text','L (2×1)','Position',[xA  yHdr2 60 18],'FontWeight','bold');
         uilabel(p_SS,'Text','K (1×2)','Position',[xA2 yHdr2 60 18],'FontWeight','bold');
-        uilabel(p_SS,'Text','Ki:',    'Position',[xKi yHdr2 24 18],'FontWeight','bold');
-        uilabel(p_SS,'Text','Nbar:',  'Position',[xNb yHdr2 36 18],'FontWeight','bold');
-
+        uilabel(p_SS,'Text','Ki:',    'Position',[xB  yHdr2 24 18],'FontWeight','bold');
+        uilabel(p_SS,'Text','Nbar:',  'Position',[xC  yHdr2 36 18],'FontWeight','bold');
         p_L1  = ssEdt(p_SS,xA, yR3, c.ss_L(1));
         p_L2  = ssEdt(p_SS,xA, yR4, c.ss_L(2));
         p_K1  = ssEdt(p_SS,xA2,yR3, c.ss_K(1));
         p_K2  = ssEdt(p_SS,xA2,yR4, c.ss_K(2));
-        p_Ki  = ssEdt(p_SS,xKi,yR3, c.ss_Ki);
-        p_Nb  = ssEdt(p_SS,xNb,yR3, c.ss_Nbar);
+        p_Ki  = ssEdt(p_SS,xB, yR3, c.ss_Ki);
+        p_Nb  = ssEdt(p_SS,xC, yR3, c.ss_Nbar);
         p_Nb.ValueChangedFcn = @(~,~) pSyncKiNbar();
 
-        % ── Botones ───────────────────────────────────────────────────────────
         uibutton(pf,'Text','✔  Aplicar y cerrar',...
             'Position',[PW-286 BTN_Y 180 28],...
             'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
@@ -781,7 +763,6 @@ txtLog.Value = strings(0,1);
 
         pRefresh();
 
-        % ── Callbacks internos del popup ──────────────────────────────────────
         function pRefresh(~,~)
             mn = pd_m.Value;
             p_TF.Visible = strcmp(mn,'TF');
@@ -791,9 +772,7 @@ txtLog.Value = strings(0,1);
         end
 
         function pSyncKiNbar(~,~)
-            if ~pc_i.Value
-                p_Ki.Value = p_Nb.Value;
-            end
+            if ~pc_i.Value, p_Ki.Value = p_Nb.Value; end
         end
 
         function pDoApply(~,~)
@@ -801,9 +780,12 @@ txtLog.Value = strings(0,1);
             c2.mode    = pd_m.Value;
             c2.obs     = pd_o.Value;
             c2.has_int = pc_i.Value;
-            c2.N       = max(1, round(pd_n.Value));
+            if has_N && ~isempty(pd_n)
+                c2.N = max(1, round(pd_n.Value));
+            else
+                c2.N = 1;
+            end
 
-            % Leer tabla TF
             D = p_tbl.Data;
             if iscell(D)
                 D2 = zeros(size(D));
@@ -815,14 +797,13 @@ txtLog.Value = strings(0,1);
                 D = D2;
             end
             D = double(D);
-            c2.tf_b  = D(:,1); c2.tf_a = D(:,2);
+            c2.tf_b   = D(:,1);  c2.tf_a = D(:,2);
             c2.tf_ord = p_ord.Value;
             a0 = c2.tf_a(1);
             if a0 ~= 0 && a0 ~= 1
-                c2.tf_b = c2.tf_b/a0; c2.tf_a = c2.tf_a/a0; c2.tf_a(1)=1;
+                c2.tf_b = c2.tf_b/a0;  c2.tf_a = c2.tf_a/a0;  c2.tf_a(1)=1;
             end
 
-            % Leer campos SS
             c2.ss_A   = [ssV(p_A11) ssV(p_A12); ssV(p_A21) ssV(p_A22)];
             c2.ss_B   = [ssV(p_B1); ssV(p_B2)];
             c2.ss_C   = [ssV(p_C1)  ssV(p_C2)];
@@ -831,14 +812,12 @@ txtLog.Value = strings(0,1);
             c2.ss_K   = [ssV(p_K1)  ssV(p_K2)];
             c2.ss_Ki  = ssV(p_Ki);
             c2.ss_Nbar= ssV(p_Nb);
-
             S.cfg(pp) = c2;
 
-            % Sincronizar panel compacto
             ddMode(pp).Value = c2.mode;
             ddObs(pp).Value  = c2.obs;
             cbInt(pp).Value  = c2.has_int;
-            edtN(pp).Value   = c2.N;
+            if pp == 2, edtN(pp).Value = c2.N; end
 
             onApplyCtrl(pp);
             delete(pf);
@@ -854,27 +833,25 @@ txtLog.Value = strings(0,1);
 
     function openSimPopup(pp)
         if ~isempty(S.sim_popup_fig{pp}) && isvalid(S.sim_popup_fig{pp})
-            figure(S.sim_popup_fig{pp}); return;
+            figure(S.sim_popup_fig{pp});  return;
         end
-        SW = 530; SH = 370;
-        sf = uifigure('Name',sprintf('Modelo Simulación — Planta %d',pp-1),...
+        SW = 530;  SH = 370;
+        sf = uifigure('Name',sprintf('Modelo Simulación — Planta %d', pp),...
              'Position',[350+pp*20 200 SW SH],'Resize','off');
         S.sim_popup_fig{pp} = sf;
         sf.DeleteFcn = @(~,~) simPopupClosed(pp);
 
-        % Fila superior
         uilabel(sf,'Text','Tipo:',   'Position',[ 8 SH-40  36 22]);
         sd_type = uidropdown(sf,'Items',{'TF','SS'},'Value','TF',...
                   'Position',[46 SH-40 80 22],'ValueChangedFcn',@sRefresh);
         uilabel(sf,'Text','Dominio:','Position',[136 SH-40 54 22]);
         sd_dom  = uidropdown(sf,'Items',{'Continuo','Discreto'},'Value','Discreto',...
                   'Position',[192 SH-40 108 22]);
-        uilabel(sf,'Text','Ts (s):','Position',[310 SH-40 44 22]);
+        uilabel(sf,'Text','Ts (s):', 'Position',[310 SH-40 44 22]);
         sd_ts   = uieditfield(sf,'numeric','Value',S.ctrl.Ts,...
                   'Limits',[1e-6 10],'Position',[356 SH-40 78 22]);
 
-        % Panel TF
-        BTN_Y2 = 10; BODY_Y2 = BTN_Y2+38; BODY_H2 = SH-40-8-BODY_Y2;
+        BTN_Y2 = 10;  BODY_Y2 = BTN_Y2+38;  BODY_H2 = SH-40-8-BODY_Y2;
         sp_TF = uipanel(sf,'Title','TF — num y den como vectores MATLAB  (ej: [1 0.5])',...
                 'Position',[5 BODY_Y2 SW-10 BODY_H2]);
         uilabel(sp_TF,'Text','Num:','Position',[8 BODY_H2-48 36 22]);
@@ -884,13 +861,12 @@ txtLog.Value = strings(0,1);
         s_den = uieditfield(sp_TF,'text','Value','[1 1]',...
                 'Position',[46 BODY_H2-80 SW-64 22]);
 
-        % Panel SS
-        sp_SS = uipanel(sf,'Title','SS — A,B,C,D como expresiones MATLAB (ej: [1 0;0 0.9])',...
+        sp_SS = uipanel(sf,'Title','SS — A,B,C,D como expresiones MATLAB',...
                 'Position',[5 BODY_Y2 SW-10 BODY_H2]);
         slbls = {'A:','B:','C:','D:'};
         sdefs = {'[1 0;0 1]','[0;1]','[1 0]','[0]'};
         s_ss  = cell(4,1);
-        for fi=1:4
+        for fi = 1:4
             uilabel(sp_SS,'Text',slbls{fi},'Position',[8 BODY_H2-44-(fi-1)*34 24 22]);
             s_ss{fi} = uieditfield(sp_SS,'text','Value',sdefs{fi},...
                        'Position',[34 BODY_H2-44-(fi-1)*34 SW-52 22]);
@@ -898,7 +874,6 @@ txtLog.Value = strings(0,1);
 
         uilabel(sf,'Text','ŷ (cyan punteado) se compara con y en los gráficos.',...
             'Position',[8 BTN_Y2+4 300 18],'FontSize',9,'FontColor',[0.4 0.4 0.4]);
-
         uibutton(sf,'Text','✔  Aplicar','Position',[SW-238 BTN_Y2 116 28],...
             'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
             'ButtonPushedFcn',@sDoApply);
@@ -916,7 +891,6 @@ txtLog.Value = strings(0,1);
             try
                 is_cont = strcmp(sd_dom.Value,'Continuo');
                 Ts_s    = sd_ts.Value;
-
                 if strcmp(sd_type.Value,'TF')
                     num_v = str2num(strtrim(s_num.Value)); %#ok<ST2NM>
                     den_v = str2num(strtrim(s_den.Value)); %#ok<ST2NM>
@@ -930,30 +904,24 @@ txtLog.Value = strings(0,1);
                     if any(cellfun(@isempty,{Ac,Bc,Cc,Dc}))
                         error('Matrices SS inválidas.'); end
                 end
-
                 if is_cont
                     [Ad,Bd] = c2d_zoh(Ac,Bc,Ts_s);
-                    Cd = Cc; Dd = Dc;
+                    Cd = Cc;  Dd = Dc;
                 else
-                    Ad = Ac; Bd = Bc; Cd = Cc; Dd = Dc;
+                    Ad = Ac;  Bd = Bc;  Cd = Cc;  Dd = Dc;
                 end
-
                 ns = size(Ad,1);
                 if size(Bd,1)~=ns||size(Cd,2)~=ns
                     error('Dimensiones inconsistentes.'); end
-                if ~isequal(size(Cd),[1 ns])||~isequal(size(Dd),[1 1])
-                    Dd = Dd(1,1);
-                    if size(Cd,1)~=1, error('C debe ser fila 1×N.'); end
-                end
-
-                S.cfg(pp).sim_Ad = Ad; S.cfg(pp).sim_Bd = Bd;
-                S.cfg(pp).sim_Cd = Cd; S.cfg(pp).sim_Dd = Dd(1,1);
+                if ~isequal(size(Cd),[1 ns])
+                    error('C debe ser fila 1×N.'); end
+                S.cfg(pp).sim_Ad = Ad;  S.cfg(pp).sim_Bd = Bd;
+                S.cfg(pp).sim_Cd = Cd;  S.cfg(pp).sim_Dd = double(Dd(1,1));
                 S.cfg(pp).sim_x  = zeros(ns,1);
                 S.cfg(pp).sim_enabled = true;
                 cbSimEn(pp).Value = true;
-
-                logMsg(sprintf('P%d: modelo sim cargado. %s %s  %d estados.',...
-                    pp-1, sd_type.Value, sd_dom.Value, ns));
+                logMsg(sprintf('Planta %d: modelo sim cargado. %s %s  %d estados.',...
+                    pp, sd_type.Value, sd_dom.Value, ns));
                 delete(sf);
             catch e
                 uialert(sf, string(e.message), 'Error — modelo simulación');
@@ -966,6 +934,52 @@ txtLog.Value = strings(0,1);
         S.sim_popup_fig{pp} = [];
     end
 
+%% ═══ POPUP — ESCALADORES ════════════════════════════════════════════════════
+
+    function openScalerPopup()
+        if ~isempty(S.scaler_popup_fig) && isvalid(S.scaler_popup_fig)
+            figure(S.scaler_popup_fig);  return;
+        end
+        SW = 310;  SH = 400;
+        sf = uifigure('Name','Escaladores de visualización',...
+             'Position',[500 200 SW SH],'Resize','off');
+        S.scaler_popup_fig = sf;
+        sf.DeleteFcn = @(~,~) scalerPopupClosed();
+
+        slabels = {'u₁×','u₂×','y₁×','y₂×','ŷsim1×','ŷsim2×','R×',...
+                   'x̂₁ᵢ×','x̂₂ᵢ×','x̂₁ₒ×','x̂₂ₒ×'};
+        sfields = {'su1','su2','sy1','sy2','sysim1','sysim2','sr',...
+                   'sx1i','sx2i','sx1o','sx2o'};
+        NS = numel(sfields);
+        ef_scl = cell(NS,1);
+        for fi = 1:NS
+            uilabel(sf,'Text',slabels{fi},...
+                'Position',[12 SH-52-fi*30 70 22]);
+            ef_scl{fi} = uieditfield(sf,'numeric',...
+                'Value', S.scalers.(sfields{fi}),'Limits',[-1e9 1e9],...
+                'Position',[86 SH-52-fi*30 110 22]);
+        end
+
+        uibutton(sf,'Text','✔  Aplicar','Position',[SW-232 10 110 28],...
+            'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
+            'ButtonPushedFcn',@sclApply);
+        uibutton(sf,'Text','✖  Cerrar','Position',[SW-116 10 108 28],...
+            'ButtonPushedFcn',@(~,~) delete(sf));
+
+        function sclApply(~,~)
+            for fi2 = 1:NS
+                S.scalers.(sfields{fi2}) = ef_scl{fi2}.Value;
+            end
+            updatePlots();
+            delete(sf);
+        end
+
+    end % openScalerPopup
+
+    function scalerPopupClosed()
+        S.scaler_popup_fig = [];
+    end
+
 %% ═══ UART BAJO NIVEL ═════════════════════════════════════════════════════════
 
     function ll_flush()
@@ -973,79 +987,103 @@ txtLog.Value = strings(0,1);
     end
 
     function b = ll_readexact(n, tmo)
-        if nargin<2, tmo=STEP_TMO; end
-        t0=tic; buf=zeros(1,n,'uint8'); k=0;
-        while k<n
-            if toc(t0)>tmo, error('Timeout (%d/%d B)',k,n); end
-            av=S.sp.NumBytesAvailable;
-            if av>0
-                m=min(av,n-k); tmp=read(S.sp,m,"uint8");
-                buf(k+1:k+m)=tmp(:)'; k=k+m;
-            else, pause(0.001); end
+        if nargin < 2, tmo = STEP_TMO; end
+        t0 = tic;  buf = zeros(1,n,'uint8');  k = 0;
+        while k < n
+            if toc(t0) > tmo, error('Timeout (%d/%d B)',k,n); end
+            av = S.sp.NumBytesAvailable;
+            if av > 0
+                m = min(av,n-k);
+                tmp = read(S.sp,m,"uint8");
+                buf(k+1:k+m) = tmp(:)';  k = k+m;
+            else
+                pause(0.001);
+            end
         end
-        b=buf(:);
+        b = buf(:);
     end
 
-    function rsp = ll_cmd_wait(cmd, tmo)
-        if nargin<2, tmo=STEP_TMO; end
-        write(S.sp,uint8(cmd),"uint8");
-        t0=tic;
-        while true
-            if toc(t0)>tmo, error("Timeout cmd '%s'",cmd); end
-            if S.sp.NumBytesAvailable>0
-                b=read(S.sp,1,"uint8"); b=b(1);
-                if any(b==uint8(['R','K','!'])), rsp=b; return; end
-            else, pause(0.001); end
+    function b = ll_readexact_fast(n)
+        % Versión sin pause para el loop de control (tight poll)
+        t0 = tic;  buf = zeros(1,n,'uint8');  k = 0;
+        while k < n
+            if toc(t0) > 0.5, error('Timeout ctrl (%d/%d B)',k,n); end
+            av = S.sp.NumBytesAvailable;
+            if av > 0
+                m = min(av,n-k);
+                tmp = read(S.sp,m,"uint8");
+                buf(k+1:k+m) = tmp(:)';  k = k+m;
+            end
         end
+        b = buf(:);
     end
 
     function ll_send_payload(data_u8)
-        data_u8=uint8(data_u8(:)); n=numel(data_u8); idx=1;
-        while idx<=n
-            w=uint8([0;0;0;0]); take=min(4,n-idx+1);
-            w(1:take)=data_u8(idx:idx+take-1);
-            tries=0;
+        data_u8 = uint8(data_u8(:));  n = numel(data_u8);  idx = 1;
+        while idx <= n
+            w = uint8([0;0;0;0]);  take = min(4,n-idx+1);
+            w(1:take) = data_u8(idx:idx+take-1);
+            tries = 0;
             while true
-                tries=tries+1; if tries>MAX_RETRIES, error('Max retries idx=%d',idx); end
+                tries = tries+1;
+                if tries > MAX_RETRIES, error('Max retries idx=%d',idx); end
                 write(S.sp,w,"uint8");
-                echo=ll_readexact(4); match=isequal(echo(:),w(:));
+                echo = ll_readexact(4);
+                match = isequal(echo(:),w(:));
                 if match, write(S.sp,uint8('A'),"uint8");
                 else,     write(S.sp,uint8('N'),"uint8"); end
-                conf=ll_readexact(1);
+                conf = ll_readexact(1);
                 if match && conf(1)==uint8('A'), break; end
             end
-            idx=idx+take;
+            idx = idx + take;
         end
     end
 
 %% ═══ PROTOCOLO UART ══════════════════════════════════════════════════════════
 
     function uartp_reset()
-        ll_flush(); rsp=ll_cmd_wait('r');
-        if rsp~=uint8('K'), error("reset: rsp=%c",char(rsp)); end
+        ll_flush();  rsp = ll_cmd_wait('r');
+        if rsp ~= uint8('K'), error("reset: rsp=%c",char(rsp)); end
     end
 
     function uartp_set_fs(fs_hz)
-        ll_flush(); rsp=ll_cmd_wait('f');
-        if rsp~=uint8('R'), error("set_fs: rsp=%c",char(rsp)); end
+        ll_flush();  rsp = ll_cmd_wait('f');
+        if rsp ~= uint8('R'), error("set_fs: rsp=%c",char(rsp)); end
         ll_send_payload(typecast(single(fs_hz),'uint8'));
-        fin=ll_readexact(1);
-        if fin(1)~=uint8('K'), error("set_fs fin=%c",char(fin(1))); end
+        fin = ll_readexact(1);
+        if fin(1) ~= uint8('K'), error("set_fs fin=%c",char(fin(1))); end
     end
 
     function uartp_start_run()
-        ll_flush(); rsp=ll_cmd_wait('i');
-        if rsp~=uint8('K'), error("start: rsp=%c",char(rsp)); end
+        ll_flush();  rsp = ll_cmd_wait('i');
+        if rsp ~= uint8('K'), error("start: rsp=%c",char(rsp)); end
     end
 
     function uartp_stop()
-        try, write(S.sp,uint8([0,0,uint8('s')]),"uint8"); catch, end
-        t0=tic;
-        while toc(t0)<1.5
-            if S.sp.NumBytesAvailable>0
-                b=read(S.sp,1,"uint8");
-                if b(1)==uint8('K'), return; end
-            else, pause(0.002); end
+        if isempty(S.sp), return; end
+        try, write(S.sp, uint8('s'), "uint8"); catch, return; end
+        t0 = tic;
+        while toc(t0) < 1.5
+            if isempty(S.sp), return; end
+            if S.sp.NumBytesAvailable > 0
+                b = read(S.sp,1,"uint8");
+                if b(1) == uint8('K'), return; end
+            end
+        end
+    end
+
+    function rsp = ll_cmd_wait(cmd, tmo)
+        if nargin < 2, tmo = STEP_TMO; end
+        write(S.sp, uint8(cmd), "uint8");
+        t0 = tic;
+        while true
+            if toc(t0) > tmo, error("Timeout cmd '%s'",cmd); end
+            if S.sp.NumBytesAvailable > 0
+                b = read(S.sp,1,"uint8");  b = b(1);
+                if any(b == uint8(['R','K','!'])), rsp = b;  return; end
+            else
+                pause(0.001);
+            end
         end
     end
 
@@ -1057,191 +1095,218 @@ txtLog.Value = strings(0,1);
 
     function onConnToggle(~,~)
         if ~S.isConnected
-            com=strtrim(string(edtCom.Value));
-            if com=="", logMsg("Puerto vacío."); return; end
+            com = strtrim(string(edtCom.Value));
+            if com == "", logMsg("Puerto vacío."); return; end
             try
-                S.sp=serialport(com,edtBaud.Value); S.sp.Timeout=0.1;
-                flush(S.sp); pause(0.05); ll_flush();
-                S.isConnected=true;
-                btnConn.Text='Desconectar'; btnConn.BackgroundColor=[0.65 0.15 0.15];
-                lblStat.Text="CONECTADO: "+com;
-                logMsg("Conectado: "+com+" @ "+edtBaud.Value);
-                startStream();
+                S.sp = serialport(com, edtBaud.Value);  S.sp.Timeout = 0.1;
+                flush(S.sp);  pause(0.05);  ll_flush();
+                S.isConnected = true;
+                btnConn.Text = 'Desconectar';
+                btnConn.BackgroundColor = [0.65 0.15 0.15];
+                lblStat.Text = "CONECTADO: " + com;
+                logMsg("Conectado: " + com + " @ " + edtBaud.Value);
             catch e
-                logMsg("Error: "+string(e.message));
-                S.sp=[]; S.isConnected=false;
+                logMsg("Error: " + string(e.message));
+                S.sp = [];  S.isConnected = false;
             end
         else
-            stopStream();
-            try, if ~isempty(S.sp), flush(S.sp); delete(S.sp); end, catch, end
-            S.sp=[]; S.isConnected=false;
-            btnConn.Text='Conectar'; btnConn.BackgroundColor=[0.2 0.62 0.2];
-            lblStat.Text='Desconectado'; logMsg("Desconectado.");
+            S.streamOn = false;   % señal para que runControlLoop salga
+            try
+                if ~isempty(S.sp) && isvalid(S.sp), flush(S.sp); delete(S.sp); end
+            catch, end
+            S.sp = [];  S.isConnected = false;
+            btnConn.Text = 'Conectar';
+            btnConn.BackgroundColor = [0.2 0.62 0.2];
+            lblStat.Text = 'Desconectado';
+            lblRunSt.Text = 'Detenido';  lblRunSt.FontColor = [0 0 0];
+            logMsg("Desconectado.");
         end
     end
 
     function onSaveSession(~,~)
-        [f,p]=uiputfile('*.mat','Guardar sesión'); if isequal(f,0), return; end
+        [f,p] = uiputfile('*.mat','Guardar sesión');
+        if isequal(f,0), return; end
         try
-            sess = struct();
-            sess.cfg1 = S.cfg(1); sess.cfg1.sim_x = [];
-            sess.cfg2 = S.cfg(2); sess.cfg2.sim_x = [];
-            sess.Fs     = edtFs(1).Value;
-            sess.SatMin = edtSatMin.Value; sess.SatMax = edtSatMax.Value;
-            sess.SU1=edtSU1.Value; sess.SU2=edtSU2.Value;
-            sess.SY1=edtSY1.Value; sess.SY2=edtSY2.Value;
+            sess.cfg1    = S.cfg(1);  sess.cfg1.sim_x = [];
+            sess.cfg2    = S.cfg(2);  sess.cfg2.sim_x = [];
+            sess.Fs      = edtFs(1).Value;
+            sess.SatMin  = edtSatMin.Value;
+            sess.SatMax  = edtSatMax.Value;
+            sess.scalers = S.scalers;
             save(fullfile(p,f),'-struct','sess');
-            logMsg("Sesión guardada: "+string(f));
-        catch e, logMsg("Guardar FAIL: "+string(e.message)); end
+            logMsg("Sesión guardada: " + string(f));
+        catch e, logMsg("Guardar FAIL: " + string(e.message)); end
     end
 
     function onLoadSession(~,~)
-        [f,p]=uigetfile('*.mat','Cargar sesión'); if isequal(f,0), return; end
+        [f,p] = uigetfile('*.mat','Cargar sesión');
+        if isequal(f,0), return; end
         try
-            sess=load(fullfile(p,f));
+            sess = load(fullfile(p,f));
             if isfield(sess,'cfg1')
-                S.cfg(1)=sess.cfg1; S.cfg(1).sim_x=[];
-                ddMode(1).Value=S.cfg(1).mode; ddObs(1).Value=S.cfg(1).obs;
-                cbInt(1).Value=S.cfg(1).has_int; edtN(1).Value=S.cfg(1).N;
-                cbSimEn(1).Value=S.cfg(1).sim_enabled;
+                S.cfg(1) = sess.cfg1;  S.cfg(1).sim_x = [];
+                ddMode(1).Value  = S.cfg(1).mode;
+                ddObs(1).Value   = S.cfg(1).obs;
+                cbInt(1).Value   = S.cfg(1).has_int;
+                edtFs(1).Value   = S.cfg(1).Fs;
+                cbSimEn(1).Value = S.cfg(1).sim_enabled;
             end
             if isfield(sess,'cfg2')
-                S.cfg(2)=sess.cfg2; S.cfg(2).sim_x=[];
-                ddMode(2).Value=S.cfg(2).mode; ddObs(2).Value=S.cfg(2).obs;
-                cbInt(2).Value=S.cfg(2).has_int; edtN(2).Value=S.cfg(2).N;
-                cbSimEn(2).Value=S.cfg(2).sim_enabled;
+                S.cfg(2) = sess.cfg2;  S.cfg(2).sim_x = [];
+                ddMode(2).Value  = S.cfg(2).mode;
+                ddObs(2).Value   = S.cfg(2).obs;
+                cbInt(2).Value   = S.cfg(2).has_int;
+                edtN(2).Value    = S.cfg(2).N;
+                cbSimEn(2).Value = S.cfg(2).sim_enabled;
             end
-            if isfield(sess,'Fs'),     edtFs(1).Value=sess.Fs; end
-            if isfield(sess,'SatMin'), edtSatMin.Value=sess.SatMin; end
-            if isfield(sess,'SatMax'), edtSatMax.Value=sess.SatMax; end
-            if isfield(sess,'SU1'),    edtSU1.Value=sess.SU1; end
-            if isfield(sess,'SU2'),    edtSU2.Value=sess.SU2; end
-            if isfield(sess,'SY1'),    edtSY1.Value=sess.SY1; end
-            if isfield(sess,'SY2'),    edtSY2.Value=sess.SY2; end
-            for pp2=1:2, onModeChange(pp2); updateCfgStatus(pp2); end
-            logMsg("Sesión cargada: "+string(f));
-        catch e, logMsg("Cargar FAIL: "+string(e.message)); end
-    end
-
-    function onApplyRef(~,~)
-        S.ctrl.inner.ref = edtRef.Value;
-        logMsg(sprintf("Ref inner → %.4g", edtRef.Value));
+            if isfield(sess,'Fs'),     edtFs(1).Value   = sess.Fs; end
+            if isfield(sess,'SatMin'), edtSatMin.Value  = sess.SatMin; end
+            if isfield(sess,'SatMax'), edtSatMax.Value  = sess.SatMax; end
+            if isfield(sess,'scalers')
+                S.scalers = sess.scalers;
+            elseif isfield(sess,'SU1')
+                % compatibilidad con sesiones v4
+                S.scalers.su1 = sess.SU1;  S.scalers.su2 = sess.SU2;
+                S.scalers.sy1 = sess.SY1;  S.scalers.sy2 = sess.SY2;
+            end
+            for pp2 = 1:2, onModeChange(pp2);  updateCfgStatus(pp2); end
+            logMsg("Sesión cargada: " + string(f));
+        catch e, logMsg("Cargar FAIL: " + string(e.message)); end
     end
 
     function onStart(~,~)
         if ~reqConn(), return; end
-        for pp2=1:2, onApplyCtrl(pp2); end
-        S.ctrl.Ts      = 1/edtFs(1).Value;
+        if S.inLoop
+            % Ya corriendo: solo actualizar referencia y parámetros
+            S.ctrl.inner.ref = edtRef.Value;
+            S.ctrl.sat_min   = edtSatMin.Value;
+            S.ctrl.sat_max   = edtSatMax.Value;
+            for pp2 = 1:2, onApplyCtrl(pp2); end
+            logMsg(sprintf("Ref → %.4g", edtRef.Value));
+            return;
+        end
+        % Inicio completo
+        for pp2 = 1:2, onApplyCtrl(pp2); end
+        S.ctrl.Ts      = 1 / edtFs(1).Value;
         S.ctrl.sat_min = edtSatMin.Value;
         S.ctrl.sat_max = edtSatMax.Value;
         ref0 = edtRef.Value;
-        S.ctrl.inner = ctrl_reset_states(S.ctrl.inner); S.ctrl.inner.ref = ref0;
-        S.ctrl.outer = ctrl_reset_states(S.ctrl.outer); S.ctrl.outer.ref = 0;
-        % Reset estados de simulación
-        for pp2=1:2
+        S.ctrl.inner = ctrl_reset_states(S.ctrl.inner);
+        S.ctrl.inner.ref = ref0;
+        S.ctrl.outer = ctrl_reset_states(S.ctrl.outer);
+        S.ctrl.outer.ref = 0;
+        for pp2 = 1:2
             if ~isempty(S.cfg(pp2).sim_Ad)
                 S.cfg(pp2).sim_x = zeros(size(S.cfg(pp2).sim_Ad,1),1);
             end
         end
+        S.rms1_sum2 = 0;  S.rms1_n = 0;
+        S.rms2_sum2 = 0;  S.rms2_n = 0;
         updateAxesLayout();
         try
-            S.inTxn=true; stopStream(); ll_flush();
+            ll_flush();
             uartp_reset();
-            uartp_set_fs(edtFs(1).Value);
-            uartp_start_run();
-            S.streamOn=true; S.rxBuf=uint8([]);
-            S.autoStopArmed=S.autoStopEn && S.autoStopN>0;
-            lblRunSt.Text='▶ CORRIENDO'; lblRunSt.FontColor=[0 0.5 0];
+            uartp_start_run();   % 'f' eliminado: timing manejado por MATLAB
+            S.streamOn = true;
+            S.autoStopArmed = S.autoStopEn && S.autoStopN > 0;
+            lblRunSt.Text = '▶ CORRIENDO';  lblRunSt.FontColor = [0 0.5 0];
             logMsg(sprintf("Iniciado. Fs=%.1fHz  ref=%.4g  sat=[%.0f,%.0f]",...
-                edtFs(1).Value,ref0,S.ctrl.sat_min,S.ctrl.sat_max));
+                edtFs(1).Value, ref0, S.ctrl.sat_min, S.ctrl.sat_max));
         catch e
-            logMsg("Start FAIL: "+string(e.message)); S.streamOn=false;
+            logMsg("Start FAIL: " + string(e.message));
+            S.streamOn = false;
+            return;
         end
-        S.inTxn=false; startStream();
+        runControlLoop();   % bloquea hasta que S.streamOn = false
     end
 
     function onStop(~,~)
-        if ~reqConn(), return; end
-        try
-            S.streamOn=false; S.inTxn=true;
-            stopStream(); ll_flush();
-            uartp_stop();
-            lblRunSt.Text='Detenido'; lblRunSt.FontColor=[0 0 0];
-            logMsg("Control detenido.");
-        catch e, logMsg("Stop FAIL: "+string(e.message)); end
-        S.inTxn=false; startStream();
+        S.streamOn = false;   % runControlLoop lo detecta y sale
     end
 
     function onAutoStopToggle(~,~)
-        S.autoStopEn=cbAutoStop.Value; S.autoStopN=edtAutoN.Value;
+        S.autoStopEn = cbAutoStop.Value;
+        S.autoStopN  = edtAutoN.Value;
     end
 
-%% ═══ STREAMING ═══════════════════════════════════════════════════════════════
+%% ═══ LOOP DE CONTROL SÍNCRONO ════════════════════════════════════════════════
 
-    function startStream()
-        stopStream();
-        if ~S.isConnected||isempty(S.sp), return; end
-        S.streamTimer=timer('ExecutionMode','fixedSpacing',...
-            'Period',STREAM_PERIOD,'BusyMode','drop','TimerFcn',@onStreamTick);
-        start(S.streamTimer);
-    end
+    function runControlLoop()
+        S.inLoop      = true;
+        Ts            = S.ctrl.Ts;
+        last_rtt_ms   = 0;
+        t_last_draw   = tic;
+        DRAW_INTERVAL = 0.05;   % 50 ms entre actualizaciones de pantalla (~20 fps)
 
-    function stopStream()
-        try
-            if ~isempty(S.streamTimer) && isvalid(S.streamTimer)
-                stop(S.streamTimer); delete(S.streamTimer);
-            end
-        catch, end
-        S.streamTimer=[];
-    end
-
-    function onStreamTick(~,~)
-        if S.inTxn||~S.isConnected||isempty(S.sp), return; end
-        try
-            nAv=S.sp.NumBytesAvailable;
-            if nAv>0
-                raw=read(S.sp,nAv,"uint8");
-                S.rxBuf=[S.rxBuf; uint8(raw(:))];
-            end
-            if ~S.streamOn, return; end
-            nProc=0;
-            while numel(S.rxBuf)>=FRAME_SZ
-                frame=S.rxBuf(1:FRAME_SZ); S.rxBuf=S.rxBuf(FRAME_SZ+1:end);
+        while S.streamOn && S.isConnected && ~isempty(S.sp)
+            t_frame = tic;
+            try
+                % 1. Solicitar muestra al PSoC
+                write(S.sp, uint8('g'), "uint8");
+                % 2. Leer trama de 6 bytes
+                frame = ll_readexact_fast(FRAME_SZ);
+                % 3. Calcular control y enviar esfuerzo (dentro de processControlFrame)
                 processControlFrame(frame);
-                nProc=nProc+1;
-                if nProc>=8, break; end
+                last_rtt_ms = toc(t_frame) * 1000;
+            catch e
+                logMsg("Loop ERR: " + string(e.message));
+                S.streamOn = false;
+                break;
             end
-            if S.autoStopArmed && S.framesTotal>=S.autoStopN
-                S.autoStopArmed=false;
-                logMsg(sprintf("Auto-stop: %d frames.",S.framesTotal));
-                onStop(); return;
+
+            % Actualizar pantalla a ~20 fps (permite procesar eventos GUI)
+            if toc(t_last_draw) >= DRAW_INTERVAL
+                t_last_draw = tic;
+                updatePlots();
+                updateRmsLabels();
+                updateDataInfo();
+                try, lblRTT.Text = sprintf('RTT %.2f ms', last_rtt_ms); catch, end
+                drawnow;   % procesa: Stop, Disconnect, popups, etc.
             end
-            if nProc>0
-                updatePlots(); updateDataInfo();
+
+            % Auto-stop
+            if S.autoStopArmed && S.framesTotal >= S.autoStopN
+                S.autoStopArmed = false;
+                S.streamOn = false;
+                logMsg(sprintf("Auto-stop: %d frames.", S.framesTotal));
             end
-        catch e
-            S.rxBuf=uint8([]);
-            logMsg("stream WARN: "+string(e.message));
+
+            % Rate limiting: esperar el tiempo restante del período
+            elapsed = toc(t_frame);
+            if elapsed < Ts
+                pause(Ts - elapsed);
+            end
         end
+
+        % ── Salida limpia ─────────────────────────────────────────────────────
+        try
+            S.streamOn = false;
+            uartp_stop();
+            lblRunSt.Text = 'Detenido';  lblRunSt.FontColor = [0 0 0];
+            try, lblRTT.Text = sprintf('RTT %.2f ms  (última)', last_rtt_ms); catch, end
+            logMsg("Control detenido.");
+            updatePlots();  updateRmsLabels();  updateDataInfo();
+            drawnow;
+        catch, end
+        S.inLoop = false;
     end
+
+%% ═══ FRAME DE CONTROL ════════════════════════════════════════════════════════
 
     function processControlFrame(frame)
-        % Decodificar trama PSoC
         theta_cnt  = double(typecast(uint8(frame(1:4)),'int32'));
         delta_om_c = double(typecast(uint8(frame(5:6)),'int16'));
         Ts = S.ctrl.Ts;
-        y2 = theta_cnt  * (2*pi / PENDULO_CPR);        % θ [rad]
-        y1 = delta_om_c * (2*pi / MOTOR_CPR) / Ts;     % ω [rad/s]
+        y2 = theta_cnt  * (2*pi / PENDULO_CPR);      % θ [rad]
+        y1 = delta_om_c * (2*pi / MOTOR_CPR) / Ts;   % ω [rad/s]
 
-        % Ejecutar control (double precision)
-        [u_sat,u_unsat,x1i,x2i,x1o,x2o,ctrl_new] = run_control(S.ctrl,y1,y2);
+        [u_sat,u_unsat,x1i,x2i,x1o,x2o,ctrl_new] = run_control(S.ctrl, y1, y2);
         S.ctrl = ctrl_new;
 
-        % Enviar esfuerzo al PSoC (int16 LE)
         u_clamped = max(-32768, min(32767, round(u_sat)));
         send_u(u_clamped);
 
-        % ── Simulación planta inner (input = u_sat → output ≈ ω) ─────────────
+        % ── Simulación Planta 1 (input=u_sat → output≈ω) ─────────────────────
         ysim1 = nan;
         c1 = S.cfg(1);
         if c1.sim_enabled && ~isempty(c1.sim_Ad)
@@ -1249,22 +1314,32 @@ txtLog.Value = strings(0,1);
             S.cfg(1).sim_x = c1.sim_Ad * c1.sim_x + c1.sim_Bd * u_sat;
         end
 
-        % ── Simulación planta outer (input = inner.ref → output ≈ θ) ─────────
+        % ── Simulación Planta 2 (input=ref_inner → output≈θ) ─────────────────
         ysim2 = nan;
         c2 = S.cfg(2);
         if c2.sim_enabled && ~isempty(c2.sim_Ad)
-            u2_in = S.ctrl.inner.ref;   % salida outer = referencia inner
+            u2_in = S.ctrl.inner.ref;
             ysim2 = c2.sim_Cd * c2.sim_x + c2.sim_Dd * u2_in;
             S.cfg(2).sim_x = c2.sim_Ad * c2.sim_x + c2.sim_Bd * u2_in;
         end
 
-        % ── Guardar telemetría — todos en el mismo índice n (sincronizados) ───
+        % ── Acumular error RMS ────────────────────────────────────────────────
+        if ~isnan(ysim1)
+            S.rms1_sum2 = S.rms1_sum2 + (ysim1 - y1)^2;
+            S.rms1_n    = S.rms1_n + 1;
+        end
+        if ~isnan(ysim2)
+            S.rms2_sum2 = S.rms2_sum2 + (ysim2 - y2)^2;
+            S.rms2_n    = S.rms2_n + 1;
+        end
+
+        % ── Guardar telemetría (todos en el mismo índice n) ───────────────────
         n = S.framesTotal + 1;
         S.nVec(end+1,1)        = n;
         S.u1Vec(end+1,1)       = u_sat;
         S.u1unsat_Vec(end+1,1) = u_unsat;
         S.y1Vec(end+1,1)       = y1;
-        S.u2Vec(end+1,1)       = S.ctrl.inner.ref;   % R inner capturado post-control
+        S.u2Vec(end+1,1)       = S.ctrl.inner.ref;
         S.y2Vec(end+1,1)       = y2;
         S.x1iVec(end+1,1)      = x1i;
         S.x2iVec(end+1,1)      = x2i;
@@ -1274,22 +1349,26 @@ txtLog.Value = strings(0,1);
         S.ySimVec2(end+1,1)    = ysim2;
         S.framesTotal = n;
 
-        if numel(S.nVec)>MAX_PTS
-            k=numel(S.nVec)-MAX_PTS+1;
-            S.nVec=S.nVec(k:end);
-            S.u1Vec=S.u1Vec(k:end);           S.u1unsat_Vec=S.u1unsat_Vec(k:end);
-            S.y1Vec=S.y1Vec(k:end);           S.u2Vec=S.u2Vec(k:end);
-            S.y2Vec=S.y2Vec(k:end);
-            S.x1iVec=S.x1iVec(k:end);        S.x2iVec=S.x2iVec(k:end);
-            S.x1oVec=S.x1oVec(k:end);        S.x2oVec=S.x2oVec(k:end);
-            S.ySimVec1=S.ySimVec1(k:end);     S.ySimVec2=S.ySimVec2(k:end);
+        if numel(S.nVec) > MAX_PTS
+            k = numel(S.nVec) - MAX_PTS + 1;
+            S.nVec        = S.nVec(k:end);
+            S.u1Vec       = S.u1Vec(k:end);
+            S.u1unsat_Vec = S.u1unsat_Vec(k:end);
+            S.y1Vec       = S.y1Vec(k:end);
+            S.u2Vec       = S.u2Vec(k:end);
+            S.y2Vec       = S.y2Vec(k:end);
+            S.x1iVec      = S.x1iVec(k:end);
+            S.x2iVec      = S.x2iVec(k:end);
+            S.x1oVec      = S.x1oVec(k:end);
+            S.x2oVec      = S.x2oVec(k:end);
+            S.ySimVec1    = S.ySimVec1(k:end);
+            S.ySimVec2    = S.ySimVec2(k:end);
         end
     end
 
 %% ═══ ZOH DISCRETIZACIÓN (sin toolbox) ════════════════════════════════════════
 
     function [Ad, Bd] = c2d_zoh(Ac, Bc, Ts)
-        % Discretización por ZOH usando la exponencial de matriz
         n  = size(Ac,1);
         nu = size(Bc,2);
         M  = expm([Ac, Bc; zeros(nu, n+nu)] * Ts);
@@ -1301,49 +1380,49 @@ txtLog.Value = strings(0,1);
 
     function onExport(~,~)
         if isempty(S.nVec), uialert(fig,'No hay datos.','Exportar'); return; end
-        [f,p]=uiputfile('*.mat','Exportar datos'); if isequal(f,0), return; end
+        [f,p] = uiputfile('*.mat','Exportar datos');
+        if isequal(f,0), return; end
         try
-            data=struct();
-            data.n=S.nVec; data.u1=S.u1Vec; data.u1_unsat=S.u1unsat_Vec;
-            data.y1=S.y1Vec; data.u2=S.u2Vec; data.y2=S.y2Vec;
-            data.x1i=S.x1iVec; data.x2i=S.x2iVec;
-            data.x1o=S.x1oVec; data.x2o=S.x2oVec;
-            data.ysim1=S.ySimVec1; data.ysim2=S.ySimVec2;
-            data.fecha    = datestr(now,'yyyy-mm-dd HH:MM:SS');
-            data.Fs_inner = edtFs(1).Value;
-            data.M_plant0 = edtN(1).Value;
-            data.N_plant1 = edtN(2).Value;
-            data.Fs_outer = data.Fs_inner / max(1,data.N_plant1);
-            data.sat_min  = edtSatMin.Value;
-            data.sat_max  = edtSatMax.Value;
-            data.cfg      = S.cfg;
+            data.n         = S.nVec;
+            data.u1        = S.u1Vec;
+            data.u1_unsat  = S.u1unsat_Vec;
+            data.y1        = S.y1Vec;
+            data.u2        = S.u2Vec;   % R inner
+            data.y2        = S.y2Vec;
+            data.x1i       = S.x1iVec;  data.x2i = S.x2iVec;
+            data.x1o       = S.x1oVec;  data.x2o = S.x2oVec;
+            data.ysim1     = S.ySimVec1; data.ysim2 = S.ySimVec2;
+            data.fecha     = datestr(now,'yyyy-mm-dd HH:MM:SS');
+            data.Fs_inner  = edtFs(1).Value;
+            data.N_plant2  = S.cfg(2).N;
+            data.Fs_outer  = data.Fs_inner / max(1, data.N_plant2);
+            data.sat_min   = edtSatMin.Value;
+            data.sat_max   = edtSatMax.Value;
+            data.scalers   = S.scalers;
+            data.cfg       = S.cfg;
             data.ctrl_final = S.ctrl;
             save(fullfile(p,f),'-struct','data');
-            logMsg("Exportado: "+string(f));
-        catch e, logMsg("Export FAIL: "+string(e.message)); end
+            logMsg("Exportado: " + string(f));
+        catch e, logMsg("Export FAIL: " + string(e.message)); end
     end
 
     function onClear(~,~)
-        S.nVec=[]; S.u1Vec=[]; S.u1unsat_Vec=[];
-        S.y1Vec=[]; S.u2Vec=[]; S.y2Vec=[];
-        S.x1iVec=[]; S.x2iVec=[]; S.x1oVec=[]; S.x2oVec=[];
-        S.ySimVec1=[]; S.ySimVec2=[];
-        S.framesTotal=0; S.rxBuf=uint8([]);
-        updatePlots(); updateDataInfo();
+        S.nVec = [];  S.u1Vec = [];  S.u1unsat_Vec = [];
+        S.y1Vec = [];  S.u2Vec = [];  S.y2Vec = [];
+        S.x1iVec = [];  S.x2iVec = [];  S.x1oVec = [];  S.x2oVec = [];
+        S.ySimVec1 = [];  S.ySimVec2 = [];
+        S.framesTotal = 0;
+        S.rms1_sum2 = 0;  S.rms1_n = 0;
+        S.rms2_sum2 = 0;  S.rms2_n = 0;
+        updatePlots();  updateDataInfo();  updateRmsLabels();
         logMsg("Datos borrados.");
     end
 
 %% ═══ CIERRE ══════════════════════════════════════════════════════════════════
 
     function onClose(~,~)
-        try, stopStream(); catch, end
-        try
-            if S.isConnected && ~isempty(S.sp)
-                try, flush(S.sp); catch, end
-                delete(S.sp);
-            end
-        catch, end
-        for pp2=1:2
+        S.streamOn = false;
+        for pp2 = 1:2
             try
                 if ~isempty(S.ctrl_popup_fig{pp2}) && isvalid(S.ctrl_popup_fig{pp2})
                     delete(S.ctrl_popup_fig{pp2});
@@ -1355,6 +1434,16 @@ txtLog.Value = strings(0,1);
                 end
             catch, end
         end
+        try
+            if ~isempty(S.scaler_popup_fig) && isvalid(S.scaler_popup_fig)
+                delete(S.scaler_popup_fig);
+            end
+        catch, end
+        try
+            if S.isConnected && ~isempty(S.sp) && isvalid(S.sp)
+                flush(S.sp);  delete(S.sp);
+            end
+        catch, end
         delete(fig);
     end
 
