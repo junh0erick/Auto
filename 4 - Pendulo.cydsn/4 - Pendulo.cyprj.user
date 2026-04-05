@@ -59,11 +59,10 @@
 <dep name=".\Generated_Source\PSoC5\quad_B_motor_aliases.h" />
 <dep name=".\Generated_Source\PSoC5\quad_B_pendulo.h" />
 <dep name=".\Generated_Source\PSoC5\quad_B_pendulo_aliases.h" />
-<dep name=".\ctrl_pend.h" />
 <dep name=".\main.c" />
 <dep name=".\motor.h" />
 <dep name=".\pendulo.h" />
-<dep name=".\uartp2.h" />
+<dep name=".\uartp_pend.h" />
 </file>
 <file name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <file name=".\Generated_Source\PSoC5\CyDmac.h" />
@@ -112,10 +111,11 @@
 <file name=".\Generated_Source\PSoC5\quad_B_motor_aliases.h" />
 <file name=".\Generated_Source\PSoC5\quad_B_pendulo.h" />
 <file name=".\Generated_Source\PSoC5\quad_B_pendulo_aliases.h" />
-<file name=".\ctrl_pend.h" />
 <file name=".\main.c" />
 <file name=".\motor.h" />
 <file name=".\pendulo.h" />
+<file name=".\uartp_pend.h" />
+<file name=".\ctrl_pend.h" />
 <file name=".\uartp2.h" />
 <file name=".\CortexM3\ARM_GCC_541\Debug\ctrl_pend.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
@@ -224,7 +224,6 @@
 <dep name=".\uartp2.h" />
 </file>
 <file name=".\uartp2.c" />
-<file name=".\uartp_pend.h" />
 <file name=".\CortexM3\ARM_GCC_541\Debug\uartp_pend.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <dep name=".\Generated_Source\PSoC5\CyDmac.h" />
@@ -1462,7 +1461,7 @@
 <dataGuid v="769d31ea-68b1-4f0c-b90a-7c10a43ee563">
 <CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563 type_name="CyDesigner.Common.ProjMgmt.Model.CyLinkCustomData" version="1">
 <link_deps_times>
-<name_val_pair name="c9323d49-d323-40b8-9b59-cc008d68a989@Debug@CortexM3" v="134198193355741844" />
+<name_val_pair name="c9323d49-d323-40b8-9b59-cc008d68a989@Debug@CortexM3" v="134198316429371049" />
 </link_deps_times>
 </CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563>
 </dataGuid>

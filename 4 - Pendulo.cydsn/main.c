@@ -1,117 +1,67 @@
 /* ============================================================
-   main.c — Péndulo Invertido PSoC 5LP (on-PSoC two-plant control)
-   CTRL-mode commands: 's' stop, 'f' live inner reference update (4B raw float)
+   main.c — Péndulo Invertido PSoC 5LP  v3
+   Nueva arquitectura: PSoC = sensor/actuador únicamente.
+   MATLAB ejecuta todo el control en doble precisión.
 
-   Architecture:
-     PSoC reads encoders, runs TF/SS/OL controllers for both
-     plants, drives motor, and streams telemetry to MATLAB.
-     MATLAB configures controllers via UARTP2 protocol.
+   Protocolo (uartp_pend):
+     COMMAND mode:
+       'r' → 'K'                         Reset
+       'f' → 'R' → [Fs f32 4B handshake] → 'K'   Configurar Fs_inner
+       'i' → 'K'                         Iniciar CONTROL mode
+       's' → 'K'                         Stop
 
-   Plants:
-     Plant 0 (inner): u_pwm → ω_motor   [rad/s]   (QuadDec_1)
-     Plant 1 (outer): u_ref → θ_pendulum [rad]      (QuadDec_2)
-
-   Protocol: see uartp2.h
-   Telemetry: 16 B/tick [y2_f32 u1_f32 y1_f32 u2_f32]
+     CONTROL mode (ciclo por Ts_inner):
+       PSoC → MATLAB : [theta int32 LE (4B)][delta_om int16 LE (2B)] = 6 bytes
+       MATLAB → PSoC : [u_pwm int16 LE (2B)] = 2 bytes
+       's' (byte solitario) → 'K'        Stop (vuelve a COMMAND)
    ============================================================ */
 #include "project.h"
 #include "pendulo.h"
 #include "motor.h"
-#include "ctrl_pend.h"
-#include "uartp2.h"
+#include "uartp_pend.h"
 
 int main(void)
 {
+    int32 theta_cnt;
+    int16 delta_om;
+    uint8 frame[6];
+
     CyGlobalIntEnable;
 
-    pendulo_init();
-    ctrl_init();
-    UARTP2_Init();
+    pendulo_init();    /* QuadDec, PWM, Timer ISR, UART */
+    UARTP_Init();      /* UART_1_Start + SysMode = COMMAND */
 
     for (;;)
     {
-        /* ---- Apply pending timer period (set by ctrl_apply_coeffs) ---- */
-        if (ctrl_period_pending) {
-            Timer_1_WritePeriod(ctrl_period_ticks);
-            ctrl_period_pending = 0u;
-        }
-
-        switch (UARTP2_Mode)
+        if (UARTP_SysMode == UARTP_SYS_COMMAND)
         {
-            /* ================================================
-               COMMAND mode: wait for configuration commands
-               ================================================ */
-            case UARTP2_CMD:
-                UARTP2_ProcessOnce();
-                break;
+            /* ── COMMAND: procesar comandos de configuración ── */
+            UARTP_ProcessCommand();
+        }
+        else /* UARTP_SYS_CONTROL */
+        {
+            /* ── CONTROL: en cada tick ISR → leer → enviar → aplicar u ── */
+            if (g_flag_control)
+            {
+                g_flag_control = 0u;
 
-            /* ================================================
-               CONTROL mode: run controller + stream telemetry
-               ================================================ */
-            case UARTP2_CTRL:
-                /* Control tick */
-                if (g_flag_control) {
-                    g_flag_control = 0u;
-                    ctrl_step();
-                }
+                pendulo_read(&theta_cnt, &delta_om);
 
-                /* Stream telemetry when ready */
-                if (ctrl_telem_ready) {
-                    float u1, y1, u2, y2;
-                    uint8 intr = CyEnterCriticalSection();
-                    u1 = ctrl_telem_u1;
-                    y1 = ctrl_telem_y1;
-                    u2 = ctrl_telem_u2;
-                    y2 = ctrl_telem_y2;
-                    ctrl_telem_ready = 0u;
-                    CyExitCriticalSection(intr);
+                /* Trama de medición: [theta int32 LE][delta_om int16 LE] */
+                frame[0] = (uint8)( theta_cnt        & 0xFFu);
+                frame[1] = (uint8)((theta_cnt >>  8) & 0xFFu);
+                frame[2] = (uint8)((theta_cnt >> 16) & 0xFFu);
+                frame[3] = (uint8)((theta_cnt >> 24) & 0xFFu);
+                frame[4] = (uint8)((uint16)delta_om  & 0xFFu);
+                frame[5] = (uint8)((uint16)delta_om  >> 8);
+                UART_1_PutArray(frame, 6u);
 
-                    /* Frame order: [y2, u1, y1, u2] — matches MATLAB parseFrame */
-                    UART_1_PutArray((uint8*)&y2, 4u);
-                    UART_1_PutArray((uint8*)&u1, 4u);
-                    UART_1_PutArray((uint8*)&y1, 4u);
-                    UART_1_PutArray((uint8*)&u2, 4u);
-                }
+                /* Aplicar último esfuerzo recibido de MATLAB */
+                Motor_Control(g_last_u_pwm);
+            }
 
-                /* Check for commands while in CONTROL */
-                if (UART_1_GetRxBufferSize() > 0u) {
-                    uint8 b = UART_1_ReadRxData();
-                    if (b == (uint8)'s') {
-                        ctrl_stop();
-                        UARTP2_Mode = UARTP2_CMD;
-                        UART_1_WriteTxData((uint8)'K');
-                    } else if (b == (uint8)'f') {
-                        /* Live reference update: 4 raw bytes, no echo-confirm.
-                           At 115200 baud all 4 bytes arrive within ~1ms. */
-                        uint8 raw[4]; uint8 i; uint32 t; uint8 ok = 1u;
-                        for (i = 0u; i < 4u; i++) {
-                            t = 0u;
-                            while (UART_1_GetRxBufferSize() == 0u) {
-                                CyDelay(1u);
-                                if (++t >= 100u) { ok = 0u; break; }
-                            }
-                            if (!ok) break;
-                            raw[i] = UART_1_ReadRxData();
-                        }
-                        if (ok) {
-                            uint8 *p; float ref_new;
-                            p = (uint8*)&ref_new;
-                            p[0]=raw[0]; p[1]=raw[1]; p[2]=raw[2]; p[3]=raw[3];
-                            ctrl_update_ref(ref_new);
-                            UART_1_WriteTxData((uint8)'K');
-                        }
-                    }
-                    /* ignore other bytes (stale data) */
-                }
-                break;
-
-            /* ================================================
-               Safe default: back to COMMAND
-               ================================================ */
-            default:
-                ctrl_stop();
-                UARTP2_Mode = UARTP2_CMD;
-                break;
+            /* Sondear RX: actualiza g_last_u_pwm o gestiona stop */
+            UARTP_ControlRxPoll();
         }
     }
 }
