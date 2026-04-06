@@ -1,0 +1,9 @@
+--------------- Build Started: 04/06/2026 19:05:01 Project: 4 - Pendulo, Configuration: ARM GCC 5.4-2016-q2-update Debug ---------------
+cydsfit.exe -.appdatapath "C:\Users\user\AppData\Local\Cypress Semiconductor\PSoC Creator\4.4" -.fdsnotice -.fdswarpdepfile=warp_dependencies.txt -.fdselabdepfile=elab_dependencies.txt -.fdsbldfile=generated_files.txt -.fdsreffile=referenced_files.txt -p "D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cyprj" -d CY8C5888LTI-LP097 -s "D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\Generated_Source\PSoC5" -- -yv2 -q10 -ygs -o2 -v3 -.fftcfgtype=LE
+Elaborating Design...
+ADD: fit.M0032: warning: Clock Warning: (UART_1_IntClock's accuracy range '8 MHz +/- 1%, (7.92 MHz - 8.08 MHz)' is not within the specified tolerance range '7.373 MHz +/- 3.937%, (7.083 MHz - 7.663 MHz)'.).
+ * D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cydwr (UART_1_IntClock)
+ * D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyComponentLibrary\CyComponentLibrary.cylib\UART_v2_50\UART_v2_50.cysch (Instance:IntClock)
+HDL Generation...
+Synthesis...
+--------------- Build Canceled: 04/06/2026 19:05:08 ---------------

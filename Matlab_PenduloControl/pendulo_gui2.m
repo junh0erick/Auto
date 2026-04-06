@@ -76,6 +76,7 @@ S.rms2_sum2 = 0;  S.rms2_n = 0;   % error RMS Planta 2
 
 S.autoStopEn = false;  S.autoStopN = 0;  S.autoStopArmed = false;
 S.last_sent_payload = [];   % último payload 216B enviado y verificado al PSoC
+S.coeffsSent = false;       % true tras enviar 'p' correctamente; bloquea Start si false
 S.ctrl = ctrl_state_default();
 
 S.scalers = struct('su1',1,'su2',1,'sy1',1,'sy2',1,...
@@ -236,7 +237,9 @@ btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+208 yC1-1 88 PP_
            'ButtonPushedFcn',@onStop);
 lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+302 yC1 120 26],...
            'FontWeight','bold');
-% (btnSend removed — Start handles all param sending)
+btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+432 yC1-1 145 PP_RH],...
+              'BackgroundColor',[0.2 0.35 0.65],'FontColor','w',...
+              'ButtonPushedFcn',@onSendCoef);
 
 uilabel(pCtrl,'Text','u_min:','Position',[PP_PX yC2 42 22]);
 edtSatMin = uieditfield(pCtrl,'numeric','Value',-1264,'Limits',[-1e6 0],...
@@ -337,6 +340,13 @@ txtLog.Value = strings(0,1);
 
 %% ═══ CALLBACKS DE PANELES DE PLANTA ══════════════════════════════════════════
 
+    function invalidateCoeffs()
+        S.coeffsSent = false;
+        if exist('btnSendCoef','var') && isvalid(btnSendCoef)
+            btnSendCoef.BackgroundColor = [0.2 0.35 0.65];
+        end
+    end
+
     function onModeChange(pp)
         mn = ddMode(pp).Value;
         S.cfg(pp).mode = mn;
@@ -346,23 +356,28 @@ txtLog.Value = strings(0,1);
         if ~isSS, cbInt(pp).Value = false;  S.cfg(pp).has_int = false; end
         updateAxesLayout();
         updateCfgStatus(pp);
+        invalidateCoeffs();
     end
 
     function onObsChange(pp)
         S.cfg(pp).obs = ddObs(pp).Value;
+        invalidateCoeffs();
     end
 
     function onIntChange(pp)
         S.cfg(pp).has_int = cbInt(pp).Value;
+        invalidateCoeffs();
     end
 
     function onNChange(pp)
         S.cfg(pp).N = max(1, round(edtN(pp).Value));
         updateCfgStatus(pp);
+        invalidateCoeffs();
     end
 
     function onFsChange()
         S.cfg(1).Fs = edtFs(1).Value;
+        invalidateCoeffs();
     end
 
     function onSimToggle(pp)
@@ -1006,6 +1021,7 @@ txtLog.Value = strings(0,1);
                 if pp == 2, edtN(pp).Value = c2.N; end
 
                 onApplyCtrl(pp);
+                invalidateCoeffs();
                 delete(pf);
             catch e
                 uialert(pf, string(e.message), 'Error — controlador');
@@ -1455,6 +1471,10 @@ txtLog.Value = strings(0,1);
             return;
         end
         % ── Inicio completo ───────────────────────────────────────────────
+        if ~S.coeffsSent
+            logMsg("⚠ Enviar coeficientes primero (botón '📤 Enviar Coef').");
+            return;
+        end
         for pp2 = 1:2, onApplyCtrl(pp2); end
         S.ctrl.Ts      = 1 / edtFs(1).Value;
         S.ctrl.sat_min = edtSatMin.Value;
@@ -1472,10 +1492,6 @@ txtLog.Value = strings(0,1);
         updateAxesLayout();
         try
             ll_flush();
-            uartp_reset();
-            % uartp_send_params(force=false): compara con last_sent_payload.
-            % Si params no cambiaron, no reenvía. Si cambiaron, envía y verifica eco.
-            uartp_send_params();
             uartp_start_run();
             S.streamOn = true;
             S.autoStopArmed = S.autoStopEn && S.autoStopN > 0;
@@ -1496,6 +1512,36 @@ txtLog.Value = strings(0,1);
 
     function onStop(~,~)
         S.streamOn = false;   % runControlLoop lo detecta y sale
+    end
+
+    function onSendCoef(~,~)
+        % Envía los coeficientes al PSoC (reset + 'p' + verificación de eco).
+        % Debe ejecutarse ANTES de Start. Start queda bloqueado hasta que esto OK.
+        if ~reqConn(), return; end
+        if S.inLoop
+            logMsg("⚠ Detener el control antes de enviar coeficientes.");
+            return;
+        end
+        for pp2 = 1:2, onApplyCtrl(pp2); end
+        S.ctrl.Ts      = 1 / edtFs(1).Value;
+        S.ctrl.sat_min = edtSatMin.Value;
+        S.ctrl.sat_max = edtSatMax.Value;
+        S.ctrl.inner.ref = edtRef.Value;
+        S.ctrl.outer.ref = 0;
+        S.coeffsSent = false;
+        btnSendCoef.BackgroundColor = [0.2 0.35 0.65];
+        try
+            ll_flush();
+            uartp_reset();
+            S.last_sent_payload = [];   % forzar reenvío tras reset
+            uartp_send_params(true);    % force=true: siempre envía
+            S.coeffsSent = true;
+            btnSendCoef.BackgroundColor = [0.12 0.55 0.12];  % verde = OK
+            logMsg("✔ Coeficientes enviados. Ahora podés presionar ▶ Start.");
+        catch e
+            S.coeffsSent = false;
+            logMsg("SendCoef FAIL: " + string(e.message));
+        end
     end
 
     function onAutoStopToggle(~,~)
@@ -1729,10 +1775,9 @@ txtLog.Value = strings(0,1);
         % Flujo de envío:
         %   1. MATLAB → 'p' + [len 2B] + [216B] + [xsum]
         %   2. PSoC   → 'K'  (checksum OK) o 'E' (error)
-        %   3. MATLAB → 'v'
-        %   4. PSoC   → [216B eco] + [xsum]  (lo que quedó almacenado)
-        %   5. MATLAB verifica eco byte a byte. Error si no coincide.
-        %   6. Guarda payload en S.last_sent_payload.
+        %   3. Guarda payload en S.last_sent_payload.
+        % Nota: el paso 'v' (eco 217B) se omite — buffer TX del PSoC se
+        % desborda a 921600 baud enviando 217B en loop (solo ~38B llegan).
         if nargin < 1, force = false; end
 
         Fs      = edtFs(1).Value;
@@ -1776,35 +1821,18 @@ txtLog.Value = strings(0,1);
         write(S.sp, packet, "uint8");
 
         % ── Esperar 'K' del PSoC ──────────────────────────────────────────────
+        % 'K' confirma que el PSoC recibió el payload con checksum correcto.
+        % El paso 'v' (eco de 217B) se omite: el buffer TX del PSoC se desborda
+        % a 921600 baud enviando 217 bytes en loop → timeout en MATLAB.
         resp = ll_readexact(1, STEP_TMO);
         if resp(1) ~= uint8('K')
             error("send_params: PSoC resp=%c (esperado K)", char(resp(1)));
         end
 
-        % ── Verificación de eco: enviar 'v', leer 216B + xsum ────────────────
-        write(S.sp, uint8('v'), "uint8");
-        echo_raw = ll_readexact(217, STEP_TMO * 2);   % 216B eco + 1B xsum
-        echo_payload = echo_raw(1:216);
-        echo_xsum    = echo_raw(217);
-
-        % Verificar checksum del eco
-        xsum_echo = uint8(0);
-        for bi = 1:216
-            xsum_echo = bitxor(xsum_echo, echo_payload(bi));
-        end
-        if xsum_echo ~= echo_xsum
-            error("send_params: xsum eco inválido (PSoC=%d, calc=%d)", echo_xsum, xsum_echo);
-        end
-        % Verificar que el eco coincide con lo enviado
-        if ~isequal(echo_payload(:), payload(:))
-            n_diff = sum(echo_payload(:) ~= payload(:));
-            error("send_params: eco ≠ payload (%d bytes difieren)", n_diff);
-        end
-
-        % ── Guardar payload verificado ────────────────────────────────────────
+        % ── Guardar payload enviado ────────────────────────────────────────────
         S.last_sent_payload = payload;
 
-        logMsg(sprintf("✔ Params enviados y verificados. modeI=%d modeO=%d Fs=%.1fHz ref=%.4g numType=%s",...
+        logMsg(sprintf("✔ Params enviados (checksum OK). modeI=%d modeO=%d Fs=%.1fHz ref=%.4g numType=%s",...
             mode_inner, mode_outer, Fs, double(ref0), ddNumType.Value));
     end
 

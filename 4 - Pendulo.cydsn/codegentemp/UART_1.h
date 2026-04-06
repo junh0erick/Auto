@@ -32,7 +32,7 @@
 #define UART_1_TX_ENABLED                     (1u)
 #define UART_1_HD_ENABLED                     (0u)
 #define UART_1_RX_INTERRUPT_ENABLED           (1u)
-#define UART_1_TX_INTERRUPT_ENABLED           (0u)
+#define UART_1_TX_INTERRUPT_ENABLED           (1u)
 #define UART_1_INTERNAL_CLOCK_USED            (1u)
 #define UART_1_RXHW_ADDRESS_ENABLED           (0u)
 #define UART_1_OVER_SAMPLE_COUNT              (8u)
@@ -45,8 +45,8 @@
 #define UART_1_USE23POLLING                   (1u)
 #define UART_1_FLOW_CONTROL                   (0u)
 #define UART_1_CLK_FREQ                       (0u)
-#define UART_1_TX_BUFFER_SIZE                 (4u)
-#define UART_1_RX_BUFFER_SIZE                 (128u)
+#define UART_1_TX_BUFFER_SIZE                 (500u)
+#define UART_1_RX_BUFFER_SIZE                 (500u)
 
 /* Check to see if required defines such as CY_PSOC5LP are available */
 /* They are defined starting with cy_boot v3.0 */
@@ -112,7 +112,7 @@ void UART_1_Wakeup(void) ;
     uint8 UART_1_ReadRxStatus(void) ;
     uint8 UART_1_GetChar(void) ;
     uint16 UART_1_GetByte(void) ;
-    uint8 UART_1_GetRxBufferSize(void)
+    uint16 UART_1_GetRxBufferSize(void)
                                                             ;
     void UART_1_ClearRxBuffer(void) ;
 
@@ -137,13 +137,13 @@ void UART_1_Wakeup(void) ;
     uint8 UART_1_ReadTxStatus(void) ;
     void UART_1_PutChar(uint8 txDataByte) ;
     void UART_1_PutString(const char8 string[]) ;
-    void UART_1_PutArray(const uint8 string[], uint8 byteCount)
+    void UART_1_PutArray(const uint8 string[], uint16 byteCount)
                                                             ;
     void UART_1_PutCRLF(uint8 txDataByte) ;
     void UART_1_ClearTxBuffer(void) ;
     void UART_1_SetTxAddressMode(uint8 addressMode) ;
     void UART_1_SendBreak(uint8 retMode) ;
-    uint8 UART_1_GetTxBufferSize(void)
+    uint16 UART_1_GetTxBufferSize(void)
                                                             ;
     /* Obsolete functions, defines for backward compatible */
     #define UART_1_PutStringConst         UART_1_PutString
@@ -310,14 +310,14 @@ void UART_1_Wakeup(void) ;
 extern uint8 UART_1_initVar;
 #if (UART_1_TX_INTERRUPT_ENABLED && UART_1_TX_ENABLED)
     extern volatile uint8 UART_1_txBuffer[UART_1_TX_BUFFER_SIZE];
-    extern volatile uint8 UART_1_txBufferRead;
-    extern uint8 UART_1_txBufferWrite;
+    extern volatile uint16 UART_1_txBufferRead;
+    extern uint16 UART_1_txBufferWrite;
 #endif /* (UART_1_TX_INTERRUPT_ENABLED && UART_1_TX_ENABLED) */
 #if (UART_1_RX_INTERRUPT_ENABLED && (UART_1_RX_ENABLED || UART_1_HD_ENABLED))
     extern uint8 UART_1_errorStatus;
     extern volatile uint8 UART_1_rxBuffer[UART_1_RX_BUFFER_SIZE];
-    extern volatile uint8 UART_1_rxBufferRead;
-    extern volatile uint8 UART_1_rxBufferWrite;
+    extern volatile uint16 UART_1_rxBufferRead;
+    extern volatile uint16 UART_1_rxBufferWrite;
     extern volatile uint8 UART_1_rxBufferLoopDetect;
     extern volatile uint8 UART_1_rxBufferOverflow;
     #if (UART_1_RXHW_ADDRESS_ENABLED)
