@@ -1,0 +1,20 @@
+# PSoC Creator build artifacts
+4 - Pendulo.cydsn/CortexM3/
+4 - Pendulo.cydsn/codegentemp/
+4 - Pendulo.cydsn/BUILD.log
+4 - Pendulo.cydsn/*.cycdx
+4 - Pendulo.cydsn/*.cyfit
+4 - Pendulo.cydsn/*.rpt
+4 - Pendulo.cydsn/*.svd
+4 - Pendulo.cydsn/*_timing.html
+4 - Pendulo.cydsn/*.cywrk
+4 - Pendulo.cydsn/*.cywrk.user
+4 - Pendulo.cydsn/Export/
+4 - Pendulo.cydsn/Generated_Source/
+
+# PSoC Creator workspace user prefs
+*.cywrk.user
+*.cyprj.user
+
+# Other PSoC generated
+1 - Barrido.cydsn/*.cywrk.user

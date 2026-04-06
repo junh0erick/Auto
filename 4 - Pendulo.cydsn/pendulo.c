@@ -17,6 +17,11 @@ volatile int16  g_last_u_pwm       = 0;
    Dispara cada Ts_inner = 1 / Fs_inner.
    SOLO levanta la bandera — todo el trabajo se hace en main.
    ============================================================ */
+CY_ISR(Control_Timer_ISR)
+{
+    Timer_1_ReadStatusRegister();   /* limpiar interrupción */
+    g_flag_control = 1u;
+}
 
 
 /* ============================================================
@@ -35,8 +40,11 @@ void pendulo_init(void)
     QuadDec_2_Start();
     g_prev_motor_count = (int32)QuadDec_1_GetCounter();
 
+    /* ---- Timer de control (24 MHz, periodo por defecto 5ms = 200 Hz) ---- */
+    Timer_1_Start();
+    isr_1_StartEx(Control_Timer_ISR);
+
     /* ---- Estado inicial ---- */
-    /* Timer no se usa en v5: el timing lo maneja MATLAB con solicitudes 'g' */
     g_flag_control = 0u;
     g_last_u_pwm   = 0;
 }
