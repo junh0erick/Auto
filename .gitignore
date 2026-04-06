@@ -18,3 +18,11 @@
 
 # Other PSoC generated
 1 - Barrido.cydsn/*.cywrk.user
+
+# CMSIS library (fuente en DSP/ submodule, no hace falta duplicar)
+CMSIS_4-4.5.0/
+CMSIS_4-4.5.0.zip
+
+# Claude Code (excepto CLAUDE.md)
+.claude/
+.claude_files
