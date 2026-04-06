@@ -205,6 +205,12 @@ C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_isr
 C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_isr_v1_71\Custom\custom.cs
 C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_isr_v1_71\PSoC5\API\intc.c
 C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_isr_v1_71\PSoC5\API\intc.h
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\cy_tff_v1_0.cysym
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\cy_tff_v1_0.v
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\cy_tff_v1_0.cystate
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\cy_tff_v1_0.pdf
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\version.cypatch
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\CyPrimitives\cyprimitives.cylib\cy_tff_v1_0\Custom\custom.cs
 D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cydwr
 C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_boot_v6_10\PSoC5\API\cm3gcc.ld
 C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\cy_boot_v6_10\PSoC5\API\Cm3RealView.scat

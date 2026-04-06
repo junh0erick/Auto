@@ -139,7 +139,7 @@ volatile uint8 ctrl_telem_ready = 0u;
 
 /* Timer */
 volatile uint8  ctrl_period_pending = 0u;
-volatile uint32 ctrl_period_ticks   = 0u;
+volatile uint32 ctrl_period_ticks   = (TIMER_CLOCK_HZ / 200u) - 1u;  /* 200 Hz por defecto */
 
 /* Saturación configurable */
 static float    g_sat_min = PWM_MIN_F;

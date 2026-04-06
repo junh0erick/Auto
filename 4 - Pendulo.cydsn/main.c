@@ -11,19 +11,21 @@
        's' → 'K'                          Stop
 
      STREAM mode (PSoC-driven, v6):
-       PSoC → MATLAB: 8×float32 LE = 32 bytes/tick
+       PSoC → MATLAB: 9×field = 36 bytes/tick
        MATLAB → PSoC: 'u' + [ref f32]     Actualizar referencia inner
                       's'                  Stop
 
-   Telemetría 32 bytes por tick:
-       y1   = omega [rad/s]   (float32 LE)
-       y2   = theta [rad]     (float32 LE)
-       u1   = esfuerzo PWM    (float32 LE, sin saturar)
-       u2   = ref inner       (float32 LE, salida outer o ref manual)
-       x1i  = inner xhat[0]  (float32 LE)
-       x2i  = inner xhat[1]  (float32 LE)
-       x1o  = outer xhat[0]  (float32 LE)
-       x2o  = outer xhat[1]  (float32 LE)
+   Telemetría 36 bytes por tick:
+       y1       = omega [rad/s]      (float32 LE, bytes  0- 3)
+       y2       = theta [rad]        (float32 LE, bytes  4- 7)
+       u1       = esfuerzo PWM       (float32 LE, bytes  8-11)
+       u2       = ref inner          (float32 LE, bytes 12-15)
+       x1i      = inner xhat[0]     (float32 LE, bytes 16-19)
+       x2i      = inner xhat[1]     (float32 LE, bytes 20-23)
+       x1o      = outer xhat[0]     (float32 LE, bytes 24-27)
+       x2o      = outer xhat[1]     (float32 LE, bytes 28-31)
+       elapsed  = ticks ctrl_step   (uint32  LE, bytes 32-35)
+                  clock = 24 MHz → time_us = elapsed / 24.0
    ============================================================ */
 #include "project.h"
 #include "pendulo.h"
@@ -31,8 +33,8 @@
 #include "uartp_pend.h"
 #include "ctrl_pend.h"
 
-/* Tamaño de trama de telemetría */
-#define TELEM_FRAME_SZ  32u
+/* Tamaño de trama de telemetría (8×float32 + 1×uint32 = 36 bytes) */
+#define TELEM_FRAME_SZ  36u
 
 int main(void)
 {
@@ -40,6 +42,7 @@ int main(void)
     uint8  *p;
     float  t_y1, t_y2, t_u1, t_u2;
     float  t_x1i, t_x2i, t_x1o, t_x2o;
+    uint32 cap_before, cap_after, elapsed;
     uint8  intr;
 
     CyGlobalIntEnable;
@@ -73,8 +76,20 @@ int main(void)
             {
                 g_flag_control = 0u;
 
-                /* 1. Ejecutar paso de control (lee sensores, calcula u, actúa) */
+                /* 1. Ejecutar paso de control — capturar ticks antes y después */
+                Timer_1_SoftwareCapture();
+                cap_before = Timer_1_ReadCapture();
+#if DEBUG_PINS_ENABLED
+                pin_flag_Write(1u);
+#endif
                 ctrl_step();
+#if DEBUG_PINS_ENABLED
+                pin_flag_Write(0u);
+#endif
+                Timer_1_SoftwareCapture();
+                cap_after = Timer_1_ReadCapture();
+                /* Timer cuenta hacia abajo → elapsed = before - after */
+                elapsed = (cap_before >= cap_after) ? (cap_before - cap_after) : 0u;
 
                 /* 2. Leer telemetría con sección crítica mínima */
                 intr = CyEnterCriticalSection();
@@ -106,6 +121,11 @@ int main(void)
                 frame[24]=p[0]; frame[25]=p[1]; frame[26]=p[2]; frame[27]=p[3];
                 p = (uint8*)&t_x2o;
                 frame[28]=p[0]; frame[29]=p[1]; frame[30]=p[2]; frame[31]=p[3];
+                /* elapsed ticks de ctrl_step (uint32 LE) */
+                frame[32]=(uint8)(elapsed);
+                frame[33]=(uint8)(elapsed >> 8u);
+                frame[34]=(uint8)(elapsed >> 16u);
+                frame[35]=(uint8)(elapsed >> 24u);
 
                 /* 4. Enviar por UART */
                 UART_1_PutArray(frame, TELEM_FRAME_SZ);

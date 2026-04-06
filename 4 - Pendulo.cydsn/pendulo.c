@@ -20,6 +20,7 @@ volatile int16  g_last_u_pwm       = 0;
 CY_ISR(Control_Timer_ISR)
 {
     Timer_1_ReadStatusRegister();   /* limpiar interrupción */
+
     g_flag_control = 1u;
 }
 
@@ -40,7 +41,15 @@ void pendulo_init(void)
     QuadDec_2_Start();
     g_prev_motor_count = (int32)QuadDec_1_GetCounter();
 
-    /* ---- Timer de control (24 MHz, periodo por defecto 5ms = 200 Hz) ---- */
+    /* ---- Timer de control ----
+       Clock = 24 MHz  →  period = 24 000 000 / Fs - 1
+       Ejemplos:
+         200 Hz  (5.000 ms) → 119999
+         500 Hz  (2.000 ms) →  47999
+        1000 Hz  (1.000 ms) →  23999
+       Cambiar DEFAULT_FS_HZ para ajustar la frecuencia de arranque. */
+#define DEFAULT_FS_HZ  200u
+    Timer_1_WritePeriod((TIMER_CLOCK_HZ / DEFAULT_FS_HZ) - 1u);
     Timer_1_Start();
     isr_1_StartEx(Control_Timer_ISR);
 

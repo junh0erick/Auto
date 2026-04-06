@@ -66,6 +66,12 @@
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\isr_1.h" value="HEADER;;;;;isr_1" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\isr_2.c" value="SOURCE_C;CortexM3;;;;isr_2" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\isr_2.h" value="HEADER;;;;;isr_2" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\tc_timer_aliases.h" value="HEADER;;;;;tc_timer" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\tc_timer.c" value="SOURCE_C;CortexM3;;;;tc_timer" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\tc_timer.h" value="HEADER;;;;;tc_timer" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\pin_flag_aliases.h" value="HEADER;;;;;pin_flag" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\pin_flag.c" value="SOURCE_C;CortexM3;;;;pin_flag" />
+  <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\pin_flag.h" value="HEADER;;;;;pin_flag" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_isr.c" value="SOURCE_C;CortexM3;;;;QuadDec_1_isr" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_isr.h" value="HEADER;;;;;QuadDec_1_isr" />
   <file name="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\codegentemp\QuadDec_1_Cnt16.c" value="SOURCE_C;CortexM3;;;;QuadDec_1_Cnt16" />

@@ -7,7 +7,7 @@ function pendulo_gui2()
 %  Planta 2 (outer): Péndulo / θ → ref_inner (decimado por N)
 
 %% ═══ CONSTANTES FÍSICAS Y PROTOCOLO ═════════════════════════════════════════
-TELEM_SZ    = 32;       % bytes por trama PSoC→MATLAB (8×float32: y1 y2 u1 u2 x1i x2i x1o x2o)
+TELEM_SZ    = 36;       % bytes por trama PSoC→MATLAB (8×float32 + 1×uint32: y1 y2 u1 u2 x1i x2i x1o x2o elapsed_ticks)
 MAX_PTS     = 500000;   % máx muestras en memoria
 STEP_TMO    = 0.8;      % timeout handshake [s]
 MAX_RETRIES = 50;       % reintentos handshake
@@ -25,8 +25,8 @@ AX_BOT = 10;    AX_H   = 170;   AX_GAP = 4;
 
 RX     = 908;   RW     = 585;   RGAP   = 4;
 
-H_LOG   = 86;
-H_VIZ   = 80;
+H_LOG   = 58;
+H_VIZ   = 108;
 H_DATA  = 44;
 H_CTRL  = 100;
 H_PLANT = 165;
@@ -75,6 +75,10 @@ S.rms1_sum2 = 0;  S.rms1_n = 0;   % error RMS Planta 1
 S.rms2_sum2 = 0;  S.rms2_n = 0;   % error RMS Planta 2
 
 S.autoStopEn = false;  S.autoStopN = 0;  S.autoStopArmed = false;
+S.ts_buf = zeros(50,1);   % buffer circular para promedio de Ts
+S.last_vuelo_us = 0;   % último tiempo de ctrl_step medido por Timer_1 capture (µs)
+S.ts_buf_idx = 1;
+S.ts_buf_full = false;
 S.last_sent_payload = [];   % último payload 216B enviado y verificado al PSoC
 S.coeffsSent = false;       % true tras enviar 'p' correctamente; bloquea Start si false
 S.ctrl = ctrl_state_default();
@@ -195,6 +199,9 @@ for pp = 1:2
         edtFs(pp) = uieditfield(pP,'numeric','Value',200,'Limits',[0.1 10000],...
             'Position',[PP_PX+56 PP_Y2 84 22],...
             'ValueChangedFcn',@(~,~) onFsChange());
+        lblPeriod = uilabel(pP,'Text',sprintf('period=%d', round(24e6/200)),...
+            'Position',[PP_PX+148 PP_Y2 RW-PP_PX*2-148 22],...
+            'FontColor',[0.35 0.35 0.35],'FontSize',9);
         edtN(pp) = uieditfield(pP,'numeric','Value',1,'Limits',[1 1e6],...
             'RoundFractionalValues','on','Visible','off',...
             'Position',[PP_PX+24 PP_Y2 58 22]);
@@ -247,8 +254,6 @@ edtSatMin = uieditfield(pCtrl,'numeric','Value',-1264,'Limits',[-1e6 0],...
 uilabel(pCtrl,'Text','u_max:','Position',[PP_PX+116 yC2 42 22]);
 edtSatMax = uieditfield(pCtrl,'numeric','Value', 1264,'Limits',[0 1e6],...
             'Position',[PP_PX+160 yC2 66 22]);
-lblRTT = uilabel(pCtrl,'Text','RTT — ms','Position',[PP_PX+240 yC2 300 22],...
-         'FontColor',[0.25 0.25 0.7]);
 
 cbAutoStop = uicheckbox(pCtrl,'Text','Auto-stop en frames:','Value',false,...
              'Position',[PP_PX yC3 148 22],'ValueChangedFcn',@onAutoStopToggle);
@@ -275,6 +280,7 @@ uibutton(pData,'Text','⚙ Escaladores','Position',[PP_PX+260  yD1 142 PP_RH],..
 pViz = uipanel(fig,'Title','Visualización','Position',[RX Y_VIZ RW H_VIZ]);
 yV1 = H_VIZ - 20 - PP_RH;
 yV2 = yV1 - PP_RH - PP_RG;
+yV3 = yV2 - PP_RH - PP_RG;
 
 % Fila 1: señales
 uilabel(pViz,'Text','Señales:','Position',[PP_PX yV1+2 52 18]);
@@ -292,6 +298,11 @@ cbX1i = uicheckbox(pViz,'Text','x̂₁ᵢ','Value',false,'Position',[PP_PX+ 50 y
 cbX2i = uicheckbox(pViz,'Text','x̂₂ᵢ','Value',false,'Position',[PP_PX+104 yV2 52 22],'ValueChangedFcn',@updatePlots);
 cbX1o = uicheckbox(pViz,'Text','x̂₁ₒ','Value',false,'Position',[PP_PX+158 yV2 52 22],'ValueChangedFcn',@updatePlots);
 cbX2o = uicheckbox(pViz,'Text','x̂₂ₒ','Value',false,'Position',[PP_PX+212 yV2 52 22],'ValueChangedFcn',@updatePlots);
+
+% Fila 3: métricas de timing
+lblRTT = uilabel(pViz,'Text','RTT — ms',...
+    'Position',[PP_PX yV3 RW-PP_PX*2 20],...
+    'FontColor',[0.2 0.2 0.6],'FontSize',9);
 
 % ── 7. Log ────────────────────────────────────────────────────────────────────
 txtLog = uitextarea(fig,'Editable','off','Position',[RX Y_LOG RW H_LOG],...
@@ -313,6 +324,32 @@ txtLog.Value = strings(0,1);
     function ok = reqConn()
         ok = S.isConnected && ~isempty(S.sp);
         if ~ok, logMsg("⚠ No conectado."); end
+    end
+
+    % Formatea un valor en ms con escala automática
+    function s = fmt_time(ms_val)
+        if ms_val < 1e-3        % < 1 µs → nanosegundos
+            s = sprintf('%.2fns', ms_val * 1e6);
+        elseif ms_val < 1       % < 1 ms → microsegundos
+            s = sprintf('%.2f\xB5s', ms_val * 1e3);
+        elseif ms_val < 1000    % < 1 s  → milisegundos
+            s = sprintf('%.3fms', ms_val);
+        else                    % >= 1 s
+            s = sprintf('%.3fs', ms_val / 1e3);
+        end
+    end
+
+    % Formatea un valor en Hz con escala automática
+    function s = fmt_freq(hz_val)
+        if hz_val < 1           % < 1 Hz → mHz
+            s = sprintf('%.2fmHz', hz_val * 1e3);
+        elseif hz_val < 1e3     % < 1 kHz → Hz
+            s = sprintf('%.2fHz', hz_val);
+        elseif hz_val < 1e6     % < 1 MHz → kHz
+            s = sprintf('%.3fkHz', hz_val / 1e3);
+        else                    % >= 1 MHz
+            s = sprintf('%.3fMHz', hz_val / 1e6);
+        end
     end
 
     function setupAx(ax, ttl, yl)
@@ -377,6 +414,8 @@ txtLog.Value = strings(0,1);
 
     function onFsChange()
         S.cfg(1).Fs = edtFs(1).Value;
+        lblPeriod.Text = sprintf('period=%d  (Ts=%.3fms)', ...
+            round(24e6 / edtFs(1).Value), 1000/edtFs(1).Value);
         invalidateCoeffs();
     end
 
@@ -1490,6 +1529,7 @@ txtLog.Value = strings(0,1);
         S.rms1_sum2 = 0;  S.rms1_n = 0;
         S.rms2_sum2 = 0;  S.rms2_n = 0;
         updateAxesLayout();
+        S.last_vuelo_us = 0;
         try
             ll_flush();
             uartp_start_run();
@@ -1571,11 +1611,22 @@ txtLog.Value = strings(0,1);
                 end
 
                 % 2. Procesar tramas completas de 32 bytes (8×float32)
+                % Medir inter-frame solo una vez por lote (no entre frames
+                % del mismo burst — eso daría Fs_meas irreal de kHz).
+                n_frames_lote = floor(numel(rxBuf) / TELEM_SZ);
+                if n_frames_lote >= 1
+                    % Tiempo desde el último lote dividido entre frames del lote
+                    dt_lote = toc(t_last_frame) * 1000;   % ms totales del lote
+                    t_last_frame = tic;
+                    last_inter_ms = dt_lote / n_frames_lote;
+                    % Acumular en buffer circular para promedio
+                    S.ts_buf(S.ts_buf_idx) = last_inter_ms;
+                    S.ts_buf_idx = mod(S.ts_buf_idx, 50) + 1;
+                    if S.ts_buf_idx == 1, S.ts_buf_full = true; end
+                end
                 while numel(rxBuf) >= TELEM_SZ
                     processTelemFrame(rxBuf(1:TELEM_SZ));
                     rxBuf = rxBuf(TELEM_SZ+1:end);
-                    last_inter_ms = toc(t_last_frame)*1000;
-                    t_last_frame  = tic;
                 end
             catch e
                 logMsg("Stream ERR: " + string(e.message));
@@ -1590,8 +1641,18 @@ txtLog.Value = strings(0,1);
                 updateRmsLabels();
                 updateDataInfo();
                 try
-                    lblRTT.Text = sprintf('Ts_meas=%.2fms  n=%d',...
-                        last_inter_ms, S.framesTotal);
+                    if S.ts_buf_full
+                        ts_avg = mean(S.ts_buf);
+                    else
+                        ts_avg = mean(S.ts_buf(1:max(1,S.ts_buf_idx-1)));
+                    end
+                    fs_inst = 1000 / last_inter_ms;
+                    fs_avg  = 1000 / ts_avg;
+                    vuelo_ms = S.last_vuelo_us / 1000;
+                    lblRTT.Text = sprintf('Ts %s  avg %s  |  Fs %s  avg %s  |  vuelo %s', ...
+                        fmt_time(last_inter_ms), fmt_time(ts_avg), ...
+                        fmt_freq(fs_inst), fmt_freq(fs_avg), ...
+                        fmt_time(vuelo_ms));
                 catch, end
                 drawnow;
             end
@@ -1619,7 +1680,11 @@ txtLog.Value = strings(0,1);
             btnStart.BackgroundColor = [0.12 0.62 0.12];
             btnStart.FontColor = 'w';
             try
-                lblRTT.Text = sprintf('Ts_meas=%.2fms  (última)',last_inter_ms);
+                valid = S.ts_buf(S.ts_buf > 0);
+                ts_avg_fin = mean(valid);
+                lblRTT.Text = sprintf('Ts %s  avg %s  |  Fs %s  avg %s  (última)', ...
+                    fmt_time(last_inter_ms), fmt_time(ts_avg_fin), ...
+                    fmt_freq(1000/last_inter_ms), fmt_freq(1000/ts_avg_fin));
             catch, end
             logMsg("Streaming detenido.");
             updatePlots();  updateRmsLabels();  updateDataInfo();
@@ -1631,9 +1696,10 @@ txtLog.Value = strings(0,1);
 %% ═══ TRAMA DE TELEMETRÍA v6 (PSoC → MATLAB) ═════════════════════════════════
 
     function processTelemFrame(frame)
-        % Decodifica 32 bytes = 8 × float32 LE enviados por PSoC.
-        % Bytes  0-15: y1 y2 u1 u2  (señales principales)
-        % Bytes 16-31: x1i x2i x1o x2o  (estados observador, 0 si modo TF/OL)
+        % Decodifica 36 bytes enviados por PSoC.
+        % Bytes  1-16:  y1 y2 u1 u2        (4 × float32 LE)
+        % Bytes 17-32:  x1i x2i x1o x2o   (4 × float32 LE, estados observador)
+        % Bytes 33-36:  elapsed_ticks       (uint32 LE, ticks de ctrl_step @ 24MHz)
         y1     = double(typecast(uint8(frame(1:4)),   'single'));
         y2     = double(typecast(uint8(frame(5:8)),   'single'));
         u1_raw = double(typecast(uint8(frame(9:12)),  'single'));
@@ -1642,6 +1708,8 @@ txtLog.Value = strings(0,1);
         x2i    = double(typecast(uint8(frame(21:24)), 'single'));
         x1o    = double(typecast(uint8(frame(25:28)), 'single'));
         x2o    = double(typecast(uint8(frame(29:32)), 'single'));
+        elapsed_ticks = double(typecast(uint8(frame(33:36)), 'uint32'));
+        S.last_vuelo_us = elapsed_ticks / 24.0;   % µs
 
         % Saturar u1 con los límites configurados (PSoC ya lo hace, aquí para display)
         u1_sat   = max(S.ctrl.sat_min, min(S.ctrl.sat_max, u1_raw));

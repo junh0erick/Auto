@@ -1,5 +1,5 @@
 # 4 - Pendulo
-# 2026-04-06 22:05:17Z
+# 2026-04-06 22:47:21Z
 
 # IO_0@[IOP=(1)][IoId=(0)] is reserved: SWDDebugEnabled
 dont_use_io iocell 1 0
@@ -14,3 +14,5 @@ set_io "Pin_IN1(0)" iocell 2 6
 set_io "Pin_IN2(0)" iocell 2 5
 set_io "Tx_1(0)" iocell 12 7
 set_io "Rx_1(0)" iocell 12 6
+set_io "tc_timer(0)" iocell 2 1
+set_io "pin_flag(0)" iocell 2 0

@@ -253,6 +253,7 @@
     <Group key="Pin">
       <Data key="01d8c360-9e43-49c5-b69a-25ff8ff55663" value="quad_B_pendulo" />
       <Data key="3b1009a4-327c-4b98-9779-c29da247c474" value="quad_A_pendulo" />
+      <Data key="7ba2c347-1c17-455c-b844-e92da8b10bd6" value="pin_flag" />
       <Data key="8c68b4c7-bcbb-4289-8f4c-dd959170d125" value="quad_B_motor" />
       <Data key="8d318d8b-cf7b-4b6b-b02c-ab1c5c49d0ba" value="quad_A_motor" />
       <Data key="1425177d-0d0e-4468-8bcc-e638e5509a9b" value="Rx_1" />
@@ -262,6 +263,7 @@
       <Data key="e851a3b9-efb8-48be-bbb8-b303b216c393" value="Pin_ENA" />
       <Data key="e49989b5-f93e-4a18-b8dd-38951c7756c3" value="Pin_1" />
       <Data key="ed092b9b-d398-4703-be89-cebf998501f6" value="Tx_1" />
+      <Data key="eeacbad0-5b42-4676-8a31-83ecfeaf4a85" value="tc_timer" />
     </Group>
   </Group>
   <Group key="EEPROM">
@@ -3348,6 +3350,11 @@
     </Group>
   </Group>
   <Group key="Pin2">
+    <Group key="7ba2c347-1c17-455c-b844-e92da8b10bd6">
+      <Group key="0">
+        <Data key="Port Format" value="2,0" />
+      </Group>
+    </Group>
     <Group key="8c68b4c7-bcbb-4289-8f4c-dd959170d125">
       <Group key="0">
         <Data key="Port Format" value="1,7" />
@@ -3391,6 +3398,11 @@
     <Group key="ed092b9b-d398-4703-be89-cebf998501f6">
       <Group key="0">
         <Data key="Port Format" value="12,7" />
+      </Group>
+    </Group>
+    <Group key="eeacbad0-5b42-4676-8a31-83ecfeaf4a85">
+      <Group key="0">
+        <Data key="Port Format" value="2,1" />
       </Group>
     </Group>
   </Group>

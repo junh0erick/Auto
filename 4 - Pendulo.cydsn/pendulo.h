@@ -27,6 +27,14 @@
 #define TIMER_CLOCK_HZ  24000000UL
 
 /* ============================================================
+   PINES DE DEBUG
+     pin_flag  : Digital Output — HIGH durante la ejecución del paso de
+                 control (ISR sube, main baja al terminar ctrl_step).
+                 tc_timer está conectado por hardware al timer, sin código.
+   ============================================================ */
+#define DEBUG_PINS_ENABLED  1u   /* 0 = deshabilitar sin borrar código */
+
+/* ============================================================
    VARIABLES COMPARTIDAS (escritas en main, ISR y uartp_pend)
    ============================================================ */
 extern volatile uint8  g_flag_control;       /* ISR → main: tick listo    */
