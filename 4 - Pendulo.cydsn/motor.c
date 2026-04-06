@@ -61,3 +61,18 @@ void Motor_Free(void)
     Pin_IN2_Write(0u);
     PWM_Motor_WriteCompare(0u);
 }
+
+/* ============================================================
+   PWM_Desde_Voltaje()
+   Convierte voltaje (V) a unidades PWM en [-1264, +1264].
+   Usa polinomio Horner grado 4 calibrado en el banco.
+   Bidireccional: preserva signo para marcha atrás.
+   ============================================================ */
+int16 PWM_Desde_Voltaje(float v)
+{
+    float av = (v >= 0.0f) ? v : -v;
+    int16 pwm = (int16)((((PWM_P1*av + PWM_P2)*av + PWM_P3)*av + PWM_P4)*av + PWM_P5);
+    if (pwm > MOTOR_MAX) pwm = MOTOR_MAX;
+    if (pwm < 0)         pwm = 0;
+    return (v >= 0.0f) ? pwm : -pwm;
+}

@@ -1,4 +1,4 @@
-function pendulo_gui2()
+﻿function pendulo_gui2()
 %PENDULO_GUI2  GUI Péndulo Invertido PSoC 5LP — v6
 %  Control en PSoC (ctrl_pend.c). MATLAB = display + configuración.
 %  Protocolo v6.2: MATLAB→'p'(216B params)→'v'(eco)→'i'→PSoC streaming 32B/tick
@@ -25,9 +25,9 @@ AX_BOT = 10;    AX_H   = 170;   AX_GAP = 4;
 
 RX     = 908;   RW     = 585;   RGAP   = 4;
 
-H_LOG   = 58;
-H_VIZ   = 108;
-H_DATA  = 44;
+H_LOG   = 82;
+H_VIZ   = 130;
+H_DATA  = 72;
 H_CTRL  = 100;
 H_PLANT = 165;
 H_CONN  = 35;
@@ -234,17 +234,20 @@ yC2 = yC1 - PP_RH - PP_RG;
 yC3 = yC2 - PP_RH - PP_RG;
 
 uilabel(pCtrl,'Text','Ref:','Position',[PP_PX yC1 30 22]);
-edtRef = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e6 1e6],...
+edtRef = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1264 1264],...
          'Position',[PP_PX+32 yC1 66 22]);
-btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+104 yC1-1 98 PP_RH],...
+cbVolts = uicheckbox(pCtrl,'Text','V','Value',false,...
+          'Position',[PP_PX+100 yC1 38 22],...
+          'ValueChangedFcn',@onVoltsToggle);
+btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+140 yC1-1 98 PP_RH],...
            'BackgroundColor',[0.12 0.62 0.12],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStart);
-btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+208 yC1-1 88 PP_RH],...
+btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+244 yC1-1 88 PP_RH],...
            'BackgroundColor',[0.78 0.1 0.1],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStop);
-lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+302 yC1 120 26],...
+lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+340 yC1 104 26],...
            'FontWeight','bold');
-btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+432 yC1-1 145 PP_RH],...
+btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+454 yC1-1 123 PP_RH],...
               'BackgroundColor',[0.2 0.35 0.65],'FontColor','w',...
               'ButtonPushedFcn',@onSendCoef);
 
@@ -269,18 +272,27 @@ ddNumType  = uidropdown(pCtrl,...
 % ── 5. Datos ──────────────────────────────────────────────────────────────────
 pData = uipanel(fig,'Title','Datos','Position',[RX Y_DATA RW H_DATA]);
 yD1 = H_DATA - 20 - PP_RH;
+yD2 = yD1 - PP_RH - PP_RG;
 uibutton(pData,'Text','Exportar .mat', 'Position',[PP_PX      yD1 130 PP_RH],...
          'ButtonPushedFcn',@onExport);
 uibutton(pData,'Text','Borrar datos',  'Position',[PP_PX+136  yD1 118 PP_RH],...
          'ButtonPushedFcn',@onClear);
 uibutton(pData,'Text','⚙ Escaladores','Position',[PP_PX+260  yD1 142 PP_RH],...
          'ButtonPushedFcn',@(~,~) openScalerPopup());
+% Fila 2: controles de ventana
+uilabel(pData,'Text','Vista pts:','Position',[PP_PX yD2 62 22]);
+edtViewPts = uieditfield(pData,'numeric','Value',2000,'Limits',[1 1e7],...
+             'RoundFractionalValues','on','Position',[PP_PX+64 yD2 84 22]);
+uilabel(pData,'Text','Máx mem:','Position',[PP_PX+158 yD2 60 22]);
+edtMaxPts  = uieditfield(pData,'numeric','Value',500000,'Limits',[100 1e8],...
+             'RoundFractionalValues','on','Position',[PP_PX+220 yD2 100 22]);
 
 % ── 6. Visualización ──────────────────────────────────────────────────────────
 pViz = uipanel(fig,'Title','Visualización','Position',[RX Y_VIZ RW H_VIZ]);
 yV1 = H_VIZ - 20 - PP_RH;
 yV2 = yV1 - PP_RH - PP_RG;
 yV3 = yV2 - PP_RH - PP_RG;
+yV4 = yV3 - PP_RH - PP_RG;
 
 % Fila 1: señales
 uilabel(pViz,'Text','Señales:','Position',[PP_PX yV1+2 52 18]);
@@ -304,10 +316,23 @@ lblRTT = uilabel(pViz,'Text','RTT — ms',...
     'Position',[PP_PX yV3 RW-PP_PX*2 20],...
     'FontColor',[0.2 0.2 0.6],'FontSize',9);
 
+% Fila 4: error RMS simulación
+lblRMSViz = uilabel(pViz,'Text','Sim RMS — sin simulación',...
+    'Position',[PP_PX yV4 RW-PP_PX*2 20],...
+    'FontColor',[0.05 0.45 0.05],'FontSize',10);
+
 % ── 7. Log ────────────────────────────────────────────────────────────────────
-txtLog = uitextarea(fig,'Editable','off','Position',[RX Y_LOG RW H_LOG],...
-         'FontSize',9);
+LOG_HDR_H = 26;
+uilabel(fig,'Text','Log:','Position',[RX Y_LOG+H_LOG-LOG_HDR_H 32 22],...
+        'FontWeight','bold');
+% Área de texto (debajo del header)
+txtLog = uitextarea(fig,'Editable','off',...
+         'Position',[RX Y_LOG RW H_LOG-LOG_HDR_H],...
+         'FontSize',12);
 txtLog.Value = strings(0,1);
+% Botón Limpiar (definido después de txtLog para capturarlo en el closure)
+uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
+         'ButtonPushedFcn',@(~,~) set(txtLog,'Value',strings(0,1)));
 
 %% ═══ HELPERS UI ══════════════════════════════════════════════════════════════
 
@@ -419,6 +444,15 @@ txtLog.Value = strings(0,1);
         invalidateCoeffs();
     end
 
+    function onVoltsToggle(~,~)
+        if cbVolts.Value
+            edtRef.Limits = [-12 12];
+        else
+            edtRef.Limits = [-1264 1264];
+        end
+        invalidateCoeffs();
+    end
+
     function onSimToggle(pp)
         S.cfg(pp).sim_enabled = cbSimEn(pp).Value;
         % ŷ checkbox only visible when sim is enabled for that plant
@@ -497,7 +531,11 @@ txtLog.Value = strings(0,1);
         for h = hAll, set(h,'XData',nan,'YData',nan); end
         if isempty(S.nVec), return; end
 
-        n    = S.nVec;
+        % Ventana de visualización: últimos N puntos
+        N_total = numel(S.nVec);
+        N_view  = min(N_total, round(edtViewPts.Value));
+        i0      = N_total - N_view + 1;
+        n    = S.nVec(i0:end);
         su1  = safeS(S.scalers.su1);   su2  = safeS(S.scalers.su2);
         sy1  = safeS(S.scalers.sy1);   sy2  = safeS(S.scalers.sy2);
         sr   = safeS(S.scalers.sr);
@@ -509,31 +547,31 @@ txtLog.Value = strings(0,1);
         out = ~strcmp(ddMode(2).Value,'Off');
 
         if inn
-            if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',S.u1Vec*su1);       end
-            if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',S.u1unsat_Vec*su1); end
-            if cbSigR.Value,     set(hR1,     'XData',n,'YData',S.u2Vec*sr);        end
-            if cbSigY1.Value,    set(hY1,     'XData',n,'YData',S.y1Vec*sy1);       end
-            if cbSigSim1.Value && numel(S.ySimVec1)==numel(n)
-                set(hY1sim,'XData',n,'YData',S.ySimVec1*ss1);
+            if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',S.u1Vec(i0:end)*su1);       end
+            if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',S.u1unsat_Vec(i0:end)*su1); end
+            if cbSigR.Value,     set(hR1,     'XData',n,'YData',S.u2Vec(i0:end)*sr);        end
+            if cbSigY1.Value,    set(hY1,     'XData',n,'YData',S.y1Vec(i0:end)*sy1);       end
+            if cbSigSim1.Value && numel(S.ySimVec1)==N_total
+                set(hY1sim,'XData',n,'YData',S.ySimVec1(i0:end)*ss1);
             end
-            if cbX1i.Value && numel(S.x1iVec)==numel(n)
-                set(hX1i,'XData',n,'YData',S.x1iVec*sx1i);
+            if cbX1i.Value && numel(S.x1iVec)==N_total
+                set(hX1i,'XData',n,'YData',S.x1iVec(i0:end)*sx1i);
             end
-            if cbX2i.Value && numel(S.x2iVec)==numel(n)
-                set(hX2i,'XData',n,'YData',S.x2iVec*sx2i);
+            if cbX2i.Value && numel(S.x2iVec)==N_total
+                set(hX2i,'XData',n,'YData',S.x2iVec(i0:end)*sx2i);
             end
         end
         if out
-            if cbSigU.Value,  set(hU2, 'XData',n,'YData',S.u2Vec*su2);  end
-            if cbSigY2.Value, set(hY2, 'XData',n,'YData',S.y2Vec*sy2);  end
-            if cbSigSim2.Value && numel(S.ySimVec2)==numel(n)
-                set(hY2sim,'XData',n,'YData',S.ySimVec2*ss2);
+            if cbSigU.Value,  set(hU2, 'XData',n,'YData',S.u2Vec(i0:end)*su2);  end
+            if cbSigY2.Value, set(hY2, 'XData',n,'YData',S.y2Vec(i0:end)*sy2);  end
+            if cbSigSim2.Value && numel(S.ySimVec2)==N_total
+                set(hY2sim,'XData',n,'YData',S.ySimVec2(i0:end)*ss2);
             end
-            if cbX1o.Value && numel(S.x1oVec)==numel(n)
-                set(hX1o,'XData',n,'YData',S.x1oVec*sx1o);
+            if cbX1o.Value && numel(S.x1oVec)==N_total
+                set(hX1o,'XData',n,'YData',S.x1oVec(i0:end)*sx1o);
             end
-            if cbX2o.Value && numel(S.x2oVec)==numel(n)
-                set(hX2o,'XData',n,'YData',S.x2oVec*sx2o);
+            if cbX2o.Value && numel(S.x2oVec)==N_total
+                set(hX2o,'XData',n,'YData',S.x2oVec(i0:end)*sx2o);
             end
         end
 
@@ -544,6 +582,7 @@ txtLog.Value = strings(0,1);
     end
 
     function updateRmsLabels()
+        rms1_txt = '—';  rms2_txt = '—';
         for pp2 = 1:2
             try
                 if pp2 == 1
@@ -554,22 +593,25 @@ txtLog.Value = strings(0,1);
                 if n_s > 0
                     rms_e = sqrt(ss / n_s);
                     yv_ok = yv(isfinite(yv));
-                    if ~isempty(yv_ok)
-                        ymag = sqrt(mean(yv_ok.^2));
-                    else
-                        ymag = 0;
-                    end
+                    ymag = 0;
+                    if ~isempty(yv_ok), ymag = sqrt(mean(yv_ok.^2)); end
                     if ymag > 1e-9
                         pct = rms_e / ymag * 100;
-                        lblRMS(pp2).Text = sprintf('sim err RMS: %.4g  (%.1f%%)', rms_e, pct);
+                        txt = sprintf('%.4g  (%.1f%%)', rms_e, pct);
+                        lblRMS(pp2).Text = sprintf('sim err RMS: %s', txt);
                     else
-                        lblRMS(pp2).Text = sprintf('sim err RMS: %.4g', rms_e);
+                        txt = sprintf('%.4g', rms_e);
+                        lblRMS(pp2).Text = sprintf('sim err RMS: %s', txt);
                     end
+                    if pp2 == 1, rms1_txt = txt; else, rms2_txt = txt; end
                 else
                     lblRMS(pp2).Text = '— sin sim —';
                 end
             catch, end
         end
+        try
+            lblRMSViz.Text = sprintf('Sim RMS — \x03C9: %s  |  \x03B8: %s', rms1_txt, rms2_txt);
+        catch, end
     end
 
     function updateDataInfo()
@@ -588,7 +630,8 @@ txtLog.Value = strings(0,1);
             'ss_Ki',0,  'ss_Nbar',1,...
             'q_scale',1.0,...
             'sim_enabled',false,...
-            'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[]);
+            'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],...
+            'sim_in_volts',false);
     end
 
     function lp = ctrl_loop_default()
@@ -1131,6 +1174,10 @@ txtLog.Value = strings(0,1);
         % ── Bottom ─────────────────────────────────────────────────────
         uilabel(sf,'Text','ŷ (cyan punteado) se compara con y medida.',...
             'Position',[8 BTN_Y+5 280 18],'FontSize',9,'FontColor',[0.4 0.4 0.4]);
+        cbSimInVolts = uicheckbox(sf,'Text','Modelo en Volts',...
+            'Value', S.cfg(pp).sim_in_volts,...
+            'Position',[8 BTN_Y-20 160 20],...
+            'Tooltip','El modelo recibe Voltaje. Se convierte u_pwm->V antes de simular.');
         uibutton(sf,'Text','✔  Aplicar','Position',[SW-226 BTN_Y 108 28],...
             'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
             'ButtonPushedFcn',@sDoApply);
@@ -1216,6 +1263,7 @@ txtLog.Value = strings(0,1);
                 S.cfg(pp).sim_Ad = Ad;  S.cfg(pp).sim_Bd = Bd;
                 S.cfg(pp).sim_Cd = Cd;  S.cfg(pp).sim_Dd = double(Dd(1,1));
                 S.cfg(pp).sim_x  = zeros(ns,1);
+                S.cfg(pp).sim_in_volts = cbSimInVolts.Value;
                 S.cfg(pp).sim_enabled = true;
                 cbSimEn(pp).Value = true;
                 onSimToggle(pp);   % update ŷ checkbox visibility
@@ -1731,7 +1779,9 @@ txtLog.Value = strings(0,1);
         ysim1 = nan;
         c1 = S.cfg(1);
         if c1.sim_enabled && ~isempty(c1.sim_Ad)
-            u_c  = sim_cast1(u1_sat);
+            u1_for_sim = u1_sat;
+            if c1.sim_in_volts, u1_for_sim = pwm_to_volts_approx(u1_sat); end
+            u_c  = sim_cast1(u1_for_sim);
             ysim1 = double(sim_cast1(c1.sim_Cd * c1.sim_x) + c1.sim_Dd * u_c);
             S.cfg(1).sim_x = sim_cast1(c1.sim_Ad * c1.sim_x + c1.sim_Bd * u_c);
         end
@@ -1739,7 +1789,9 @@ txtLog.Value = strings(0,1);
         ysim2 = nan;
         c2 = S.cfg(2);
         if c2.sim_enabled && ~isempty(c2.sim_Ad)
-            u2_c = sim_cast2(u2);
+            u2_for_sim = u2;
+            if c2.sim_in_volts, u2_for_sim = pwm_to_volts_approx(u2); end
+            u2_c = sim_cast2(u2_for_sim);
             ysim2 = double(sim_cast2(c2.sim_Cd * c2.sim_x) + c2.sim_Dd * u2_c);
             S.cfg(2).sim_x = sim_cast2(c2.sim_Ad * c2.sim_x + c2.sim_Bd * u2_c);
         end
@@ -1770,8 +1822,9 @@ txtLog.Value = strings(0,1);
         S.ySimVec2(end+1,1)    = ysim2;
         S.framesTotal = n;
 
-        if numel(S.nVec) > MAX_PTS
-            k = numel(S.nVec) - MAX_PTS + 1;
+        cur_max_pts = round(edtMaxPts.Value);
+        if numel(S.nVec) > cur_max_pts
+            k = numel(S.nVec) - cur_max_pts + 1;
             S.nVec        = S.nVec(k:end);
             S.u1Vec       = S.u1Vec(k:end);
             S.u1unsat_Vec = S.u1unsat_Vec(k:end);
@@ -1784,7 +1837,7 @@ txtLog.Value = strings(0,1);
             S.x2oVec      = S.x2oVec(k:end);
             S.ySimVec1    = S.ySimVec1(k:end);
             S.ySimVec2    = S.ySimVec2(k:end);
-        end
+        end %#ok<SEPEX>
     end
 
 %% ═══ SERIALIZACIÓN DE PARÁMETROS PARA PSoC ═══════════════════════════════════
@@ -1865,6 +1918,7 @@ txtLog.Value = strings(0,1);
         payload(2) = mode_outer;
         NUM_TYPE_NAMES = {'f32','f64','f16','q31','q15','q7'};
         payload(3) = uint8(find(strcmp(NUM_TYPE_NAMES, ddNumType.Value), 1, 'first') - 1);
+        payload(4) = uint8(cbVolts.Value);   % 0=PWM, 1=Voltios
         payload(5:104)   = typecast(c_inner(:), 'uint8');
         payload(105:204) = typecast(c_outer(:), 'uint8');
         payload(205:208) = typecast(ref0,        'uint8');
@@ -2030,3 +2084,24 @@ txtLog.Value = strings(0,1);
     end
 
 end % pendulo_gui2
+
+%% ═══ HELPERS STANDALONE ══════════════════════════════════════════════════════
+
+function v = pwm_to_volts_approx(pwm)
+% Invierte PWM_Desde_Voltaje(v) = P1*v^4+P2*v^3+P3*v^2+P4*v+P5 (Horner).
+% 1 paso Newton desde estimación lineal. Preserva signo.
+    P1 = -1.101764e-1;  P2 = 4.057681;
+    P3 = -3.073966e1;   P4 = 1.321242e2;  P5 = 1.250859e2;
+    s  = sign(pwm);  ap = abs(pwm);
+    v0 = ap * (12 / 1264);                        % estimación lineal
+    f  = @(vv) ((((P1*vv+P2)*vv+P3)*vv+P4)*vv+P5) - ap;
+    df = @(vv) (((4*P1*vv+3*P2)*vv+2*P3)*vv+P4);
+    dv = df(v0);
+    if abs(dv) > 1e-6
+        v1 = v0 - f(v0) / dv;
+    else
+        v1 = v0;
+    end
+    v1 = max(0, min(12, v1));
+    v  = s * v1;
+end

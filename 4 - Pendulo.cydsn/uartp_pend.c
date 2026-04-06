@@ -17,6 +17,7 @@
    ============================================================ */
 volatile uartp_sys_mode_t UARTP_SysMode  = UARTP_SYS_COMMAND;
 volatile float            UARTP_PendingRef = 0.0f;
+volatile uint8            g_ref_in_volts   = 0u;   /* 0=PWM, 1=Voltios */
 
 /* ============================================================
    RX state machine en modo STREAM
@@ -128,10 +129,11 @@ static void handle_cmd_p(void)
         return;
     }
 
-    /* --- Parsear modos y tipo numérico --- */
+    /* --- Parsear modos, tipo numérico y flag de unidad de referencia --- */
     mode_inner = s_p_buf[0];
     mode_outer = s_p_buf[1];
     ctrl_set_num_type(s_p_buf[2]);   /* byte[2]: CTRL_NUM_F32/F64/Q31/Q15/Q7 */
+    g_ref_in_volts = s_p_buf[3];     /* byte[3]: 0=PWM, 1=Voltios */
 
     /* --- Aplicar inner (bytes 4..103 = 25 float32) --- */
     ctrl_set_mode(PLANT_INNER, mode_inner);
@@ -169,7 +171,10 @@ static void handle_cmd_p(void)
 
     /* --- Aplicar saturación y guardar ref para ctrl_start() --- */
     ctrl_set_sat(sat_min, sat_max);
-    UARTP_PendingRef = ref_inner;
+    /* Convertir ref si viene en Voltios */
+    UARTP_PendingRef = (g_ref_in_volts != 0u) ?
+                       (float)PWM_Desde_Voltaje(ref_inner) :
+                       ref_inner;
 
     ll_putchar((uint8)'K');
 }
@@ -330,7 +335,11 @@ CY_ISR(UARTP_Rx_ISR)
             {
                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
-                ctrl_update_ref(ref_val);
+                /* Convertir si ref viene en Voltios */
+                if (g_ref_in_volts != 0u)
+                    ctrl_update_ref((float)PWM_Desde_Voltaje(ref_val));
+                else
+                    ctrl_update_ref(ref_val);
                 s_rx_state = RX_IDLE;
             }
         }

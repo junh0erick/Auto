@@ -23,13 +23,28 @@
 #define MOTOR_MIN       (-PWM_PERIOD)
 
 /* ============================================================
+   CONVERSIÓN VOLTAJE → PWM
+   Polinomio Horner grado 4: PWM = f(V), V en [0, 12]
+   Coeficientes calibrados en el banco de pruebas.
+   ============================================================ */
+#define PWM_P1  -1.101764e-01f
+#define PWM_P2   4.057681e+00f
+#define PWM_P3  -3.073966e+01f
+#define PWM_P4   1.321242e+02f
+#define PWM_P5   1.250859e+02f
+
+/* ============================================================
    PROTOTIPOS
    Motor_Control(velocidad):
      velocidad en [-1264, +1264]
      signo → dirección (IN1/IN2), magnitud → PWM compare
+   PWM_Desde_Voltaje(v):
+     v en [-12, +12] V → PWM en [-1264, +1264]
+     preserva signo para marcha atrás
    ============================================================ */
 void Motor_Control(int16 velocidad);
 void Motor_Brake(void);
 void Motor_Free(void);
+int16 PWM_Desde_Voltaje(float v);
 
 #endif /* MOTOR_H */
