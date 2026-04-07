@@ -2,7 +2,7 @@
 --	Conversion of 4 - Pendulo.v to vh2:
 --
 --	Cypress Semiconductor - WARP Version 6.3 IR 41
---	Mon Apr 06 20:17:35 2026
+--	Mon Apr 06 19:47:20 2026
 --
 
 USE cypress.cypress.all;

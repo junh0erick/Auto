@@ -42,7 +42,7 @@ grid on;
 
 
 % --- PARAMETROS DE DISCRETIZACION ---
-T = 1/1000;
+T = 0.005;
 
 % 1. Discretizacion de la Planta del Motor (ZOH)
 plantaMD = c2d(G_m,T,'zoh');
