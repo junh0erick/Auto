@@ -81,6 +81,7 @@ S.ts_buf_idx = 1;
 S.ts_buf_full = false;
 S.last_sent_payload = [];   % último payload 216B enviado y verificado al PSoC
 S.coeffsSent = false;       % true tras enviar 'p' correctamente; bloquea Start si false
+S.manual_zoom = false;      % true cuando el usuario fijó la ventana de X (Apply Zoom)
 S.ctrl = ctrl_state_default();
 
 S.scalers = struct('su1',1,'su2',1,'sy1',1,'sy2',1,...
@@ -227,13 +228,6 @@ for pp = 1:2
     uibutton(pP,'Text','📈 Cargar modelo',...
         'Position',[PP_PX+240 PP_Y1 148 PP_RH],...
         'ButtonPushedFcn',@(~,~) openSimPopup(pp));
-    % cbVolts: solo en Planta 1 — ref en Voltios o PWM
-    if pp == 1
-        cbVolts = uicheckbox(pP,'Text','Ref en V','Value',false,...
-            'Position',[PP_PX+396 PP_Y1 90 PP_RH],...
-            'Tooltip','Referencia en Voltios. PSoC convierte a PWM via polinomio.',...
-            'ValueChangedFcn',@onVoltsToggle);
-    end
 end
 onModeChange(1);  onModeChange(2);
 
@@ -471,28 +465,29 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         invalidateCoeffs();
     end
 
-    function onVoltsToggle(~,~)
-        if cbVolts.Value
+    function updateRefLimits()
+        if S.cfg(1).ref_in_volts
             edtRef.Limits = [-12 12];
         else
             edtRef.Limits = [-1264 1264];
         end
-        invalidateCoeffs();
     end
 
     function onApplyZoom(~,~)
         x1 = edtZoomX1.Value;
         x2 = edtZoomX2.Value;
         if x2 > x1
+            S.manual_zoom = true;
             ax_u1.XLim = [x1 x2];   % linkaxes propaga a ax_y1, ax_u2, ax_y2
         end
     end
 
     function onResetZoom(~,~)
-        axis(ax_u1,'autox');   % linkaxes propaga a todos
+        S.manual_zoom = false;
         for axh = [ax_u1, ax_y1, ax_u2, ax_y2]
             if strcmp(axh.Visible,'on'), axis(axh,'autoy'); end
         end
+        updatePlots();  % re-aplica XLim desde datos
     end
 
     function onSimToggle(pp)
@@ -617,6 +612,10 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             end
         end
 
+        % Actualizar XLim desde datos (linkaxes+'autoy' no propaga X auto)
+        if ~isempty(n) && ~S.manual_zoom
+            ax_u1.XLim = [min(n)-0.5, max(n)+0.5];  % linkaxes propaga a los demás
+        end
         for axh = [ax_u1,ax_y1,ax_u2,ax_y2]
             if strcmp(axh.Visible,'on'), axis(axh,'autoy'); end
         end
@@ -673,7 +672,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             'q_scale',1.0,...
             'sim_enabled',false,...
             'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],...
-            'sim_in_volts',false);
+            'sim_in_volts',false,...
+            'ref_in_volts',false);
     end
 
     function lp = ctrl_loop_default()
@@ -842,8 +842,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
 
         % ── Top controls ─────────────────────────────────────────────────
         uilabel(pf,'Text','Modo:','Position',[8 TOP 42 22]);
-        pd_m = uidropdown(pf,'Items',MODE_NAMES,'Value',c.mode,...
-               'Position',[52 TOP 86 22],'ValueChangedFcn',@pRefresh);
+        uilabel(pf,'Text',c.mode,'FontWeight','bold',...
+                'Position',[52 TOP 86 22]);
         uilabel(pf,'Text','Obs:','Position',[146 TOP 30 22]);
         pd_o = uidropdown(pf,'Items',{'Predictor','Actual'},'Value',c.obs,...
                'Position',[178 TOP 92 22]);
@@ -967,6 +967,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 'Position',[EF_X+128 r5 STA_W+100 22]);
 
         % ── Bottom buttons ────────────────────────────────────────────────
+        pcb_ref_v = [];
+        if pp == 1
+            pcb_ref_v = uicheckbox(pf,'Text','Ref en Voltios (PSoC convierte)',...
+                'Value', S.cfg(1).ref_in_volts,...
+                'Position',[8 BTN_Y+4 200 22],...
+                'Tooltip','Cuando activo, PSoC convierte la referencia de Voltaje a PWM con PWM_Desde_Voltaje()');
+        end
         uibutton(pf,'Text','✔  Aplicar y cerrar',...
             'Position',[PW-296 BTN_Y 188 28],...
             'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
@@ -1052,11 +1059,10 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function pRefresh(~,~)
-            mn = pd_m.Value;
-            p_TF.Visible = strcmp(mn,'TF');
-            p_SS.Visible = strcmp(mn,'SS');
-            pd_o.Enable  = strcmp(mn,'SS');
-            pc_i.Enable  = strcmp(mn,'SS');
+            p_TF.Visible = strcmp(c.mode,'TF');
+            p_SS.Visible = strcmp(c.mode,'SS');
+            pd_o.Enable  = strcmp(c.mode,'SS');
+            pc_i.Enable  = strcmp(c.mode,'SS');
         end
 
         function pSyncKiNbar()
@@ -1070,7 +1076,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         function pDoApply(~,~)
             try
                 c2 = S.cfg(pp);
-                c2.mode    = pd_m.Value;
+                c2.mode    = c.mode;
                 c2.obs     = pd_o.Value;
                 c2.has_int = pc_i.Value;
                 if has_N && ~isempty(pd_n)
@@ -1138,7 +1144,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 % Leer q_scale (siempre, aplica en modo SS para paths Q)
                 c2.q_scale = max(1e-9, et_qs.Value);
 
+                if pp == 1 && ~isempty(pcb_ref_v)
+                    c2.ref_in_volts = pcb_ref_v.Value;
+                end
                 S.cfg(pp) = c2;
+                if pp == 1, updateRefLimits(); end
                 ddMode(pp).Value = c2.mode;
                 ddObs(pp).Value  = c2.obs;
                 cbInt(pp).Value  = c2.has_int;
@@ -1217,10 +1227,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                  'ButtonPushedFcn',@(~,~) sDemoEval(s_ss_ef,sl_ss,'ss'));
 
         % -- Bottom --
+        cbSimInVolts = [];
         if pp == 1
             cbSimInVolts = uicheckbox(sf,'Text','Modelo en Volts',...
                 'Value', S.cfg(pp).sim_in_volts,...
-                'Position',[8 BTN_Y+4 130 22],...
+                'Position',[8 BTN_Y+4 145 22],...
                 'Tooltip','El modelo recibe Voltaje. Se convierte u_pwm->V antes de simular.');
         end
         uibutton(sf,'Text','✔  Aplicar','Position',[SW-224 BTN_Y 106 28],...
@@ -1586,6 +1597,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 S.scalers.su1 = sess.SU1;  S.scalers.su2 = sess.SU2;
                 S.scalers.sy1 = sess.SY1;  S.scalers.sy2 = sess.SY2;
             end
+            % retrocompat: campos nuevos no presentes en sesiones antiguas
+            if ~isfield(S.cfg(1),'ref_in_volts'), S.cfg(1).ref_in_volts = false; end
+            if ~isfield(S.cfg(1),'sim_in_volts'), S.cfg(1).sim_in_volts = false; end
+            if ~isfield(S.cfg(2),'sim_in_volts'), S.cfg(2).sim_in_volts = false; end
+            updateRefLimits();
             for pp2 = 1:2, onModeChange(pp2);  updateCfgStatus(pp2); end
             for pp2 = 1:2, onSimToggle(pp2); end   % sync ŷ checkbox visibility
             logMsg("Sesión cargada: " + string(f));
@@ -1965,7 +1981,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         payload(2) = mode_outer;
         NUM_TYPE_NAMES = {'f32','f64','f16','q31','q15','q7'};
         payload(3) = uint8(find(strcmp(NUM_TYPE_NAMES, ddNumType.Value), 1, 'first') - 1);
-        payload(4) = uint8(cbVolts.Value);   % 0=PWM, 1=Voltios
+        payload(4) = uint8(S.cfg(1).ref_in_volts);   % 0=PWM, 1=Voltios
         payload(5:104)   = typecast(c_inner(:), 'uint8');
         payload(105:204) = typecast(c_outer(:), 'uint8');
         payload(205:208) = typecast(ref0,        'uint8');

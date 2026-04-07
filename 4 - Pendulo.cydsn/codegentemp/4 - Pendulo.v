@@ -1,6 +1,6 @@
 // ======================================================================
 // 4 - Pendulo.v generated from TopDesign.cysch
-// 04/06/2026 at 19:47
+// 04/06/2026 at 20:17
 // This file is auto generated. ANY EDITS YOU MAKE MAY BE LOST WHEN THIS FILE IS REGENERATED!!!
 // ======================================================================
 
