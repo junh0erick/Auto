@@ -227,12 +227,11 @@ for pp = 1:2
     uibutton(pP,'Text','📈 Cargar modelo',...
         'Position',[PP_PX+240 PP_Y1 148 PP_RH],...
         'ButtonPushedFcn',@(~,~) openSimPopup(pp));
-    % cbVolts: solo en Planta 1, habilitado solo en modo Open-loop
+    % cbVolts: solo en Planta 1 — ref en Voltios o PWM
     if pp == 1
         cbVolts = uicheckbox(pP,'Text','Ref en V','Value',false,...
-            'Enable','off',...
             'Position',[PP_PX+396 PP_Y1 90 PP_RH],...
-            'Tooltip','Referencia en Voltios. Solo disponible en Open-loop.',...
+            'Tooltip','Referencia en Voltios. PSoC convierte a PWM via polinomio.',...
             'ValueChangedFcn',@onVoltsToggle);
     end
 end
@@ -432,28 +431,18 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         mn = ddMode(pp).Value;
         S.cfg(pp).mode = mn;
         isSS = strcmp(mn,'SS');
-        isOL = strcmp(mn,'Open-loop');
         ddObs(pp).Enable = isSS;
         cbInt(pp).Enable = isSS;
         if ~isSS, cbInt(pp).Value = false;  S.cfg(pp).has_int = false; end
         % Visibilidad de x̂ (SS states) según modo
         if pp == 1
-            vis1 = onoff(isSS);
-            cbX1i.Visible = vis1;  cbX2i.Visible = vis1;
+            cbX1i.Visible = onoff_str(isSS);  cbX2i.Visible = onoff_str(isSS);
         else
-            vis2 = onoff(isSS);
-            cbX1o.Visible = vis2;  cbX2o.Visible = vis2;
+            cbX1o.Visible = onoff_str(isSS);  cbX2o.Visible = onoff_str(isSS);
         end
         % Actualizar visibilidad del label "SS x̂:"
-        lblSSxhat.Visible = onoff(strcmp(ddMode(1).Value,'SS') || strcmp(ddMode(2).Value,'SS'));
-        % cbVolts: solo activo en Planta 1 Open-loop
-        if pp == 1
-            cbVolts.Enable = onoff(isOL);
-            if ~isOL
-                cbVolts.Value = false;
-                edtRef.Limits = [-1264 1264];
-            end
-        end
+        anyss = strcmp(ddMode(1).Value,'SS') || strcmp(ddMode(2).Value,'SS');
+        lblSSxhat.Visible = onoff_str(anyss);
         updateAxesLayout();
         updateCfgStatus(pp);
         invalidateCoeffs();
@@ -2144,6 +2133,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
 end % pendulo_gui2
 
 %% ═══ HELPERS STANDALONE ══════════════════════════════════════════════════════
+
+function s = onoff_str(b)
+% Convierte lógico a 'on'/'off' (sustituto de onoff() para versiones antiguas)
+    if b, s = 'on'; else, s = 'off'; end
+end
 
 function v = pwm_to_volts_approx(pwm)
 % Invierte PWM_Desde_Voltaje(v) = P1*v^4+P2*v^3+P3*v^2+P4*v+P5 (Horner).
