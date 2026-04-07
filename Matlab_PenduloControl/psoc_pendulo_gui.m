@@ -18,7 +18,7 @@ function psoc_pendulo_gui()
 % SESIONES: se guardan en  ./sesiones/   (LAST_SESSION.mat = auto-save)
 
 %% ── Constantes ──────────────────────────────────────────────────────────────
-MOTOR_CPR      = 1040;
+MOTOR_CPR      = 10000;
 FRAME_SZ       = 6;
 STEP_TIMEOUT_S = 0.5;
 MAX_RETRIES    = 50;

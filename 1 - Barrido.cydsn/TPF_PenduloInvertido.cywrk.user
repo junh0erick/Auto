@@ -18,7 +18,7 @@
 <v>Output</v>
 </TreeKeys>
 <TreeStates>
-<CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237 type_name="CyDesigner.Common.Base.Controls.CyTreeViewState" version="1" SelectedNodeId="TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1\Timer_1.h">
+<CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237 type_name="CyDesigner.Common.Base.Controls.CyTreeViewState" version="1" SelectedNodeId="TPF_PenduloInvertido\4 - Pendulo">
 <ExpandedNodeIds>
 <v>TPF_PenduloInvertido</v>
 <v>TPF_PenduloInvertido\1 - Barrido\TopDesign</v>
@@ -87,6 +87,7 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\4 - Pendulo.cydwr\Directives</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\4 - Pendulo.cydwr\Flash Security</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\4 - Pendulo.cydwr\EEPROM</v>
+<v>TPF_PenduloInvertido\4 - Pendulo\Header Files</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\arm_compiler_specific.h</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\arm_math.h</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\arm_math_memory.h</v>
@@ -117,6 +118,7 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\uartp2.h</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\utils.h</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Header Files\window_functions.h</v>
+<v>TPF_PenduloInvertido\4 - Pendulo\Source Files</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Source Files\arm_add_f32.c</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Source Files\arm_add_q15.c</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Source Files\arm_add_q31.c</v>
@@ -146,57 +148,8 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\Source Files\uartp2.c</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1</v>
 </ExpandedNodeIds>
-<VisibleNodeIds>
-<v>TPF_PenduloInvertido\4 - Pendulo\Source Files</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\BUS_CLK</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cy_boot</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Em_EEPROM_Dynamic</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\isr_1</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\isr_2</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Pin_ENA</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\pin_flag</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Pin_IN1</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Pin_IN2</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\PWM_Motor</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\quad_A_motor</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\quad_A_pendulo</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\quad_B_motor</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\quad_B_pendulo</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_1</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_1_Cnt16</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_1_isr</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_2</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_2_Cnt16</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\QuadDec_2_isr</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\tc_timer</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1\Timer_1.c</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1\Timer_1.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\Timer_1\Timer_1_PM.c</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\UART_1</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\UART_1_IntClock</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cycodeshareexport.ld</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cycodeshareimport.ld</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cycodeshareimport.scat</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevice.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevice_trm.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevicegnu.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevicegnu_trm.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydeviceiar.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydeviceiar_trm.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevicerv.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydevicerv_trm.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cydisabledsheets.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cyfitter.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cyfitter_cfg.c</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cyfitter_cfg.h</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cyfittergnu.inc</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\Generated_Source\PSoC5\cyfitteriar.inc</v>
-</VisibleNodeIds>
+<VisibleNodeIds />
 </CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237>
 <CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237 type_name="CyDesigner.Common.Base.Controls.CyTreeViewState" version="1" SelectedNodeId="">
 <ExpandedNodeIds>
@@ -214,21 +167,7 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\TopDesign</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\TopDesign\TopDesign.cysch</v>
 </ExpandedNodeIds>
-<VisibleNodeIds>
-<v>TPF_PenduloInvertido</v>
-<v>TPF_PenduloInvertido\1 - Barrido</v>
-<v>TPF_PenduloInvertido\1 - Barrido\TopDesign</v>
-<v>TPF_PenduloInvertido\1 - Barrido\TopDesign\TopDesign.cysch</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\TopDesign</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\TopDesign\TopDesign.cysch</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\TopDesign</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\TopDesign\TopDesign.cysch</v>
-<v>TPF_PenduloInvertido\4 - Pendulo</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\TopDesign</v>
-<v>TPF_PenduloInvertido\4 - Pendulo\TopDesign\TopDesign.cysch</v>
-</VisibleNodeIds>
+<VisibleNodeIds />
 </CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237>
 <CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237 type_name="CyDesigner.Common.Base.Controls.CyTreeViewState" version="1" SelectedNodeId="">
 <ExpandedNodeIds>
@@ -480,55 +419,7 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\4 - Pendulo.rpt</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\4 - Pendulo_timing.html</v>
 </ExpandedNodeIds>
-<VisibleNodeIds>
-<v>TPF_PenduloInvertido</v>
-<v>TPF_PenduloInvertido\1 - Barrido</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\BUS_CLK.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Cm3Start.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\cy_em_eeprom.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\CyBootAsmGnu.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\CyDmac.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\cyfitter_cfg.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\CyFlash.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\CyLib.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\cymetadata.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\cyPm.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\CySpc.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\cyutils.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\isr_1.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\main.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Pin_ENA.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Pin_IN1.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Pin_IN2.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\PWM_Motor.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\PWM_Motor_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\quad_A_motor.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\quad_A_pendulo.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\quad_B_motor.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\quad_B_pendulo.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1_Cnt16.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1_Cnt16_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1_INT.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1_isr.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_1_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2_Cnt16.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2_Cnt16_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2_INT.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2_isr.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\QuadDec_2_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Timer_1.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\Timer_1_PM.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\UART_1.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\UART_1_BOOT.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\UART_1_INT.lst</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CortexM3\ARM_GCC_541\Debug\Listing Files\UART_1_IntClock.lst</v>
-</VisibleNodeIds>
+<VisibleNodeIds />
 </CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237>
 </TreeStates>
 <TreeKeysV2>
@@ -605,55 +496,7 @@
 <v>TPF_PenduloInvertido\4 - Pendulo\UART_v2_50.pdf</v>
 <v>TPF_PenduloInvertido\4 - Pendulo\ZeroTerminal.pdf</v>
 </ExpandedNodeIds>
-<VisibleNodeIds>
-<v>TPF_PenduloInvertido</v>
-<v>TPF_PenduloInvertido\1 - Barrido</v>
-<v>TPF_PenduloInvertido\1 - Barrido\PSoC 5LP Architecture TRM</v>
-<v>TPF_PenduloInvertido\1 - Barrido\CY8C58LP Family Datasheet</v>
-<v>TPF_PenduloInvertido\1 - Barrido\System Reference Guides</v>
-<v>TPF_PenduloInvertido\1 - Barrido\System Reference Guides\cy_boot_v6_10</v>
-<v>TPF_PenduloInvertido\1 - Barrido\cy_clock_v2_20</v>
-<v>TPF_PenduloInvertido\1 - Barrido\cy_clock_v2_20\cy_clock_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\cy_isr_v1_71.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\cy_pins_v2_20</v>
-<v>TPF_PenduloInvertido\1 - Barrido\cy_pins_v2_20\cy_pins_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\PWM_v3_30.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\QuadDec_v3_0</v>
-<v>TPF_PenduloInvertido\1 - Barrido\QuadDec_v3_0\QuadDec_v3_0.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\Timer_v2_80.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\UART_v2_50.pdf</v>
-<v>TPF_PenduloInvertido\1 - Barrido\ZeroTerminal.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\PSoC 5LP Architecture TRM</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\CY8C58LP Family Datasheet</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\System Reference Guides</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\System Reference Guides\cy_boot_v6_10</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\cy_clock_v2_20</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\cy_clock_v2_20\cy_clock_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\cy_isr_v1_71.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\cy_pins_v2_20</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\cy_pins_v2_20\cy_pins_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\PWM_v3_30.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\QuadDec_v3_0</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\QuadDec_v3_0\QuadDec_v3_0.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\Timer_v2_80.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\UART_v2_50.pdf</v>
-<v>TPF_PenduloInvertido\2 - Ajuste de Curva\ZeroTerminal.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\PSoC 5LP Architecture TRM</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\CY8C58LP Family Datasheet</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\System Reference Guides</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\System Reference Guides\cy_boot_v6_10</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\cy_clock_v2_20</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\cy_clock_v2_20\cy_clock_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\cy_isr_v1_71.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\cy_pins_v2_20</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\cy_pins_v2_20\cy_pins_v2_20.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\PWM_v3_30.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\QuadDec_v3_0</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\QuadDec_v3_0\QuadDec_v3_0.pdf</v>
-<v>TPF_PenduloInvertido\3 - ControladorMotor\Timer_v2_80.pdf</v>
-</VisibleNodeIds>
+<VisibleNodeIds />
 </CyGuid_2a325b3b-c96a-4e9f-b7a0-2c44ecb5f237>
 </TreeStatesV2>
 </CyGuid_1b906a0f-a7b6-4e4d-a428-82f98b53cb35>
@@ -664,6 +507,23 @@
 <OpenDocs>
 <name v="..\3 - ControladorMotor.cydsn\TopDesign\TopDesign.cysch" />
 <name v="..\3 - ControladorMotor.cydsn\3 - ControladorMotor.cydwr" />
+<name v="..\4 - Pendulo.cydsn\main.c" />
+<name v="..\4 - Pendulo.cydsn\pid.h" />
+<name v="..\4 - Pendulo.cydsn\pendulo.h" />
+<name v="..\4 - Pendulo.cydsn\ctrl_pend.c" />
+<name v="..\4 - Pendulo.cydsn\ctrl_pend.h" />
+<name v="..\4 - Pendulo.cydsn\arm_math.h" />
+<name v="..\4 - Pendulo.cydsn\4 - Pendulo.cydwr" />
+<name v="..\4 - Pendulo.cydsn\Generated_Source\PSoC5\Timer_1.h" />
+<name v="..\3 - ControladorMotor.cydsn\motor.h" />
+<name v="..\3 - ControladorMotor.cydsn\motor.c" />
+<name v="..\4 - Pendulo.cydsn\motor.h" />
+<name v="..\4 - Pendulo.cydsn\motor.c" />
+<name v="..\4 - Pendulo.cydsn\pendulo.c" />
+<name v="..\3 - ControladorMotor.cydsn\3 - ControladorMotor.rpt" />
+<name v="..\4 - Pendulo.cydsn\4 - Pendulo.rpt" />
+<name v="..\4 - Pendulo.cydsn\Generated_Source\PSoC5\QuadDec_1.c" />
+<name v="..\4 - Pendulo.cydsn\TopDesign\TopDesign.cysch" />
 </OpenDocs>
 <OpenDocsLayout><![CDATA[<?xml version="1.0"?><!--
 
@@ -671,7 +531,7 @@
   Copyright (c) 2001-2016 Actipro Software LLC.  All rights reserved.
   http://www.actiprosoftware.com
 
---><DocumentLayout Version="1.0"><LayoutData><TabbedMdiRootContainer Orientation="Vertical"><TabbedMdiContainer Size="1205, 668" SelectedTabbedMdiWindow="e9129458-cf08-4eaa-878b-b9398bf5c107"><ToolWindow Key="Start Page:bd4649ab-da6b-4d04-a663-c722b8bf99db:Start Page" Guid="ce45c123-cd2e-43ed-ba56-882e55693a0a" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\TopDesign\TopDesign.cysch" Guid="e9129458-cf08-4eaa-878b-b9398bf5c107" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\3 - ControladorMotor.cydwr" Guid="dcbcbc49-9357-4a2d-8fa9-6234c3af35b6" /></TabbedMdiContainer></TabbedMdiRootContainer><FloatingContainers /></LayoutData></DocumentLayout>]]></OpenDocsLayout>
+--><DocumentLayout Version="1.0"><LayoutData><TabbedMdiRootContainer Orientation="Vertical"><TabbedMdiContainer Size="1589, 549" SelectedTabbedMdiWindow="78f5d161-0390-4caf-a762-a6af498b5720"><ToolWindow Key="Start Page:bd4649ab-da6b-4d04-a663-c722b8bf99db:Start Page" Guid="ce45c123-cd2e-43ed-ba56-882e55693a0a" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\TopDesign\TopDesign.cysch" Guid="e9129458-cf08-4eaa-878b-b9398bf5c107" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\3 - ControladorMotor.cydwr" Guid="dcbcbc49-9357-4a2d-8fa9-6234c3af35b6" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\main.c" Guid="61a500e8-0b7d-4261-9bba-37cbf3f4e26c" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\pid.h" Guid="c7b47969-39c2-4cd9-9224-2ac3b68560e2" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\pendulo.h" Guid="215b0b1b-7df1-438f-8d7f-d879a4e9e7fa" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\ctrl_pend.c" Guid="233fd10c-0b4f-4b0a-aca6-72060fe8b759" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\ctrl_pend.h" Guid="2a5ddb90-2b8b-4fa8-8f49-7d55ed708864" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\arm_math.h" Guid="c77819cd-a711-48b5-905f-f59f5625c38e" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cydwr" Guid="7eb9ec65-8aad-4b03-9511-4bde6f1d20bf" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\Generated_Source\PSoC5\Timer_1.h" Guid="04165131-20e8-4187-ba8b-684b2477378c" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\motor.h" Guid="d7bcfdda-8133-4dea-ac3b-a75f797669c8" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\motor.c" Guid="3c9117ac-205a-4c52-9ac2-49ccc59d3f09" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\motor.h" Guid="cba3539a-8225-4c91-a007-2b10e7d748c8" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\motor.c" Guid="61fade2e-fd4c-4772-9cec-82820dd872e2" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\pendulo.c" Guid="f0eb1951-8494-4bad-9351-f661652c46f2" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\3 - ControladorMotor.rpt" Guid="3d992cb3-1287-4fc0-9209-855ab150d691" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.rpt" Guid="aaeb3dbd-5879-4dda-8b8f-70ba17537946" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\Generated_Source\PSoC5\QuadDec_1.c" Guid="798e4be8-3bf4-4a16-a16d-8c385055509b" /><DocumentWindow Key="D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\TopDesign\TopDesign.cysch" Guid="78f5d161-0390-4caf-a762-a6af498b5720" /></TabbedMdiContainer></TabbedMdiRootContainer><FloatingContainers /></LayoutData></DocumentLayout>]]></OpenDocsLayout>
 <config v="" />
 <AutoUpdate v="true" />
 </CyGuid_843a90a4-0c4b-4e44-991d-05e7fb117a21>

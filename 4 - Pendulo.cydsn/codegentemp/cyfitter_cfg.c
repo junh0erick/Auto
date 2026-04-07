@@ -161,11 +161,11 @@ CYPACKED typedef struct
 /* IOPINS0_7 Address: CYREG_PRT12_DR Size (bytes): 10 */
 #define BS_IOPINS0_7_VAL ((const uint8 CYFAR *)0x48000CF0u)
 
-/* IOPINS0_1 Address: CYREG_PRT1_DM0 Size (bytes): 8 */
+/* IOPINS0_1 Address: CYREG_PRT1_DR Size (bytes): 10 */
 #define BS_IOPINS0_1_VAL ((const uint8 CYFAR *)0x48000CFCu)
 
 /* IOPINS0_2 Address: CYREG_PRT2_DM0 Size (bytes): 8 */
-#define BS_IOPINS0_2_VAL ((const uint8 CYFAR *)0x48000D04u)
+#define BS_IOPINS0_2_VAL ((const uint8 CYFAR *)0x48000D08u)
 
 
 /*******************************************************************************
@@ -403,7 +403,7 @@ void cyfitter_cfg(void)
 
 	/* Perform second pass device configuration. These items must be configured in specific order after the regular configuration is done. */
 	CYCONFIGCPY((void CYFAR *)(CYREG_PRT12_DR), (const void CYFAR *)(BS_IOPINS0_7_VAL), 10u);
-	CYCONFIGCPY((void CYFAR *)(CYREG_PRT1_DM0), (const void CYFAR *)(BS_IOPINS0_1_VAL), 8u);
+	CYCONFIGCPY((void CYFAR *)(CYREG_PRT1_DR), (const void CYFAR *)(BS_IOPINS0_1_VAL), 10u);
 	CYCONFIGCPY((void CYFAR *)(CYREG_PRT2_DM0), (const void CYFAR *)(BS_IOPINS0_2_VAL), 8u);
 	/* Switch Boost to the precision bandgap reference from its internal reference */
 	CY_SET_REG8((void CYXDATA *)CYREG_BOOST_CR2, (CY_GET_REG8((void CYXDATA *)CYREG_BOOST_CR2) | 0x08u));

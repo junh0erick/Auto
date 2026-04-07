@@ -18,7 +18,7 @@
    ENCODER DEL MOTOR (QuadDec_1)
    Coincide con motor.h de la planta original.
    ============================================================ */
-#define MOTOR_CPR       1040u       /* cuentas/revolución */
+#define MOTOR_CPR       10000u      /* cuentas/revolución (QuadDec x4, 2500 PPR físico) */
 
 /* ============================================================
    TIMER DE CONTROL

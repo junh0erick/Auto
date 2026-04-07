@@ -1,5 +1,5 @@
 -- Project:   4 - Pendulo
--- Generated: 04/06/2026 19:47:25
+-- Generated: 04/07/2026 18:32:52
 -- PSoC Creator  4.4
 
 ENTITY \4 - Pendulo\ IS
@@ -1171,10 +1171,10 @@ BEGIN
 
     quad_A_motor:logicalport
         GENERIC MAP(
-            drive_mode => "001",
+            drive_mode => "010",
             ibuf_enabled => "1",
             id => "8d318d8b-cf7b-4b6b-b02c-ab1c5c49d0ba",
-            init_dr_st => "0",
+            init_dr_st => "1",
             input_buffer_sel => "00",
             input_clk_en => 0,
             input_sync => "0",
@@ -1262,10 +1262,10 @@ BEGIN
 
     quad_B_motor:logicalport
         GENERIC MAP(
-            drive_mode => "001",
+            drive_mode => "010",
             ibuf_enabled => "1",
             id => "8c68b4c7-bcbb-4289-8f4c-dd959170d125",
-            init_dr_st => "0",
+            init_dr_st => "1",
             input_buffer_sel => "00",
             input_clk_en => 0,
             input_sync => "0",

@@ -45,7 +45,7 @@
    Constantes físicas
    ============================================================ */
 #define PI_F            3.14159265f
-#define MOTOR_CPR_F     1040.0f
+#define MOTOR_CPR_F     10000.0f
 #define PENDULO_CPR_F   10000.0f
 #define PWM_MAX_F       1264.0f
 #define PWM_MIN_F      (-1264.0f)
