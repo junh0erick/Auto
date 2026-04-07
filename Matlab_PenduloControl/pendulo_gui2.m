@@ -26,7 +26,7 @@ AX_BOT = 10;    AX_H   = 170;   AX_GAP = 4;
 RX     = 908;   RW     = 585;   RGAP   = 4;
 
 H_LOG   = 82;
-H_VIZ   = 130;
+H_VIZ   = 158;
 H_DATA  = 72;
 H_CTRL  = 100;
 H_PLANT = 165;
@@ -135,6 +135,9 @@ hX1o   = plot(ax_y2,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ₒ');
 hX2o   = plot(ax_y2,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ₒ');
 hold(ax_y2,'off');  legend(ax_y2,'show');
 
+% Acoplar eje X de todos los gráficos (zoom/pan sincronizado)
+linkaxes([ax_u1, ax_y1, ax_u2, ax_y2], 'x');
+
 %% ═══ PANEL DERECHO ═══════════════════════════════════════════════════════════
 
 % ── 1. Conexión ───────────────────────────────────────────────────────────────
@@ -224,6 +227,14 @@ for pp = 1:2
     uibutton(pP,'Text','📈 Cargar modelo',...
         'Position',[PP_PX+240 PP_Y1 148 PP_RH],...
         'ButtonPushedFcn',@(~,~) openSimPopup(pp));
+    % cbVolts: solo en Planta 1, habilitado solo en modo Open-loop
+    if pp == 1
+        cbVolts = uicheckbox(pP,'Text','Ref en V','Value',false,...
+            'Enable','off',...
+            'Position',[PP_PX+396 PP_Y1 90 PP_RH],...
+            'Tooltip','Referencia en Voltios. Solo disponible en Open-loop.',...
+            'ValueChangedFcn',@onVoltsToggle);
+    end
 end
 onModeChange(1);  onModeChange(2);
 
@@ -236,18 +247,15 @@ yC3 = yC2 - PP_RH - PP_RG;
 uilabel(pCtrl,'Text','Ref:','Position',[PP_PX yC1 30 22]);
 edtRef = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1264 1264],...
          'Position',[PP_PX+32 yC1 66 22]);
-cbVolts = uicheckbox(pCtrl,'Text','V','Value',false,...
-          'Position',[PP_PX+100 yC1 38 22],...
-          'ValueChangedFcn',@onVoltsToggle);
-btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+140 yC1-1 98 PP_RH],...
+btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+104 yC1-1 98 PP_RH],...
            'BackgroundColor',[0.12 0.62 0.12],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStart);
-btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+244 yC1-1 88 PP_RH],...
+btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+208 yC1-1 88 PP_RH],...
            'BackgroundColor',[0.78 0.1 0.1],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStop);
-lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+340 yC1 104 26],...
+lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+302 yC1 120 26],...
            'FontWeight','bold');
-btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+454 yC1-1 123 PP_RH],...
+btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+432 yC1-1 145 PP_RH],...
               'BackgroundColor',[0.2 0.35 0.65],'FontColor','w',...
               'ButtonPushedFcn',@onSendCoef);
 
@@ -293,6 +301,7 @@ yV1 = H_VIZ - 20 - PP_RH;
 yV2 = yV1 - PP_RH - PP_RG;
 yV3 = yV2 - PP_RH - PP_RG;
 yV4 = yV3 - PP_RH - PP_RG;
+yV5 = yV4 - PP_RH - PP_RG;
 
 % Fila 1: señales
 uilabel(pViz,'Text','Señales:','Position',[PP_PX yV1+2 52 18]);
@@ -304,12 +313,12 @@ cbSigY2    = uicheckbox(pViz,'Text','y₂',    'Value',true, 'Position',[PP_PX+2
 cbSigSim1  = uicheckbox(pViz,'Text','ŷ₁',   'Value',true,'Visible',false, 'Position',[PP_PX+310 yV1 44 22],'ValueChangedFcn',@updatePlots);
 cbSigSim2  = uicheckbox(pViz,'Text','ŷ₂',   'Value',true,'Visible',false, 'Position',[PP_PX+356 yV1 44 22],'ValueChangedFcn',@updatePlots);
 
-% Fila 2: SS estados
-uilabel(pViz,'Text','SS x̂:','Position',[PP_PX yV2+2 44 18]);
-cbX1i = uicheckbox(pViz,'Text','x̂₁ᵢ','Value',false,'Position',[PP_PX+ 50 yV2 52 22],'ValueChangedFcn',@updatePlots);
-cbX2i = uicheckbox(pViz,'Text','x̂₂ᵢ','Value',false,'Position',[PP_PX+104 yV2 52 22],'ValueChangedFcn',@updatePlots);
-cbX1o = uicheckbox(pViz,'Text','x̂₁ₒ','Value',false,'Position',[PP_PX+158 yV2 52 22],'ValueChangedFcn',@updatePlots);
-cbX2o = uicheckbox(pViz,'Text','x̂₂ₒ','Value',false,'Position',[PP_PX+212 yV2 52 22],'ValueChangedFcn',@updatePlots);
+% Fila 2: SS estados (visibles solo cuando la planta usa SS)
+lblSSxhat = uilabel(pViz,'Text','SS x̂:','Position',[PP_PX yV2+2 44 18],'Visible','off');
+cbX1i = uicheckbox(pViz,'Text','x̂₁ᵢ','Value',false,'Visible','off','Position',[PP_PX+ 50 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX2i = uicheckbox(pViz,'Text','x̂₂ᵢ','Value',false,'Visible','off','Position',[PP_PX+104 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX1o = uicheckbox(pViz,'Text','x̂₁ₒ','Value',false,'Visible','off','Position',[PP_PX+158 yV2 52 22],'ValueChangedFcn',@updatePlots);
+cbX2o = uicheckbox(pViz,'Text','x̂₂ₒ','Value',false,'Visible','off','Position',[PP_PX+212 yV2 52 22],'ValueChangedFcn',@updatePlots);
 
 % Fila 3: métricas de timing
 lblRTT = uilabel(pViz,'Text','RTT — ms',...
@@ -320,6 +329,16 @@ lblRTT = uilabel(pViz,'Text','RTT — ms',...
 lblRMSViz = uilabel(pViz,'Text','Sim RMS — sin simulación',...
     'Position',[PP_PX yV4 RW-PP_PX*2 20],...
     'FontColor',[0.05 0.45 0.05],'FontSize',10);
+
+% Fila 5: zoom manual en eje X (acoplado entre todos los ejes)
+uilabel(pViz,'Text','Zoom X:','Position',[PP_PX yV5+2 48 18]);
+edtZoomX1 = uieditfield(pViz,'numeric','Value',0,'Position',[PP_PX+52 yV5 80 22]);
+uilabel(pViz,'Text','—','Position',[PP_PX+134 yV5+2 12 18],'HorizontalAlignment','center');
+edtZoomX2 = uieditfield(pViz,'numeric','Value',1000,'Position',[PP_PX+148 yV5 80 22]);
+uibutton(pViz,'Text','Aplicar','Position',[PP_PX+234 yV5 68 22],...
+    'ButtonPushedFcn',@onApplyZoom);
+uibutton(pViz,'Text','Reset','Position',[PP_PX+306 yV5 58 22],...
+    'ButtonPushedFcn',@onResetZoom);
 
 % ── 7. Log ────────────────────────────────────────────────────────────────────
 LOG_HDR_H = 26;
@@ -413,9 +432,28 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         mn = ddMode(pp).Value;
         S.cfg(pp).mode = mn;
         isSS = strcmp(mn,'SS');
+        isOL = strcmp(mn,'Open-loop');
         ddObs(pp).Enable = isSS;
         cbInt(pp).Enable = isSS;
         if ~isSS, cbInt(pp).Value = false;  S.cfg(pp).has_int = false; end
+        % Visibilidad de x̂ (SS states) según modo
+        if pp == 1
+            vis1 = onoff(isSS);
+            cbX1i.Visible = vis1;  cbX2i.Visible = vis1;
+        else
+            vis2 = onoff(isSS);
+            cbX1o.Visible = vis2;  cbX2o.Visible = vis2;
+        end
+        % Actualizar visibilidad del label "SS x̂:"
+        lblSSxhat.Visible = onoff(strcmp(ddMode(1).Value,'SS') || strcmp(ddMode(2).Value,'SS'));
+        % cbVolts: solo activo en Planta 1 Open-loop
+        if pp == 1
+            cbVolts.Enable = onoff(isOL);
+            if ~isOL
+                cbVolts.Value = false;
+                edtRef.Limits = [-1264 1264];
+            end
+        end
         updateAxesLayout();
         updateCfgStatus(pp);
         invalidateCoeffs();
@@ -451,6 +489,21 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             edtRef.Limits = [-1264 1264];
         end
         invalidateCoeffs();
+    end
+
+    function onApplyZoom(~,~)
+        x1 = edtZoomX1.Value;
+        x2 = edtZoomX2.Value;
+        if x2 > x1
+            ax_u1.XLim = [x1 x2];   % linkaxes propaga a ax_y1, ax_u2, ax_y2
+        end
+    end
+
+    function onResetZoom(~,~)
+        axis(ax_u1,'autox');   % linkaxes propaga a todos
+        for axh = [ax_u1, ax_y1, ax_u2, ax_y2]
+            if strcmp(axh.Visible,'on'), axis(axh,'autoy'); end
+        end
     end
 
     function onSimToggle(pp)
@@ -576,7 +629,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         for axh = [ax_u1,ax_y1,ax_u2,ax_y2]
-            if strcmp(axh.Visible,'on'), axis(axh,'auto'); end
+            if strcmp(axh.Visible,'on'), axis(axh,'autoy'); end
         end
         drawnow;
     end
@@ -1123,13 +1176,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             figure(S.sim_popup_fig{pp});  return;
         end
 
-        SW = 680;  SH = 280;
-        sf = uifigure('Name',sprintf('Modelo Simulación — Planta %d', pp),...
+        SW = 680;  SH = 320;
+        sf = uifigure('Name',sprintf('Modelo Simulacion -- Planta %d', pp),...
              'Position',[350+pp*20 200 SW SH],'Resize','off');
         S.sim_popup_fig{pp} = sf;
         sf.DeleteFcn = @(~,~) simPopupClosed(pp);
 
-        % ── Top controls ───────────────────────────────────────────────
+        % -- Top controls --
         TOP = SH - 44;
         uilabel(sf,'Text','Tipo:','Position',[8 TOP 36 22]);
         sd_type = uidropdown(sf,'Items',{'TF','SS'},'Value','TF',...
@@ -1140,45 +1193,48 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 'Position',[SW-200 TOP 192 22],'FontColor',[0.4 0.4 0.4],...
                 'HorizontalAlignment','right');
 
-        % ── Body panels ────────────────────────────────────────────────
-        BTN_Y = 10;
+        % -- Body panels --
+        BTN_Y  = 10;
         BODY_Y = BTN_Y + 38;
         BODY_H = TOP - 8 - BODY_Y;
 
-        LBL_X = 8;  LBL_W = 90;  EF_X = 108;  EF_W = 394;
-        BTN_X = 510; BTN_W = 60;  STA_X = 578;  STA_W = SW-14-STA_X;
-        r1 = BODY_H - 44;  r2 = r1 - 36;
+        LBL_X = 8;   LBL_W = 90;   EF_X = 108;  EF_W = 402;
+        BTN_X = 518; BTN_W = 60;
+        r1 = BODY_H - 44;          % fila: label + editfield + Eval
+        r2 = r1 - 38;              % fila: status (mensaje largo)
 
-        % ── TF panel ───────────────────────────────────────────────────
+        % -- TF panel --
         sp_TF = uipanel(sf,...
-            'Title','Función de transferencia  — ej: tf([1],[1 -0.5],Ts) o variable workspace',...
+            'Title','Funcion de transferencia  -- ej: tf([1],[1 -0.5],Ts) o variable workspace',...
             'Position',[5 BODY_Y SW-10 BODY_H]);
         uilabel(sp_TF,'Text','Modelo TF:','FontWeight','bold','Position',[LBL_X r1 LBL_W 22]);
-        s_tf = uieditfield(sp_TF,'text','Value','tf([1],[1 -1],Ts)',...
-               'Position',[EF_X r1 EF_W 22]);
-        sl_tf = uilabel(sp_TF,'Text','—','FontSize',10,'Position',[STA_X r1 STA_W 22]);
+        s_tf  = uieditfield(sp_TF,'text','Value','tf([1],[1 -1],Ts)',...
+                'Position',[EF_X r1 EF_W 22]);
+        sl_tf = uilabel(sp_TF,'Text','--','FontSize',10,'WordWrap','on',...
+                'Position',[EF_X r2 SW-EF_X-20 36]);
         uibutton(sp_TF,'Text','✔ Eval','Position',[BTN_X r1 BTN_W 22],...
                  'ButtonPushedFcn',@(~,~) sDemoEval(s_tf,sl_tf,'tf'));
 
-        % ── SS panel ───────────────────────────────────────────────────
+        % -- SS panel --
         sp_SS = uipanel(sf,...
-            'Title','Estado-Espacio  — ej: ss(A,B,C,D,Ts) o variable workspace',...
+            'Title','Estado-Espacio  -- ej: ss(A,B,C,D,Ts) o variable workspace',...
             'Position',[5 BODY_Y SW-10 BODY_H]);
         uilabel(sp_SS,'Text','Modelo SS:','FontWeight','bold','Position',[LBL_X r1 LBL_W 22]);
         s_ss_ef = uieditfield(sp_SS,'text','Value','ss(A,B,C,D,Ts)',...
                   'Position',[EF_X r1 EF_W 22]);
-        sl_ss = uilabel(sp_SS,'Text','—','FontSize',10,'Position',[STA_X r1 STA_W 22]);
+        sl_ss = uilabel(sp_SS,'Text','--','FontSize',10,'WordWrap','on',...
+                'Position',[EF_X r2 SW-EF_X-20 36]);
         uibutton(sp_SS,'Text','✔ Eval','Position',[BTN_X r1 BTN_W 22],...
                  'ButtonPushedFcn',@(~,~) sDemoEval(s_ss_ef,sl_ss,'ss'));
 
-        % ── Bottom ─────────────────────────────────────────────────────
-        uilabel(sf,'Text','ŷ (cyan punteado) se compara con y medida.',...
-            'Position',[8 BTN_Y+5 280 18],'FontSize',9,'FontColor',[0.4 0.4 0.4]);
-        cbSimInVolts = uicheckbox(sf,'Text','Modelo en Volts',...
-            'Value', S.cfg(pp).sim_in_volts,...
-            'Position',[8 BTN_Y-20 160 20],...
-            'Tooltip','El modelo recibe Voltaje. Se convierte u_pwm->V antes de simular.');
-        uibutton(sf,'Text','✔  Aplicar','Position',[SW-226 BTN_Y 108 28],...
+        % -- Bottom --
+        if pp == 1
+            cbSimInVolts = uicheckbox(sf,'Text','Modelo en Volts',...
+                'Value', S.cfg(pp).sim_in_volts,...
+                'Position',[8 BTN_Y+4 130 22],...
+                'Tooltip','El modelo recibe Voltaje. Se convierte u_pwm->V antes de simular.');
+        end
+        uibutton(sf,'Text','✔  Aplicar','Position',[SW-224 BTN_Y 106 28],...
             'BackgroundColor',[0.12 0.62 0.12],'FontColor','w',...
             'ButtonPushedFcn',@sDoApply);
         uibutton(sf,'Text','✖  Cerrar','Position',[SW-112 BTN_Y 104 28],...
@@ -1194,7 +1250,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function setStat(sl, msg, ok)
-            sl.Text = msg(1:min(numel(msg),60));
+            sl.Text = msg;   % WordWrap activo — sin truncar
             if ok, sl.FontColor = [0.05 0.50 0.05];
             else,  sl.FontColor = [0.80 0.10 0.10];  end
         end
@@ -1263,7 +1319,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 S.cfg(pp).sim_Ad = Ad;  S.cfg(pp).sim_Bd = Bd;
                 S.cfg(pp).sim_Cd = Cd;  S.cfg(pp).sim_Dd = double(Dd(1,1));
                 S.cfg(pp).sim_x  = zeros(ns,1);
-                S.cfg(pp).sim_in_volts = cbSimInVolts.Value;
+                if pp == 1
+                    S.cfg(pp).sim_in_volts = cbSimInVolts.Value;
+                else
+                    S.cfg(pp).sim_in_volts = false;
+                end
                 S.cfg(pp).sim_enabled = true;
                 cbSimEn(pp).Value = true;
                 onSimToggle(pp);   % update ŷ checkbox visibility
@@ -1789,9 +1849,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         ysim2 = nan;
         c2 = S.cfg(2);
         if c2.sim_enabled && ~isempty(c2.sim_Ad)
-            u2_for_sim = u2;
-            if c2.sim_in_volts, u2_for_sim = pwm_to_volts_approx(u2); end
-            u2_c = sim_cast2(u2_for_sim);
+            u2_c = sim_cast2(u2);   % planta 2: entrada siempre en unidades de ref inner (PWM/rad/s)
             ysim2 = double(sim_cast2(c2.sim_Cd * c2.sim_x) + c2.sim_Dd * u2_c);
             S.cfg(2).sim_x = sim_cast2(c2.sim_Ad * c2.sim_x + c2.sim_Bd * u2_c);
         end
