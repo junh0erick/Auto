@@ -3,11 +3,15 @@
    CMSIS-DSP f32 + Q31/Q15/Q7 paths (arm_dot_prod, arm_scale, arm_add)
 
    Coeficientes (25 floats, 0-indexed):
-     TF:  c[0..5]=b,  c[6..11]=a,  c[14]=N, c[15]=Fs_hz
+     TF:  c[0..5]=b,  c[6..11]=a,  c[14]=N, c[15]=Fs_hz,
+          c[17]=Nbar   (u += Nbar*ref;  0=desactivado)
+          c[18]=offset (u += offset;    0=desactivado)
+          ley completa: u = Nbar*ref + C(z)*(ref-y) + offset
      SS:  c[0..3]=A(2x2 row-major), c[4..5]=B, c[6..7]=C,
           c[8]=D, c[9..10]=L, c[11..12]=K, c[13]=Kx,
           c[14]=N, c[15]=Fs_hz, c[16]=q_scale (0=default 1.0)
      OL/OFF: solo c[14]=N, c[15]=Fs_hz importan
+     c[17..18]: Nbar y offset — solo activos en modo TF
 
    q_scale (c[16]): normaliza señales a [-1,1) para Q-format.
      Las señales físicas se dividen por q_scale antes de convertir a Q.

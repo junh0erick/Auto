@@ -17,7 +17,7 @@
    ============================================================ */
 volatile uartp_sys_mode_t UARTP_SysMode  = UARTP_SYS_COMMAND;
 volatile float            UARTP_PendingRef = 0.0f;
-volatile uint8            g_ref_in_volts   = 0u;   /* 0=PWM, 1=Voltios */
+volatile uint8            g_ref_in_volts   = 0u;   /* 0=sin conversión (TF/SS: rad/s, OL: PWM directo), 1=Voltios→PWM */
 
 /* ============================================================
    RX state machine en modo STREAM

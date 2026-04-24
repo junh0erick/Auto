@@ -12,7 +12,7 @@ MAX_PTS     = 500000;   % máx muestras en memoria
 STEP_TMO    = 0.8;      % timeout handshake [s]
 MAX_RETRIES = 50;       % reintentos handshake
 
-MOTOR_CPR   = 10000.0;
+MOTOR_CPR   = 1040.0;   % 4 × 260 PPR (QuadDec x4)
 PENDULO_CPR = 10000.0;
 
 MODE_NAMES = {'TF','SS','Open-loop','Off'};
@@ -237,16 +237,16 @@ yC1 = H_CTRL - 20 - PP_RH;
 yC2 = yC1 - PP_RH - PP_RG;
 yC3 = yC2 - PP_RH - PP_RG;
 
-uilabel(pCtrl,'Text','Ref:','Position',[PP_PX yC1 30 22]);
-edtRef = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1264 1264],...
-         'Position',[PP_PX+32 yC1 66 22]);
-btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+104 yC1-1 98 PP_RH],...
+lblRef   = uilabel(pCtrl,'Text','Ref:','Position',[PP_PX yC1 82 22]);
+edtRef   = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1264 1264],...
+           'Position',[PP_PX+84 yC1 50 22]);
+btnStart = uibutton(pCtrl,'Text','▶  Start','Position',[PP_PX+138 yC1-1 90 PP_RH],...
            'BackgroundColor',[0.12 0.62 0.12],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStart);
-btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+208 yC1-1 88 PP_RH],...
+btnStop  = uibutton(pCtrl,'Text','■  Stop', 'Position',[PP_PX+232 yC1-1 78 PP_RH],...
            'BackgroundColor',[0.78 0.1 0.1],'FontColor','w','FontWeight','bold',...
            'ButtonPushedFcn',@onStop);
-lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+302 yC1 120 26],...
+lblRunSt = uilabel(pCtrl,'Text','Detenido','Position',[PP_PX+314 yC1 106 26],...
            'FontWeight','bold');
 btnSendCoef = uibutton(pCtrl,'Text','📤 Enviar Coef','Position',[PP_PX+432 yC1-1 145 PP_RH],...
               'BackgroundColor',[0.2 0.35 0.65],'FontColor','w',...
@@ -258,6 +258,16 @@ edtSatMin = uieditfield(pCtrl,'numeric','Value',-1264,'Limits',[-1e6 0],...
 uilabel(pCtrl,'Text','u_max:','Position',[PP_PX+116 yC2 42 22]);
 edtSatMax = uieditfield(pCtrl,'numeric','Value', 1264,'Limits',[0 1e6],...
             'Position',[PP_PX+160 yC2 66 22]);
+uilabel(pCtrl,'Text','Nbar×:','Position',[PP_PX+248 yC2 46 22],...
+        'Tooltip','u = Nbar*ref + C(z)*(ref-y) + offset');
+edtNbar   = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e9 1e9],...
+            'Position',[PP_PX+296 yC2 66 22],...
+            'Tooltip','Feedforward: agrega Nbar*ref al esfuerzo de control.');
+uilabel(pCtrl,'Text','+offset:','Position',[PP_PX+368 yC2 50 22],...
+        'Tooltip','u = Nbar*ref + C(z)*(ref-y) + offset');
+edtOffset = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e9 1e9],...
+            'Position',[PP_PX+420 yC2 72 22],...
+            'Tooltip','Offset estático sumado al esfuerzo de control.');
 
 cbAutoStop = uicheckbox(pCtrl,'Text','Auto-stop en frames:','Value',false,...
              'Position',[PP_PX yC3 148 22],'ValueChangedFcn',@onAutoStopToggle);
@@ -269,6 +279,8 @@ ddNumType  = uidropdown(pCtrl,...
              'Items',{'f32','f64','f16','q31','q15','q7'},...
              'Value','f32',...
              'Position',[PP_PX+450 yC3 120 22]);
+
+updateRefLimits();   % inicializar límites y label de unidades de referencia
 
 % ── 5. Datos ──────────────────────────────────────────────────────────────────
 pData = uipanel(fig,'Title','Datos','Position',[RX Y_DATA RW H_DATA]);
@@ -439,6 +451,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         lblSSxhat.Visible = onoff_str(anyss);
         updateAxesLayout();
         updateCfgStatus(pp);
+        if pp == 1, updateRefLimits(); end
         invalidateCoeffs();
     end
 
@@ -466,10 +479,34 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
     end
 
     function updateRefLimits()
+        % Guard: edtRef puede no existir aún en la primera llamada al arrancar.
+        if ~exist('edtRef','var') || isempty(edtRef) || ~isvalid(edtRef), return; end
         if S.cfg(1).ref_in_volts
             edtRef.Limits = [-12 12];
-        else
-            edtRef.Limits = [-1264 1264];
+        elseif strcmp(S.cfg(1).mode,'TF') || strcmp(S.cfg(1).mode,'SS')
+            edtRef.Limits = [-500 500];   % [rad/s] — supera holgado la vel. máx. del motor
+        else  % Open-loop, Off
+            edtRef.Limits = [-1264 1264]; % [PWM]
+        end
+        updateRefLabel();
+    end
+
+    function updateRefLabel()
+        % Guard: lblRef no existe hasta que se crea el panel de Control (después
+        % de los onModeChange iniciales). Si todavía no existe, salir sin error.
+        if ~exist('lblRef','var') || isempty(lblRef) || ~isvalid(lblRef), return; end
+        if S.cfg(1).ref_in_volts
+            lblRef.Text    = 'Ref [V]:';
+            edtRef.Tooltip = 'Referencia en Voltios. El PSoC convierte a PWM internamente.';
+        elseif strcmp(S.cfg(1).mode, 'TF') || strcmp(S.cfg(1).mode, 'SS')
+            lblRef.Text    = 'Ref [rad/s]:';
+            edtRef.Tooltip = sprintf('Planta 1 en modo %s — ingresá la referencia en\nvelocidad angular del motor [rad/s].\n(y1 = omega motor, mismas unidades que la medida)', S.cfg(1).mode);
+        elseif strcmp(S.cfg(1).mode, 'Open-loop')
+            lblRef.Text    = 'Ref [PWM]:';
+            edtRef.Tooltip = 'Open-loop: la referencia se aplica directamente como esfuerzo PWM (+-1264).';
+        else  % Off
+            lblRef.Text    = 'Ref:';
+            edtRef.Tooltip = '';
         end
     end
 
@@ -820,6 +857,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             S.ctrl.outer = lp;
         end
         updateCfgStatus(pp);
+        if pp == 1, updateRefLimits(); end
         logMsg(sprintf('Planta %d: cfg aplicada. modo=%d  N=%d', pp, lp.mode, lp.N));
     end
 
@@ -886,10 +924,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
 
         uilabel(p_TF,'Text','Modelo TF:','FontWeight','bold',...
                 'Position',[LBL_X r1 LBL_W 22]);
-        % Format default TF expression from stored z^-k coefficients → z-descending
+        % Reconstruct MATLAB tf expression from stored z^-k coefficients.
+        % tf_b/tf_a are in z^-k ascending order [b0 b1 ... bN], which maps
+        % directly to MATLAB's tf([b0 b1 ... bN], [...], Ts) z-descending form
+        % when multiplied by z^N — no flip needed.
         bv = c.tf_b(1:c.tf_ord+1);  av = c.tf_a(1:c.tf_ord+1);
         tf_init = sprintf('tf(%s,%s,%.6g)',...
-            mat2str(fliplr(bv(:)'),4), mat2str(fliplr(av(:)'),4), Ts_now);
+            mat2str(bv(:)',4), mat2str(av(:)',4), Ts_now);
         et_tf = uieditfield(p_TF,'text','Value',tf_init,...
                 'Position',[EF_X r1 EF_W 22]);
         sl_tf = uilabel(p_TF,'Text','—','FontSize',10,...
@@ -1973,6 +2014,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         mode_outer = uint8(cfg_to_mode_val(S.cfg(2)));
 
         c_inner = single(build_coeffs_for_psoc(S.cfg(1), Fs));
+        c_inner(18) = single(edtNbar.Value);    % c[17] en C: Nbar feedforward (u += Nbar*ref, TF)
+        c_inner(19) = single(edtOffset.Value); % c[18] en C: offset estático  (u += offset,   TF)
         c_outer = single(build_coeffs_for_psoc(S.cfg(2), Fs));
 
         % Construir payload de 216 bytes

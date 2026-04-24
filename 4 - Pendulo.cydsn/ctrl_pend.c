@@ -45,7 +45,7 @@
    Constantes físicas
    ============================================================ */
 #define PI_F            3.14159265f
-#define MOTOR_CPR_F     10000.0f
+#define MOTOR_CPR_F     1040.0f     /* 4 × 260 PPR (QuadDec x4) */
 #define PENDULO_CPR_F   10000.0f
 #define PWM_MAX_F       1264.0f
 #define PWM_MIN_F      (-1264.0f)
@@ -76,6 +76,7 @@ typedef struct {
     float  vint;            /* acumulador integral (float, sin Ts) */
 
     float  ref;             /* setpoint actual */
+    float  Nbar;            /* feedforward: u_total = C(z)*(ref-y) + Nbar*ref  (TF mode) */
     float  u_out;           /* salida anterior saturada (para observer) */
 
     /* Decimación (solo outer, planta 1) */
@@ -717,8 +718,10 @@ static float run_step(CtrlLoop *lp, float y)
     switch (lp->mode)
     {
         case CTRL_MODE_TF:
-            /* TF usa siempre F32 (DF2T escalar) */
-            u = tf_step(lp, lp->ref - y);
+            /* TF usa siempre F32 (DF2T escalar).
+               Feedforward 2DOF: u = C(z)*(ref-y) + Nbar*ref
+               Con Nbar=0 (default) se reduce al lazo 1DOF estándar. */
+            u = tf_step(lp, lp->ref - y) + lp->Nbar * lp->ref;
             break;
 
         case CTRL_MODE_SS_PRED_NOI:
@@ -784,6 +787,7 @@ void ctrl_init(void)
         g_lp[p].mode    = CTRL_MODE_OFF;
         g_lp[p].N       = 1u;
         g_lp[p].q_scale = 1.0f;
+        g_lp[p].Nbar    = 0.0f;
     }
     g_running           = 0u;
     g_num_type          = CTRL_NUM_F32;
@@ -835,6 +839,9 @@ void ctrl_apply_coeffs(uint8 plant_id, const float* c, uint16 n)
         lp->q_scale = c[16];
     else
         lp->q_scale = 1.0f;
+
+    /* --- Nbar feedforward (c[17]): u_total = C(z)*(ref-y) + Nbar*ref (TF mode) --- */
+    lp->Nbar = (n > 17u) ? c[17] : 0.0f;
 
     /* --- Coeficientes TF --- */
     if (lp->mode == CTRL_MODE_TF)
