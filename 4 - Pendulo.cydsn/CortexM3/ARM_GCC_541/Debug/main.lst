@@ -1,4 +1,4 @@
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 1
 
 
    1              		.syntax unified
@@ -58,7 +58,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
   28:main.c        ****                   clock = 24 MHz → time_us = elapsed / 24.0
   29:main.c        ****    ============================================================ */
   30:main.c        **** #include "project.h"
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 2
 
 
   31:main.c        **** #include "pendulo.h"
@@ -118,7 +118,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
   57:main.c        ****            ctrl_apply_coeffs() calcula ctrl_period_ticks cuando recibe Fs.
   58:main.c        ****            Aplicar aquí en contexto main (no ISR).                          */
   59:main.c        ****         if (ctrl_period_pending)
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 3
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 3
 
 
   56              		.loc 1 59 0
@@ -178,7 +178,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
   92              		.loc 1 77 0
   93 004c 0025     		movs	r5, #0
   94 004e 684B     		ldr	r3, .L9+12
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 4
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 4
 
 
   95 0050 1D70     		strb	r5, [r3]
@@ -238,7 +238,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  134              	.L6:
   93:main.c        **** 
   94:main.c        ****                 /* 2. Leer telemetría con sección crítica mínima */
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 5
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 5
 
 
   95:main.c        ****                 intr = CyEnterCriticalSection();
@@ -298,7 +298,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  107:main.c        ****                 /* 3. Serializar 8 × float32 LE en trama de 32 bytes */
  108:main.c        ****                 p = (uint8*)&t_y1;
  109:main.c        ****                 frame[0]=p[0];  frame[1]=p[1];  frame[2]=p[2];  frame[3]=p[3];
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 6
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 6
 
 
  177              		.loc 1 109 0 discriminator 4
@@ -358,7 +358,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  223 0150 8DF83630 		strb	r3, [sp, #54]
  224 0154 9DF81330 		ldrb	r3, [sp, #19]	@ zero_extendqisi2
  225 0158 8DF83730 		strb	r3, [sp, #55]
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 7
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 7
 
 
  226              	.LVL25:
@@ -418,7 +418,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  130:main.c        ****                 /* 4. Enviar por UART */
  131:main.c        ****                 UART_1_PutArray(frame, TELEM_FRAME_SZ);
  268              		.loc 1 131 0 discriminator 4
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 8
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 8
 
 
  269 01d6 2421     		movs	r1, #36
@@ -478,7 +478,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  323 0028 B6010000 		.4byte	.LASF0
  324 002c 02       		.uleb128 0x2
  325 002d 01       		.byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 9
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 9
 
 
  326 002e 08       		.byte	0x8
@@ -538,7 +538,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  380 0099 02       		.uleb128 0x2
  381 009a 04       		.byte	0x4
  382 009b 04       		.byte	0x4
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 10
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 10
 
 
  383 009c DA000000 		.4byte	.LASF13
@@ -566,7 +566,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  405 00c7 01       		.byte	0x1
  406 00c8 2C000000 		.4byte	0x2c
  407 00cc 05       		.byte	0x5
- 408 00cd 2C       		.byte	0x2c
+ 408 00cd 2F       		.byte	0x2f
  409 00ce DF000000 		.4byte	0xdf
  410 00d2 08       		.uleb128 0x8
  411 00d3 59020000 		.4byte	.LASF18
@@ -578,7 +578,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  417 00df 03       		.uleb128 0x3
  418 00e0 8E000000 		.4byte	.LASF20
  419 00e4 05       		.byte	0x5
- 420 00e5 2F       		.byte	0x2f
+ 420 00e5 32       		.byte	0x32
  421 00e6 C6000000 		.4byte	0xc6
  422 00ea 09       		.uleb128 0x9
  423 00eb 25020000 		.4byte	.LASF65
@@ -598,7 +598,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  437 010e 02       		.uleb128 0x2
  438 010f 91       		.byte	0x91
  439 0110 4C       		.sleb128 -52
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 11
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 11
 
 
  440 0111 0B       		.uleb128 0xb
@@ -658,7 +658,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  494 0175 0A       		.uleb128 0xa
  495 0176 A1010000 		.4byte	.LASF28
  496 017a 01       		.byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 12
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 12
 
 
  497 017b 2C       		.byte	0x2c
@@ -718,7 +718,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  551 0201 82030000 		.4byte	0x382
  552 0205 0D       		.uleb128 0xd
  553 0206 40000000 		.4byte	.LVL6
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 13
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 13
 
 
  554 020a 8D030000 		.4byte	0x38d
@@ -778,7 +778,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  608 0285 51       		.byte	0x51
  609 0286 02       		.uleb128 0x2
  610 0287 08       		.byte	0x8
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 14
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 14
 
 
  611 0288 24       		.byte	0x24
@@ -809,75 +809,75 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  636 02bd 15       		.uleb128 0x15
  637 02be 49000000 		.4byte	.LASF36
  638 02c2 05       		.byte	0x5
- 639 02c3 31       		.byte	0x31
+ 639 02c3 34       		.byte	0x34
  640 02c4 C8020000 		.4byte	0x2c8
  641 02c8 06       		.uleb128 0x6
  642 02c9 DF000000 		.4byte	0xdf
  643 02cd 15       		.uleb128 0x15
  644 02ce 9F000000 		.4byte	.LASF37
  645 02d2 08       		.byte	0x8
- 646 02d3 31       		.byte	0x31
+ 646 02d3 35       		.byte	0x35
  647 02d4 D8020000 		.4byte	0x2d8
  648 02d8 06       		.uleb128 0x6
  649 02d9 99000000 		.4byte	0x99
  650 02dd 15       		.uleb128 0x15
  651 02de FD020000 		.4byte	.LASF38
  652 02e2 08       		.byte	0x8
- 653 02e3 32       		.byte	0x32
+ 653 02e3 36       		.byte	0x36
  654 02e4 D8020000 		.4byte	0x2d8
  655 02e8 15       		.uleb128 0x15
  656 02e9 EA020000 		.4byte	.LASF39
  657 02ed 08       		.byte	0x8
- 658 02ee 33       		.byte	0x33
+ 658 02ee 37       		.byte	0x37
  659 02ef D8020000 		.4byte	0x2d8
  660 02f3 15       		.uleb128 0x15
  661 02f4 0B030000 		.4byte	.LASF40
  662 02f8 08       		.byte	0x8
- 663 02f9 34       		.byte	0x34
+ 663 02f9 38       		.byte	0x38
  664 02fa D8020000 		.4byte	0x2d8
  665 02fe 15       		.uleb128 0x15
  666 02ff 20030000 		.4byte	.LASF41
  667 0303 08       		.byte	0x8
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 15
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 15
 
 
- 668 0304 35       		.byte	0x35
+ 668 0304 39       		.byte	0x39
  669 0305 D8020000 		.4byte	0x2d8
  670 0309 15       		.uleb128 0x15
  671 030a A8020000 		.4byte	.LASF42
  672 030e 08       		.byte	0x8
- 673 030f 36       		.byte	0x36
+ 673 030f 3A       		.byte	0x3a
  674 0310 D8020000 		.4byte	0x2d8
  675 0314 15       		.uleb128 0x15
  676 0315 A7010000 		.4byte	.LASF43
  677 0319 08       		.byte	0x8
- 678 031a 37       		.byte	0x37
+ 678 031a 3B       		.byte	0x3b
  679 031b D8020000 		.4byte	0x2d8
  680 031f 15       		.uleb128 0x15
  681 0320 C4020000 		.4byte	.LASF44
  682 0324 08       		.byte	0x8
- 683 0325 38       		.byte	0x38
+ 683 0325 3C       		.byte	0x3c
  684 0326 D8020000 		.4byte	0x2d8
  685 032a 15       		.uleb128 0x15
  686 032b 2F000000 		.4byte	.LASF45
  687 032f 08       		.byte	0x8
- 688 0330 39       		.byte	0x39
+ 688 0330 3D       		.byte	0x3d
  689 0331 AE000000 		.4byte	0xae
  690 0335 15       		.uleb128 0x15
  691 0336 C6000000 		.4byte	.LASF46
  692 033a 08       		.byte	0x8
- 693 033b 3C       		.byte	0x3c
+ 693 033b 40       		.byte	0x40
  694 033c AE000000 		.4byte	0xae
  695 0340 15       		.uleb128 0x15
  696 0341 89010000 		.4byte	.LASF47
  697 0345 08       		.byte	0x8
- 698 0346 3D       		.byte	0x3d
+ 698 0346 41       		.byte	0x41
  699 0347 B3000000 		.4byte	0xb3
  700 034b 16       		.uleb128 0x16
  701 034c 71010000 		.4byte	.LASF48
  702 0350 71010000 		.4byte	.LASF48
  703 0354 08       		.byte	0x8
- 704 0355 40       		.byte	0x40
+ 704 0355 44       		.byte	0x44
  705 0356 16       		.uleb128 0x16
  706 0357 D5030000 		.4byte	.LASF49
  707 035b D5030000 		.4byte	.LASF49
@@ -887,7 +887,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  711 0362 2F030000 		.4byte	.LASF50
  712 0366 2F030000 		.4byte	.LASF50
  713 036a 05       		.byte	0x5
- 714 036b 3E       		.byte	0x3e
+ 714 036b 41       		.byte	0x41
  715 036c 16       		.uleb128 0x16
  716 036d D3020000 		.4byte	.LASF51
  717 0371 D3020000 		.4byte	.LASF51
@@ -898,7 +898,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  722 037c 10010000 		.4byte	.LASF52
  723 0380 09       		.byte	0x9
  724 0381 68       		.byte	0x68
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 16
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 16
 
 
  725 0382 16       		.uleb128 0x16
@@ -910,7 +910,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  731 038e 5C010000 		.4byte	.LASF54
  732 0392 5C010000 		.4byte	.LASF54
  733 0396 05       		.byte	0x5
- 734 0397 41       		.byte	0x41
+ 734 0397 44       		.byte	0x44
  735 0398 16       		.uleb128 0x16
  736 0399 90020000 		.4byte	.LASF55
  737 039d 90020000 		.4byte	.LASF55
@@ -930,7 +930,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  751 03ba AD000000 		.4byte	.LASF58
  752 03be AD000000 		.4byte	.LASF58
  753 03c2 08       		.byte	0x8
- 754 03c3 45       		.byte	0x45
+ 754 03c3 49       		.byte	0x49
  755 03c4 16       		.uleb128 0x16
  756 03c5 32020000 		.4byte	.LASF59
  757 03c9 32020000 		.4byte	.LASF59
@@ -958,7 +958,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  779 0006 0B       		.uleb128 0xb
  780 0007 03       		.uleb128 0x3
  781 0008 0E       		.uleb128 0xe
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 17
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 17
 
 
  782 0009 1B       		.uleb128 0x1b
@@ -1018,7 +1018,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  836 003f 49       		.uleb128 0x49
  837 0040 13       		.uleb128 0x13
  838 0041 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 18
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 18
 
 
  839 0042 00       		.byte	0
@@ -1078,7 +1078,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  893 0079 18       		.uleb128 0x18
  894 007a 9742     		.uleb128 0x2117
  895 007c 19       		.uleb128 0x19
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 19
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 19
 
 
  896 007d 01       		.uleb128 0x1
@@ -1138,7 +1138,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  950 00b5 31       		.uleb128 0x31
  951 00b6 13       		.uleb128 0x13
  952 00b7 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 20
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 20
 
 
  953 00b8 00       		.byte	0
@@ -1198,7 +1198,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1007 00f5 13       		.uleb128 0x13
  1008 00f6 00       		.byte	0
  1009 00f7 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 21
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 21
 
 
  1010 00f8 14       		.uleb128 0x14
@@ -1258,7 +1258,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1064              	.LLST0:
  1065 0000 BC000000 		.4byte	.LVL20
  1066 0004 DC000000 		.4byte	.LVL21
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 22
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 22
 
 
  1067 0008 0300     		.2byte	0x3
@@ -1318,7 +1318,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1121 0084 7A000000 		.4byte	.LVL16
  1122 0088 0100     		.2byte	0x1
  1123 008a 54       		.byte	0x54
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 23
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 23
 
 
  1124 008b 7C000000 		.4byte	.LVL17
@@ -1378,7 +1378,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1173      666C6167 
  1173      5F577269 
  1173      746500
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 24
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 24
 
 
  1174              	.LASF60:
@@ -1438,7 +1438,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1197      656D5F75 
  1197      3100
  1198              	.LASF58:
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 25
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 25
 
 
  1199 00ad 6374726C 		.ascii	"ctrl_step\000"
@@ -1498,7 +1498,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1219              	.LASF48:
  1220 0171 6374726C 		.ascii	"ctrl_init\000"
  1220      5F696E69 
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 26
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 26
 
 
  1220      7400
@@ -1558,7 +1558,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1243              	.LASF15:
  1244 0217 63686172 		.ascii	"char\000"
  1244      00
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 27
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 27
 
 
  1245              	.LASF4:
@@ -1618,7 +1618,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1273              	.LASF42:
  1274 02a8 6374726C 		.ascii	"ctrl_telem_x2i\000"
  1274      5F74656C 
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 28
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 28
 
 
  1274      656D5F78 
@@ -1678,7 +1678,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 1
  1300      52784275 
  1300      66666572 
  1300      00
-ARM GAS  C:\Users\user\AppData\Local\Temp\ccAwRlMl.s 			page 29
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccnCfglk.s 			page 29
 
 
  1301              	.LASF62:

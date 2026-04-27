@@ -1,6 +1,6 @@
 // ======================================================================
 // 4 - Pendulo.v generated from TopDesign.cysch
-// 04/07/2026 at 18:32
+// 04/26/2026 at 18:43
 // This file is auto generated. ANY EDITS YOU MAKE MAY BE LOST WHEN THIS FILE IS REGENERATED!!!
 // ======================================================================
 
@@ -1247,9 +1247,9 @@ module top ;
 
 	cy_psoc3_pins_v1_10
 		#(.id("8d318d8b-cf7b-4b6b-b02c-ab1c5c49d0ba"),
-		  .drive_mode(3'b010),
+		  .drive_mode(3'b001),
 		  .ibuf_enabled(1'b1),
-		  .init_dr_st(1'b1),
+		  .init_dr_st(1'b0),
 		  .input_clk_en(0),
 		  .input_sync(1'b0),
 		  .input_sync_mode(1'b0),
@@ -1321,9 +1321,9 @@ module top ;
 
 	cy_psoc3_pins_v1_10
 		#(.id("8c68b4c7-bcbb-4289-8f4c-dd959170d125"),
-		  .drive_mode(3'b010),
+		  .drive_mode(3'b001),
 		  .ibuf_enabled(1'b1),
-		  .init_dr_st(1'b1),
+		  .init_dr_st(1'b0),
 		  .input_clk_en(0),
 		  .input_sync(1'b0),
 		  .input_sync_mode(1'b0),

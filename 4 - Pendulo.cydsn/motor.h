@@ -22,6 +22,10 @@
 #define MOTOR_MAX       ( PWM_PERIOD)
 #define MOTOR_MIN       (-PWM_PERIOD)
 
+/* Límite físico de voltaje del motor — fuera de este rango el polinomio
+   PWM_Desde_Voltaje pierde monotonicidad y eventualmente diverge. */
+#define MOTOR_V_MAX     12.0f
+
 /* ============================================================
    CONVERSIÓN VOLTAJE → PWM
    Polinomio Horner grado 4: PWM = f(V), V en [0, 12]

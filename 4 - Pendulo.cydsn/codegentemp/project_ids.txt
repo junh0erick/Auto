@@ -1,9 +1,9 @@
-D:\PSoc\Auto\TPF\TPF_PenduloInvertido\1 - Barrido.cydsn\1 - Barrido.cyprj|ea4db4a6-06a4-49c9-9408-e338bd46c07c
-D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|9648e56f-dff5-4532-aa32-292a73ff78a4
-C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|90c47d69-c5d0-4d64-a428-ac8d4606c470
-D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|6e93e2da-119f-4e3f-9448-5d26f86f3370
-D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|bf864d17-2b7e-4e74-b45b-e929a46ea6cd
-D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|6a8c2a78-092e-444f-b13f-cce9a11f874d
-D:\PSoc\Auto\TPF\TPF_PenduloInvertido\2 - Ajuste de Curva.cydsn\2 - Ajuste de Curva.cyprj|8a08c274-be7d-4ee9-83b7-b0ad305a6d1e
-D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\3 - ControladorMotor.cyprj|0a0dde3a-96cb-447b-aa85-260a873fa50c
-D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cyprj|ddbaf9f8-b542-4188-98b3-9b6a22497895
+D:\PSoc\Auto\TPF\TPF_PenduloInvertido\1 - Barrido.cydsn\1 - Barrido.cyprj|ca7f95d0-07c9-477f-ae4c-cfe8ea1a79f0
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|76b7e572-c50d-48d4-b04b-2f6127bf25d1
+C:\Users\user\OneDrive\Documentos\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|72afd09a-9d40-44d6-956b-bb3b003fb3cd
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|bff27ca1-3cd0-449a-977c-115a29910c23
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|af007c3c-04ef-4d64-8750-03895c9dfd2f
+D:\PSoc\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|c1b5211b-39f5-428a-abac-6fbbba0e2362
+D:\PSoc\Auto\TPF\TPF_PenduloInvertido\2 - Ajuste de Curva.cydsn\2 - Ajuste de Curva.cyprj|7ec8d7d8-ebb8-4e4a-8a3c-34f9fb981f03
+D:\PSoc\Auto\TPF\TPF_PenduloInvertido\3 - ControladorMotor.cydsn\3 - ControladorMotor.cyprj|6cf73db3-779c-4c9e-abef-ee91bec968c7
+D:\PSoc\Auto\TPF\TPF_PenduloInvertido\4 - Pendulo.cydsn\4 - Pendulo.cyprj|eea97071-82c0-41a2-aa4a-020f110df283

@@ -37,9 +37,26 @@
 #include "arm_math.h"
 
 #include "ctrl_pend.h"
+#include "uartp_pend.h"
 #include "pendulo.h"
 #include "motor.h"
 #include <string.h>
+
+/* Helper: límite físico efectivo para el lazo inner según modo de salida.
+   Cuando la salida del controlador es voltaje (bit1 de g_ref_in_volts), el
+   tope es ±MOTOR_V_MAX; en modo PWM directo, ±MOTOR_MAX. Tightens (nunca
+   amplía) el sat_min/max definido por el usuario en MATLAB. */
+static inline void inner_phys_limits(float *lo, float *hi)
+{
+    float pmin, pmax;
+    if (g_ref_in_volts & 0x02u) {
+        pmax =  MOTOR_V_MAX;  pmin = -MOTOR_V_MAX;
+    } else {
+        pmax =  (float)MOTOR_MAX;  pmin = (float)MOTOR_MIN;
+    }
+    if (*hi > pmax) *hi = pmax;
+    if (*lo < pmin) *lo = pmin;
+}
 
 /* ============================================================
    Constantes físicas
@@ -49,6 +66,13 @@
 #define PENDULO_CPR_F   10000.0f
 #define PWM_MAX_F       1264.0f
 #define PWM_MIN_F      (-1264.0f)
+
+/* Filtro Åström de primer orden: y_f = α·y_f_prev + (1−α)·y_raw.
+   DC gain = 1; polo discreto α = e^(-2π·fn·Ts) ∈ (0,1).
+   - MOT:  fn = 50 Hz → α = e^(-π/2)  ≈ 0.2079  (sobre y1, velocidad motor)
+   - PEND: fn = 10 Hz → α = e^(-π/10) ≈ 0.7304  (sobre y2, ángulo péndulo) */
+#define ALPHA_ASTROM_MOT     0.207879576350762f
+#define ALPHA_ASTROM_PEND    0.730402691048646f
 
 /* ============================================================
    Struct de estado por planta
@@ -126,6 +150,10 @@ static uint8    g_running = 0u;
 
 /* Tipo numérico activo */
 static uint8    g_num_type = CTRL_NUM_F32;
+
+/* Estados de los filtros Åström */
+static float g_y1_filt = 0.0f;   /* y1 = velocidad angular del motor (rad/s) */
+static float g_y2_filt = 0.0f;   /* y2 = ángulo del péndulo (rad)             */
 
 /* Telemetría */
 volatile float ctrl_telem_u1    = 0.0f;
@@ -730,8 +758,15 @@ static float run_step(CtrlLoop *lp, float y)
                Ki en MATLAB se diseña con esta convención: u_i = Ki × sum(e[k]). */
             if (mode_has_i(lp->mode)) lp->vint += (lp->ref - y);
 
-            u     = u_cmd(lp);
-            u_sat = satf(u, g_sat_min, g_sat_max);
+            u = u_cmd(lp);
+            {
+                float lo = g_sat_min, hi = g_sat_max;
+                /* Lazo inner = el que comanda el motor: aplicamos también el
+                   límite físico para que el anti-windup active aunque el
+                   sat_min/max de MATLAB esté en otras unidades. */
+                if (lp == &g_lp[PLANT_INNER]) inner_phys_limits(&lo, &hi);
+                u_sat = satf(u, lo, hi);
+            }
 
             /* Anti-windup back-calculation: corrige vint si hay saturación.
                Sin efecto cuando u_sat == u (no satura). */
@@ -751,8 +786,12 @@ static float run_step(CtrlLoop *lp, float y)
 
             if (mode_has_i(lp->mode)) lp->vint += (lp->ref - y);
 
-            u     = u_cmd(lp);
-            u_sat = satf(u, g_sat_min, g_sat_max);
+            u = u_cmd(lp);
+            {
+                float lo = g_sat_min, hi = g_sat_max;
+                if (lp == &g_lp[PLANT_INNER]) inner_phys_limits(&lo, &hi);
+                u_sat = satf(u, lo, hi);
+            }
 
             if (mode_has_i(lp->mode) && lp->Kx != 0.0f) {
                 lp->vint += (u_sat - u) / lp->Kx;
@@ -793,6 +832,8 @@ void ctrl_init(void)
     g_num_type          = CTRL_NUM_F32;
     ctrl_telem_ready    = 0u;
     ctrl_period_pending = 0u;
+    g_y1_filt           = 0.0f;
+    g_y2_filt           = 0.0f;
 }
 
 /* ============================================================
@@ -940,6 +981,14 @@ void ctrl_start(float ref_inner)
     g_lp[PLANT_INNER].ref = ref_inner;
     g_lp[PLANT_OUTER].ref = 0.0f;     /* péndulo vertical = 0 rad */
 
+    /* Reset del encoder del péndulo: el operador posiciona el péndulo
+       en la vertical antes de presionar Start → ese punto pasa a ser θ=0.
+       También resincroniza el conteo previo del motor para que el primer
+       tick no acumule el movimiento ocurrido durante el Stop. */
+    pendulo_reset_encoders();
+
+    g_y1_filt        = 0.0f;          /* arranque limpio de los filtros Åström */
+    g_y2_filt        = 0.0f;
     ctrl_telem_ready = 0u;
     g_running        = 1u;
 }
@@ -988,8 +1037,15 @@ void ctrl_step(void)
 
     pendulo_read(&theta_cnt, &delta_om_cnt);
 
-    float y1 = (float)delta_om_cnt * (2.0f * PI_F / MOTOR_CPR_F)    / g_Ts;
-    float y2 = (float)theta_cnt    * (2.0f * PI_F / PENDULO_CPR_F);
+    /* Velocidad cruda del motor y filtrado Åström para reducir ruido de derivada */
+    float y1_raw = (float)delta_om_cnt * (2.0f * PI_F / MOTOR_CPR_F) / g_Ts;
+    g_y1_filt    = ALPHA_ASTROM_MOT * g_y1_filt + (1.0f - ALPHA_ASTROM_MOT) * y1_raw;
+    float y1     = g_y1_filt;
+
+    /* Ángulo crudo del péndulo (QuadDec_2, sensor óptico) y filtrado Åström */
+    float y2_raw = (float)theta_cnt * (2.0f * PI_F / PENDULO_CPR_F);
+    g_y2_filt    = ALPHA_ASTROM_PEND * g_y2_filt + (1.0f - ALPHA_ASTROM_PEND) * y2_raw;
+    float y2     = g_y2_filt;
 
     CtrlLoop *inner = &g_lp[PLANT_INNER];
     CtrlLoop *outer = &g_lp[PLANT_OUTER];
@@ -1014,7 +1070,11 @@ void ctrl_step(void)
     if (inner->mode != CTRL_MODE_OFF)
     {
         u1 = run_step(inner, y1);
-        Motor_Control((int16)satf(u1, g_sat_min, g_sat_max));
+        /* bit1 de g_ref_in_volts: salida del ctrl en Voltios → convertir a PWM */
+        if (g_ref_in_volts & 0x02u)
+            Motor_Control(PWM_Desde_Voltaje(satf(u1, g_sat_min, g_sat_max)));
+        else
+            Motor_Control((int16)satf(u1, g_sat_min, g_sat_max));
     }
     else if (outer->mode != CTRL_MODE_OFF)
     {

@@ -18,7 +18,7 @@
    ENCODER DEL MOTOR (QuadDec_1)
    Coincide con motor.h de la planta original.
    ============================================================ */
-#define MOTOR_CPR       10000u      /* cuentas/revolución (QuadDec x4, 2500 PPR físico) */
+#define MOTOR_CPR       1040u       /* cuentas/revolución (QuadDec x4, 260 PPR físico) */
 
 /* ============================================================
    TIMER DE CONTROL
@@ -52,6 +52,11 @@ void pendulo_init(void);
    theta_counts     : QuadDec_2 (péndulo, int32)
    delta_omega_counts: delta QuadDec_1 (motor, int16, cuentas/Ts_inner) */
 void pendulo_read(int32 *theta_counts, int16 *delta_omega_counts);
+
+/* Resetea el encoder del péndulo (QuadDec_2) a 0 y resincroniza el
+   conteo previo del motor (QuadDec_1) para evitar un delta espurio en
+   el primer tick. Llamar en ctrl_start tras posicionar el péndulo. */
+void pendulo_reset_encoders(void);
 
 /* Reconfigura el periodo del Timer_1 para la frecuencia indicada. */
 void pendulo_timer_set_fs(float fs_inner_hz);

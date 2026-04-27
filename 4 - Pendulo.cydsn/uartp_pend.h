@@ -21,7 +21,10 @@
      [0]       mode_inner  uint8 (CTRL_MODE_*)
      [1]       mode_outer  uint8 (CTRL_MODE_*)
      [2]       num_type    uint8 (CTRL_NUM_F32=0, F64=1, F16=2, Q31=3, Q15=4, Q7=5)
-     [3]       ref_in_volts uint8 (0=PWM, 1=Voltios — PSoC convierte con PWM_Desde_Voltaje)
+     [3]       flags   uint8  bitmask:
+                         bit0=1 → ref en Voltios: PSoC convierte ref V→PWM
+                         bit1=1 → salida en Voltios: PSoC aplica PWM_Desde_Voltaje(u) antes de Motor_Control
+                         (0x02 = ref rad/s + salida V; 0x01 = ref V + salida PWM; 0x00 = todo PWM)
      [4-103]   coeffs_inner[25] float32 LE  (TF o SS segun modo)
      [104-203] coeffs_outer[25] float32 LE
      [204-207] ref_inner   float32 LE
@@ -51,7 +54,7 @@ extern volatile uartp_sys_mode_t UARTP_SysMode;
 /* Referencia inner recibida via 'p', para pasar a ctrl_start() */
 extern volatile float UARTP_PendingRef;
 
-/* Flag: 0=ref en PWM, 1=ref en Voltios (byte[3] del payload 'p') */
+/* Flags byte[3] del payload 'p': bit0=ref en V→PWM, bit1=salida en V→PWM */
 extern volatile uint8 g_ref_in_volts;
 
 /* ============================================================

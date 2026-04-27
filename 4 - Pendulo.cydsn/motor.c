@@ -70,9 +70,18 @@ void Motor_Free(void)
    ============================================================ */
 int16 PWM_Desde_Voltaje(float v)
 {
+    /* Clamp del voltaje al rango calibrado: por encima de ~25V el polinomio
+       cruza cero (P1<0 domina) y el motor pararía cuando un controlador de
+       alta ganancia demanda más esfuerzo del máximo físico. */
+    if (v >  MOTOR_V_MAX) v =  MOTOR_V_MAX;
+    if (v < -MOTOR_V_MAX) v = -MOTOR_V_MAX;
+
     float av = (v >= 0.0f) ? v : -v;
-    int16 pwm = (int16)((((PWM_P1*av + PWM_P2)*av + PWM_P3)*av + PWM_P4)*av + PWM_P5);
-    if (pwm > MOTOR_MAX) pwm = MOTOR_MAX;
-    if (pwm < 0)         pwm = 0;
+    /* Saturar en float ANTES del cast a int16 para evitar wrap-around
+       (la conversión float→int16 fuera de rango es undefined behavior). */
+    float pwm_f = (((PWM_P1*av + PWM_P2)*av + PWM_P3)*av + PWM_P4)*av + PWM_P5;
+    if (pwm_f > (float)MOTOR_MAX) pwm_f = (float)MOTOR_MAX;
+    if (pwm_f < 0.0f)             pwm_f = 0.0f;
+    int16 pwm = (int16)pwm_f;
     return (v >= 0.0f) ? pwm : -pwm;
 }

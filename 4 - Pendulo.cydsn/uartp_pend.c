@@ -133,7 +133,7 @@ static void handle_cmd_p(void)
     mode_inner = s_p_buf[0];
     mode_outer = s_p_buf[1];
     ctrl_set_num_type(s_p_buf[2]);   /* byte[2]: CTRL_NUM_F32/F64/Q31/Q15/Q7 */
-    g_ref_in_volts = s_p_buf[3];     /* byte[3]: 0=PWM, 1=Voltios */
+    g_ref_in_volts = s_p_buf[3];     /* byte[3] bitmask: bit0=ref en V->PWM, bit1=salida en V->PWM */
 
     /* --- Aplicar inner (bytes 4..103 = 25 float32) --- */
     ctrl_set_mode(PLANT_INNER, mode_inner);
@@ -171,8 +171,8 @@ static void handle_cmd_p(void)
 
     /* --- Aplicar saturación y guardar ref para ctrl_start() --- */
     ctrl_set_sat(sat_min, sat_max);
-    /* Convertir ref si viene en Voltios */
-    UARTP_PendingRef = (g_ref_in_volts != 0u) ?
+    /* Convertir ref si bit0 activo (ref enviada en Voltios) */
+    UARTP_PendingRef = (g_ref_in_volts & 0x01u) ?
                        (float)PWM_Desde_Voltaje(ref_inner) :
                        ref_inner;
 
@@ -335,8 +335,8 @@ CY_ISR(UARTP_Rx_ISR)
             {
                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
-                /* Convertir si ref viene en Voltios */
-                if (g_ref_in_volts != 0u)
+                /* Convertir ref si bit0 activo (ref enviada en Voltios) */
+                if (g_ref_in_volts & 0x01u)
                     ctrl_update_ref((float)PWM_Desde_Voltaje(ref_val));
                 else
                     ctrl_update_ref(ref_val);

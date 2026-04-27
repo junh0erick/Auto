@@ -59,6 +59,18 @@ void pendulo_init(void)
 }
 
 /* ============================================================
+   pendulo_reset_encoders()
+   Pone QuadDec_2 (péndulo) en 0 y resincroniza g_prev_motor_count
+   con la lectura actual de QuadDec_1 para que el primer pendulo_read
+   tras Start devuelva delta = 0 (no se acumula movimiento previo).
+   ============================================================ */
+void pendulo_reset_encoders(void)
+{
+    QuadDec_2_SetCounter(0);
+    g_prev_motor_count = (int32)QuadDec_1_GetCounter();
+}
+
+/* ============================================================
    pendulo_read()
    Lee ambos encoders y calcula el delta de velocidad del motor.
    Llamar UNA vez por tick de control.

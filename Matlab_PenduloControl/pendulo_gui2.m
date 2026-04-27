@@ -123,6 +123,7 @@ hY1    = plot(ax_y1,nan,nan,'b-', 'LineWidth',1.5,'DisplayName','ω meas');
 hY1sim = plot(ax_y1,nan,nan,'c--','LineWidth',1.2,'DisplayName','ω sim');
 hX1i   = plot(ax_y1,nan,nan,'g-', 'LineWidth',1.0,'DisplayName','x̂₁ᵢ');
 hX2i   = plot(ax_y1,nan,nan,'m-', 'LineWidth',1.0,'DisplayName','x̂₂ᵢ');
+hR1_y1 = plot(ax_y1,nan,nan,'r-', 'LineWidth',1.2,'DisplayName','R [rad/s]');
 hold(ax_y1,'off');  legend(ax_y1,'show');
 
 hold(ax_u2,'on');
@@ -288,9 +289,11 @@ yD1 = H_DATA - 20 - PP_RH;
 yD2 = yD1 - PP_RH - PP_RG;
 uibutton(pData,'Text','Exportar .mat', 'Position',[PP_PX      yD1 130 PP_RH],...
          'ButtonPushedFcn',@onExport);
-uibutton(pData,'Text','Borrar datos',  'Position',[PP_PX+136  yD1 118 PP_RH],...
+uibutton(pData,'Text','Exportar .csv', 'Position',[PP_PX+136  yD1 118 PP_RH],...
+         'ButtonPushedFcn',@onExportCsv);
+uibutton(pData,'Text','Borrar datos',  'Position',[PP_PX+260  yD1 108 PP_RH],...
          'ButtonPushedFcn',@onClear);
-uibutton(pData,'Text','⚙ Escaladores','Position',[PP_PX+260  yD1 142 PP_RH],...
+uibutton(pData,'Text','⚙ Escaladores','Position',[PP_PX+374  yD1 142 PP_RH],...
          'ButtonPushedFcn',@(~,~) openScalerPopup());
 % Fila 2: controles de ventana
 uilabel(pData,'Text','Vista pts:','Position',[PP_PX yD2 62 22]);
@@ -500,13 +503,29 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             edtRef.Tooltip = 'Referencia en Voltios. El PSoC convierte a PWM internamente.';
         elseif strcmp(S.cfg(1).mode, 'TF') || strcmp(S.cfg(1).mode, 'SS')
             lblRef.Text    = 'Ref [rad/s]:';
-            edtRef.Tooltip = sprintf('Planta 1 en modo %s — ingresá la referencia en\nvelocidad angular del motor [rad/s].\n(y1 = omega motor, mismas unidades que la medida)', S.cfg(1).mode);
+            if S.cfg(1).output_in_volts
+                edtRef.Tooltip = sprintf(['Modo "Salida en [V]": referencia en rad/s.\n' ...
+                    'El ctrl calcula u en Voltios y el PSoC aplica PWM_Desde_Voltaje(u).\n' ...
+                    'Ajustar u_min/u_max a Voltios (ej: -12 / 12).']);
+            else
+                edtRef.Tooltip = sprintf('Planta 1 en modo %s — ingresá la referencia en\nvelocidad angular del motor [rad/s].\n(y1 = omega motor, mismas unidades que la medida)', S.cfg(1).mode);
+            end
         elseif strcmp(S.cfg(1).mode, 'Open-loop')
             lblRef.Text    = 'Ref [PWM]:';
             edtRef.Tooltip = 'Open-loop: la referencia se aplica directamente como esfuerzo PWM (+-1264).';
         else  % Off
             lblRef.Text    = 'Ref:';
             edtRef.Tooltip = '';
+        end
+        % Actualizar título del eje u1 según el dominio de la salida del ctrl
+        if exist('ax_u1','var') && isvalid(ax_u1)
+            if S.cfg(1).ref_in_volts || S.cfg(1).output_in_volts
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.YLabel.String = 'u₁ [V]';
+            else
+                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor + R referencia';
+                ax_u1.YLabel.String = 'u₁';
+            end
         end
     end
 
@@ -595,13 +614,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             ax_u1.Visible='off'; ax_y1.Visible='off';
             ax_u2.Visible='off'; ax_y2.Visible='off';
             % Clear all lines so legends don't persist when axes are shown again
-            hAll = [hU1sat,hU1unsat,hR1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
+            hAll = [hU1sat,hU1unsat,hR1,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
             for h = hAll, set(h,'XData',nan,'YData',nan); end
         end
     end
 
     function updatePlots(~,~)
-        hAll = [hU1sat,hU1unsat,hR1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
+        hAll = [hU1sat,hU1unsat,hR1,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
         for h = hAll, set(h,'XData',nan,'YData',nan); end
         if isempty(S.nVec), return; end
 
@@ -621,9 +640,43 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         out = ~strcmp(ddMode(2).Value,'Off');
 
         if inn
-            if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',S.u1Vec(i0:end)*su1);       end
-            if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',S.u1unsat_Vec(i0:end)*su1); end
-            if cbSigR.Value,     set(hR1,     'XData',n,'YData',S.u2Vec(i0:end)*sr);        end
+            u1d       = S.u1Vec(i0:end);
+            u1unsat_d = S.u1unsat_Vec(i0:end);
+            if S.cfg(1).ref_in_volts && ~S.cfg(1).output_in_volts
+                % ref_in_volts solo: PSoC reporta u1 en PWM → convertir a V para display
+                u1d       = arrayfun(@pwm_to_volts_approx, u1d);
+                u1unsat_d = arrayfun(@pwm_to_volts_approx, u1unsat_d);
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.YLabel.String = 'u₁ [V]';
+            elseif S.cfg(1).output_in_volts
+                % output_in_volts: PSoC reporta u1 ya en Voltios (salida directa del ctrl TF)
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.YLabel.String = 'u₁ [V]';
+            else
+                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor + R referencia';
+                ax_u1.YLabel.String = 'u₁';
+            end
+            if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',u1d*su1);       end
+            if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',u1unsat_d*su1); end
+            if cbSigR.Value
+                if S.cfg(1).output_in_volts && ~S.cfg(1).ref_in_volts
+                    % ref en rad/s, u1 en V → ref va sobre ax_y1, no sobre ax_u1
+                    set(hR1,    'XData',nan,'YData',nan);
+                    set(hR1_y1, 'XData',n,  'YData',S.u2Vec(i0:end)*sr);
+                else
+                    % R va sobre ax_u1: si el eje está en V (ref_in_volts u
+                    % output_in_volts), convertir la ref que el PSoC guarda
+                    % internamente en PWM también a Voltios.
+                    u2d_ref = S.u2Vec(i0:end);
+                    if S.cfg(1).ref_in_volts || S.cfg(1).output_in_volts
+                        u2d_ref = arrayfun(@pwm_to_volts_approx, u2d_ref);
+                    end
+                    set(hR1,    'XData',n,  'YData',u2d_ref*sr);
+                    set(hR1_y1, 'XData',nan,'YData',nan);
+                end
+            else
+                set(hR1_y1, 'XData',nan,'YData',nan);
+            end
             if cbSigY1.Value,    set(hY1,     'XData',n,'YData',S.y1Vec(i0:end)*sy1);       end
             if cbSigSim1.Value && numel(S.ySimVec1)==N_total
                 set(hY1sim,'XData',n,'YData',S.ySimVec1(i0:end)*ss1);
@@ -710,7 +763,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             'sim_enabled',false,...
             'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],...
             'sim_in_volts',false,...
-            'ref_in_volts',false);
+            'ref_in_volts',false,...
+            'output_in_volts',false);
     end
 
     function lp = ctrl_loop_default()
@@ -1008,12 +1062,21 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 'Position',[EF_X+128 r5 STA_W+100 22]);
 
         % ── Bottom buttons ────────────────────────────────────────────────
-        pcb_ref_v = [];
+        pcb_ref_v = [];  pcb_out_v = [];
         if pp == 1
-            pcb_ref_v = uicheckbox(pf,'Text','Ref en Voltios (PSoC convierte)',...
+            pcb_ref_v = uicheckbox(pf,'Text','Ref en Voltios',...
                 'Value', S.cfg(1).ref_in_volts,...
-                'Position',[8 BTN_Y+4 200 22],...
-                'Tooltip','Cuando activo, PSoC convierte la referencia de Voltaje a PWM con PWM_Desde_Voltaje()');
+                'Position',[8 BTN_Y+4 130 22],...
+                'Tooltip',sprintf(['Cuando activo, la referencia se envía en Voltios [-12,12]\n' ...
+                    'y el PSoC la convierte a PWM con PWM_Desde_Voltaje().\n' ...
+                    'NO usar junto con "Salida en [V]" (ref ya debería estar en rad/s).']));
+            pcb_out_v = uicheckbox(pf,'Text','Salida en [V] (ref rad/s)',...
+                'Value', S.cfg(1).output_in_volts,...
+                'Position',[146 BTN_Y+4 174 22],...
+                'Tooltip',sprintf(['Cuando activo, el PSoC interpreta la salida del controlador\n' ...
+                    'como Voltios y aplica PWM_Desde_Voltaje(u) antes de Motor_Control.\n' ...
+                    'La referencia se mantiene en rad/s (lazo de velocidad).\n' ...
+                    'Ajustar u_min/u_max a rango de Voltios (ej: -12 a 12).']));
         end
         uibutton(pf,'Text','✔  Aplicar y cerrar',...
             'Position',[PW-296 BTN_Y 188 28],...
@@ -1186,7 +1249,17 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 c2.q_scale = max(1e-9, et_qs.Value);
 
                 if pp == 1 && ~isempty(pcb_ref_v)
-                    c2.ref_in_volts = pcb_ref_v.Value;
+                    c2.ref_in_volts    = pcb_ref_v.Value;
+                    c2.output_in_volts = ~isempty(pcb_out_v) && pcb_out_v.Value;
+                    % Advertencia si ambos están activos (ambiguo)
+                    if c2.ref_in_volts && c2.output_in_volts
+                        uialert(pf, ...
+                            sprintf(['No se recomienda activar "Ref en Voltios" y "Salida en [V]" al mismo tiempo.\n' ...
+                                     '"Ref en Voltios": referencia enviada en V, PSoC la convierte a PWM (ref interna en PWM).\n' ...
+                                     '"Salida en [V]":  referencia en rad/s, salida del ctrl en V (PSoC convierte u→PWM).\n' ...
+                                     'Estas dos opciones son para casos distintos. Continuando de todas formas.']), ...
+                            'Advertencia configuración', 'Icon', 'warning');
+                    end
                 end
                 S.cfg(pp) = c2;
                 if pp == 1, updateRefLimits(); end
@@ -1639,9 +1712,10 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 S.scalers.sy1 = sess.SY1;  S.scalers.sy2 = sess.SY2;
             end
             % retrocompat: campos nuevos no presentes en sesiones antiguas
-            if ~isfield(S.cfg(1),'ref_in_volts'), S.cfg(1).ref_in_volts = false; end
-            if ~isfield(S.cfg(1),'sim_in_volts'), S.cfg(1).sim_in_volts = false; end
-            if ~isfield(S.cfg(2),'sim_in_volts'), S.cfg(2).sim_in_volts = false; end
+            if ~isfield(S.cfg(1),'ref_in_volts'),    S.cfg(1).ref_in_volts    = false; end
+            if ~isfield(S.cfg(1),'output_in_volts'), S.cfg(1).output_in_volts = false; end
+            if ~isfield(S.cfg(1),'sim_in_volts'),    S.cfg(1).sim_in_volts    = false; end
+            if ~isfield(S.cfg(2),'sim_in_volts'),    S.cfg(2).sim_in_volts    = false; end
             updateRefLimits();
             for pp2 = 1:2, onModeChange(pp2);  updateCfgStatus(pp2); end
             for pp2 = 1:2, onSimToggle(pp2); end   % sync ŷ checkbox visibility
@@ -2024,7 +2098,9 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         payload(2) = mode_outer;
         NUM_TYPE_NAMES = {'f32','f64','f16','q31','q15','q7'};
         payload(3) = uint8(find(strcmp(NUM_TYPE_NAMES, ddNumType.Value), 1, 'first') - 1);
-        payload(4) = uint8(S.cfg(1).ref_in_volts);   % 0=PWM, 1=Voltios
+        % byte[3] bitmask: bit0=ref en V→PWM, bit1=salida en V→PWM
+        payload(4) = bitor(uint8(S.cfg(1).ref_in_volts), ...
+                           bitshift(uint8(S.cfg(1).output_in_volts), 1));
         payload(5:104)   = typecast(c_inner(:), 'uint8');
         payload(105:204) = typecast(c_outer(:), 'uint8');
         payload(205:208) = typecast(ref0,        'uint8');
@@ -2127,6 +2203,15 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             data.n         = S.nVec;
             data.u1        = S.u1Vec;
             data.u1_unsat  = S.u1unsat_Vec;
+            if S.cfg(1).ref_in_volts && ~S.cfg(1).output_in_volts
+                % ref_in_volts solo: u1 reportado en PWM → convertir
+                data.u1_V       = arrayfun(@pwm_to_volts_approx, S.u1Vec);
+                data.u1_unsat_V = arrayfun(@pwm_to_volts_approx, S.u1unsat_Vec);
+            elseif S.cfg(1).output_in_volts
+                % output_in_volts: u1 ya está en Voltios (salida directa del ctrl)
+                data.u1_V       = S.u1Vec;
+                data.u1_unsat_V = S.u1unsat_Vec;
+            end
             data.y1        = S.y1Vec;
             data.u2        = S.u2Vec;   % R inner
             data.y2        = S.y2Vec;
@@ -2146,6 +2231,31 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             save(fullfile(p,f),'-struct','data');
             logMsg("Exportado: " + string(f));
         catch e, logMsg("Export FAIL: " + string(e.message)); end
+    end
+
+    function onExportCsv(~,~)
+        if isempty(S.nVec), uialert(fig,'No hay datos.','Exportar CSV'); return; end
+        [f,p] = uiputfile('*.csv','Exportar datos como CSV');
+        if isequal(f,0), return; end
+        try
+            Ts = 1 / edtFs(1).Value;
+            t  = (S.nVec - S.nVec(1)) * Ts;   % tiempo [s] desde inicio
+
+            % Columnas: t, n, u1_pwm, u1_v, u1unsat_pwm, u1unsat_v, y1, u2, y2, x1i, x2i, x1o, x2o
+            u1_v       = arrayfun(@pwm_to_volts_approx, S.u1Vec);
+            u1unsat_v  = arrayfun(@pwm_to_volts_approx, S.u1unsat_Vec);
+
+            hdr = 't_s,n,u1_pwm,u1_V,u1unsat_pwm,u1unsat_V,y1_rads,u2_ref,y2_rad,x1i,x2i,x1o,x2o';
+            M   = [t(:), double(S.nVec(:)), S.u1Vec(:), u1_v(:), ...
+                   S.u1unsat_Vec(:), u1unsat_v(:), S.y1Vec(:), S.u2Vec(:), ...
+                   S.y2Vec(:), S.x1iVec(:), S.x2iVec(:), S.x1oVec(:), S.x2oVec(:)];
+
+            fid = fopen(fullfile(p,f), 'w');
+            fprintf(fid, '%s\n', hdr);
+            fclose(fid);
+            writematrix(M, fullfile(p,f), 'WriteMode','append');
+            logMsg("CSV exportado: " + string(f));
+        catch e, logMsg("Export CSV FAIL: " + string(e.message)); end
     end
 
     function onClear(~,~)
