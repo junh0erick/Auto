@@ -73,6 +73,7 @@ S.framesTotal = 0;
 
 S.rms1_sum2 = 0;  S.rms1_n = 0;   % error RMS Planta 1
 S.rms2_sum2 = 0;  S.rms2_n = 0;   % error RMS Planta 2
+S.ol_print_cnt = 0;               % contador para print Open-loop Planta 2
 
 S.autoStopEn = false;  S.autoStopN = 0;  S.autoStopArmed = false;
 S.ts_buf = zeros(50,1);   % buffer circular para promedio de Ts
@@ -370,6 +371,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         v(end+1,1) = "[" + ts + "] " + string(msg);
         if numel(v) > 400, v = v(end-399:end); end
         txtLog.Value = v;
+        try, scroll(txtLog,'bottom'); catch, end
         drawnow limitrate;
     end
 
@@ -761,7 +763,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             'ss_Ki',0,  'ss_Nbar',1,...
             'q_scale',1.0,...
             'sim_enabled',false,...
-            'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],...
+            'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],'sim_cnt',0,...
             'sim_in_volts',false,...
             'ref_in_volts',false,...
             'output_in_volts',false);
@@ -948,7 +950,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             pd_n = uieditfield(pf,'numeric','Value',c.N,'Limits',[1 1e6],...
                    'RoundFractionalValues','on','Position',[398 TOP 60 22]);
         end
-        Ts_now = 1 / max(edtFs(1).Value, 0.1);
+        % Ts del lazo correspondiente: Planta 1 → 1/Fs_inner. Planta 2 → N/Fs_inner.
+        Fs_in_ = max(edtFs(1).Value, 0.1);
+        if pp == 2
+            Ts_now = max(1, round(c.N)) / Fs_in_;
+        else
+            Ts_now = 1 / Fs_in_;
+        end
         uilabel(pf,'Text',sprintf('Ts = %.4g s', Ts_now),...
                 'Position',[PW-130 TOP 122 22],'FontColor',[0.4 0.4 0.4],...
                 'HorizontalAlignment','right');
@@ -1145,7 +1153,12 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function [Av,Bv,Cv,Dv,Tsv] = pExtractSS(v)
-            Ts_cur = 1 / max(edtFs(1).Value, 0.1);
+            Fs_in_ = max(edtFs(1).Value, 0.1);
+            if pp == 2
+                Ts_cur = max(1, round(S.cfg(2).N)) / Fs_in_;
+            else
+                Ts_cur = 1 / Fs_in_;
+            end
             if isa(v,'ss')
                 Av = v.A;  Bv = v.B;  Cv = v.C;  Dv = double(v.D(1,1));
                 Tsv = v.Ts;
@@ -1194,7 +1207,12 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                     v = ws_eval(et_tf.Value);
                     if isa(v,'zpk'), v = tf(v); end
                     if ~isa(v,'tf'), error('Expresión TF: se esperaba tf/zpk'); end
-                    Ts_cur = 1 / max(edtFs(1).Value, 0.1);
+                    Fs_in_ = max(edtFs(1).Value, 0.1);
+                    if pp == 2
+                        Ts_cur = max(1, round(S.cfg(2).N)) / Fs_in_;
+                    else
+                        Ts_cur = 1 / Fs_in_;
+                    end
                     if v.Ts == 0
                         [Ac,Bc,Cc,Dc] = ssdata(v);
                         [Ad,Bd] = c2d_zoh(Ac, Bc, Ts_cur);
@@ -1301,7 +1319,12 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         sd_type = uidropdown(sf,'Items',{'TF','SS'},'Value','TF',...
                   'Position',[46 TOP 72 22],'ValueChangedFcn',@sRefresh);
 
-        Ts_cur = 1 / max(edtFs(1).Value, 0.1);
+        Fs_in_ = max(edtFs(1).Value, 0.1);
+        if pp == 2
+            Ts_cur = max(1, round(S.cfg(2).N)) / Fs_in_;
+        else
+            Ts_cur = 1 / Fs_in_;
+        end
         uilabel(sf,'Text',sprintf('Ts = %.4g s  (desde Fs)',Ts_cur),...
                 'Position',[SW-200 TOP 192 22],'FontColor',[0.4 0.4 0.4],...
                 'HorizontalAlignment','right');
@@ -1387,7 +1410,12 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function [Ad,Bd,Cd,Dd] = sExtract(expr)
-            Ts_s = 1 / max(edtFs(1).Value, 0.1);
+            Fs_in_ = max(edtFs(1).Value, 0.1);
+            if pp == 2
+                Ts_s = max(1, round(S.cfg(2).N)) / Fs_in_;
+            else
+                Ts_s = 1 / Fs_in_;
+            end
             v = sWsEval(expr);
             if isa(v,'tf') || isa(v,'zpk')
                 v = tf(v);
@@ -1433,6 +1461,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 S.cfg(pp).sim_Ad = Ad;  S.cfg(pp).sim_Bd = Bd;
                 S.cfg(pp).sim_Cd = Cd;  S.cfg(pp).sim_Dd = double(Dd(1,1));
                 S.cfg(pp).sim_x  = zeros(ns,1);
+                S.cfg(pp).sim_cnt = 0;
                 if pp == 1
                     S.cfg(pp).sim_in_volts = cbSimInVolts.Value;
                 else
@@ -1751,11 +1780,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         S.ctrl.outer.ref = 0;
         for pp2 = 1:2
             if ~isempty(S.cfg(pp2).sim_Ad)
-                S.cfg(pp2).sim_x = zeros(size(S.cfg(pp2).sim_Ad,1),1);
+                S.cfg(pp2).sim_x   = zeros(size(S.cfg(pp2).sim_Ad,1),1);
+                S.cfg(pp2).sim_cnt = 0;
             end
         end
         S.rms1_sum2 = 0;  S.rms1_n = 0;
         S.rms2_sum2 = 0;  S.rms2_n = 0;
+        S.ol_print_cnt = 0;
         updateAxesLayout();
         S.last_vuelo_us = 0;
         try
@@ -1971,7 +2002,31 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         if c2.sim_enabled && ~isempty(c2.sim_Ad)
             u2_c = sim_cast2(u2);   % planta 2: entrada siempre en unidades de ref inner (PWM/rad/s)
             ysim2 = double(sim_cast2(c2.sim_Cd * c2.sim_x) + c2.sim_Dd * u2_c);
-            S.cfg(2).sim_x = sim_cast2(c2.sim_Ad * c2.sim_x + c2.sim_Bd * u2_c);
+            % Decimación: sim_Ad/Bd vienen discretizados a Ts_outer = N/Fs_inner.
+            % Solo avanzamos el estado cada N ticks para sincronizar con el lazo.
+            N_outer = max(1, round(c2.N));
+            S.cfg(2).sim_cnt = S.cfg(2).sim_cnt + 1;
+            if S.cfg(2).sim_cnt >= N_outer
+                S.cfg(2).sim_cnt = 0;
+                S.cfg(2).sim_x = sim_cast2(c2.sim_Ad * c2.sim_x + c2.sim_Bd * u2_c);
+            end
+        end
+
+        % ── Monitor "lazo abierto" Planta 2: motor OFF, controlador outer activo ─
+        % Condición: inner=Off (motor no se mueve) + outer=TF/SS (controlador corre).
+        % El PSoC ejecuta la TF/SS outer y manda u₂ por telemetría → lo logueamos
+        % cada 200ms para verificar que la salida del controlador tiene sentido.
+        if strcmp(S.cfg(1).mode, 'Off') && ...
+           (strcmp(S.cfg(2).mode, 'TF') || strcmp(S.cfg(2).mode, 'SS'))
+            Fs_in   = max(edtFs(1).Value, 0.1);
+            N_print = max(1, round(0.2 * Fs_in));
+            S.ol_print_cnt = S.ol_print_cnt + 1;
+            if S.ol_print_cnt >= N_print
+                S.ol_print_cnt = 0;
+                ang_deg = y2 * 180/pi;
+                logMsg(sprintf('Angulo: %.2f rad | %.2f deg | Vel ref: %.2f rad/s', ...
+                               y2, ang_deg, u2));
+            end
         end
 
         % ── Acumular error RMS ────────────────────────────────────────────────

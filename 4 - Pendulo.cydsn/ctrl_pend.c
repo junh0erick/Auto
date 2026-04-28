@@ -1091,7 +1091,12 @@ void ctrl_step(void)
         uint8 intr = CyEnterCriticalSection();
         ctrl_telem_u1    = u1;
         ctrl_telem_y1    = y1;
-        ctrl_telem_u2    = inner->ref;
+        /* u2 telem: si outer activo → su salida real (outer->u_out, que se
+           mantiene held entre fires por la decimación). Si outer Off → la
+           ref del inner que el usuario fija manualmente (cmd 'u'). Esto
+           permite ver la salida del controlador outer aunque inner=Off
+           (test de lazo abierto). */
+        ctrl_telem_u2    = (outer->mode != CTRL_MODE_OFF) ? outer->u_out : inner->ref;
         ctrl_telem_y2    = y2;
         ctrl_telem_x1i   = inner->xhat[0];
         ctrl_telem_x2i   = inner->xhat[1];
