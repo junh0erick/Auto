@@ -170,6 +170,9 @@ volatile uint8 ctrl_telem_ready = 0u;
 volatile uint8  ctrl_period_pending = 0u;
 volatile uint32 ctrl_period_ticks   = (TIMER_CLOCK_HZ / 200u) - 1u;  /* 200 Hz por defecto */
 
+/* Detección de stall — set por ctrl_step, reseteado por main tras notificar */
+volatile uint8  ctrl_stall_flag = 0u;
+
 /* Saturación configurable */
 static float    g_sat_min = PWM_MIN_F;
 static float    g_sat_max = PWM_MAX_F;
@@ -981,15 +984,17 @@ void ctrl_start(float ref_inner)
     g_lp[PLANT_INNER].ref = ref_inner;
     g_lp[PLANT_OUTER].ref = 0.0f;     /* péndulo vertical = 0 rad */
 
-    /* Reset del encoder del péndulo: el operador posiciona el péndulo
-       en la vertical antes de presionar Start → ese punto pasa a ser θ=0.
-       También resincroniza el conteo previo del motor para que el primer
-       tick no acumule el movimiento ocurrido durante el Stop. */
-    pendulo_reset_encoders();
+    /* NOTA: el reset del encoder del péndulo ya NO se hace aquí.
+       El operador debe calibrar el cero con el comando 'z' (botón
+       "Setear 0" en la GUI) cuando el péndulo esté en la vertical.
+       Solo resincronizamos el conteo previo del motor para que el primer
+       tick no acumule movimiento ocurrido durante el Stop. */
+    pendulo_resync_motor();
 
     g_y1_filt        = 0.0f;          /* arranque limpio de los filtros Åström */
     g_y2_filt        = 0.0f;
     ctrl_telem_ready = 0u;
+    ctrl_stall_flag  = 0u;            /* watchdog de stall arranca limpio */
     g_running        = 1u;
 }
 
@@ -1084,6 +1089,27 @@ void ctrl_step(void)
     else
     {
         Motor_Free();
+    }
+
+    /* --- Watchdog de stall (choque contra topes mecánicos) ---
+       Si |u1| >= STALL_PWM_THRESH y |delta_om_cnt| <= STALL_DELTA_THRESH
+       durante STALL_WINDOW_TICKS ticks consecutivos, levantamos el flag.
+       main.c detecta el flag, lo señaliza en la telemetría (bit 31 de
+       elapsed) y vuelve a COMMAND mode tras enviar el último frame. */
+    {
+        static uint32 stall_cnt = 0u;
+        int16 d_abs = (delta_om_cnt < 0) ? (int16)(-delta_om_cnt) : delta_om_cnt;
+        float u_abs = (u1 < 0.0f) ? -u1 : u1;
+        if (u_abs >= STALL_PWM_THRESH && d_abs <= STALL_DELTA_THRESH) {
+            stall_cnt++;
+            if (stall_cnt >= STALL_WINDOW_TICKS) {
+                ctrl_stall_flag = 1u;
+                stall_cnt       = 0u;
+                Motor_Free();   /* aborto inmediato del PWM, antes de que main lea el flag */
+            }
+        } else {
+            stall_cnt = 0u;
+        }
     }
 
     /* --- Snapshot telemetría (sección crítica mínima) --- */

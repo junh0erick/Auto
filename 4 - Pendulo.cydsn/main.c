@@ -121,14 +121,34 @@ int main(void)
                 frame[24]=p[0]; frame[25]=p[1]; frame[26]=p[2]; frame[27]=p[3];
                 p = (uint8*)&t_x2o;
                 frame[28]=p[0]; frame[29]=p[1]; frame[30]=p[2]; frame[31]=p[3];
-                /* elapsed ticks de ctrl_step (uint32 LE) */
-                frame[32]=(uint8)(elapsed);
-                frame[33]=(uint8)(elapsed >> 8u);
-                frame[34]=(uint8)(elapsed >> 16u);
-                frame[35]=(uint8)(elapsed >> 24u);
+                /* elapsed ticks de ctrl_step (uint32 LE).
+                   Bit 31 (0x80000000) se reusa como flag de stall: lo seteamos
+                   si ctrl_stall_flag=1 para que MATLAB sepa que el control se
+                   detuvo por choque contra los topes. elapsed real ~30000 ticks
+                   <<< 2^31 así que no hay colisión. */
+                {
+                    uint32 elapsed_with_flag = elapsed;
+                    if (ctrl_stall_flag) {
+                        elapsed_with_flag |= 0x80000000u;
+                    }
+                    frame[32]=(uint8)(elapsed_with_flag);
+                    frame[33]=(uint8)(elapsed_with_flag >> 8u);
+                    frame[34]=(uint8)(elapsed_with_flag >> 16u);
+                    frame[35]=(uint8)(elapsed_with_flag >> 24u);
+                }
 
                 /* 4. Enviar por UART */
                 UART_1_PutArray(frame, TELEM_FRAME_SZ);
+
+                /* 5. Si hubo stall, abortar control y volver a COMMAND mode.
+                   El frame ya viajó con el bit de stall → MATLAB lo detecta. */
+                if (ctrl_stall_flag) {
+                    Motor_Free();
+                    ctrl_stop();
+                    g_flag_control  = 0u;
+                    UARTP_SysMode   = UARTP_SYS_COMMAND;
+                    ctrl_stall_flag = 0u;
+                }
             }
 
             /* ── RX en STREAM gestionado por isr_2 / UARTP_Rx_ISR ── */

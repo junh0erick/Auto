@@ -220,6 +220,12 @@ void UARTP_ProcessCommand(void)
             ll_putchar((uint8)'K');
             break;
 
+        /* ---- Zero (calibrar cero del pendulo: solo encoders, no estados) ---- */
+        case (uint8)'z':
+            pendulo_reset_encoders();
+            ll_putchar((uint8)'K');
+            break;
+
         /* ---- Set Fs_inner (compatibilidad) ---- */
         case (uint8)'f':
             ll_putchar((uint8)'R');

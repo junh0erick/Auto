@@ -15,7 +15,7 @@ MAX_RETRIES = 50;       % reintentos handshake
 MOTOR_CPR   = 1040.0;   % 4 × 260 PPR (QuadDec x4)
 PENDULO_CPR = 10000.0;
 
-MODE_NAMES = {'TF','SS','Open-loop','Off'};
+MODE_NAMES = {'TF','SS','PID','Open-loop','Off'};   % PID disponible en ambas plantas
 
 %% ═══ GEOMETRÍA — editar aquí para ajustar la interfaz ═══════════════════════
 FIG_W  = 1500;  FIG_H  = 720;
@@ -270,6 +270,13 @@ uilabel(pCtrl,'Text','+offset:','Position',[PP_PX+368 yC2 50 22],...
 edtOffset = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e9 1e9],...
             'Position',[PP_PX+420 yC2 72 22],...
             'Tooltip','Offset estático sumado al esfuerzo de control.');
+btnSetZero = uibutton(pCtrl,'Text','📍 Setear 0',...
+             'Position',[PP_PX+498 yC2 82 PP_RH],...
+             'BackgroundColor',[0.85 0.65 0.15],'FontColor','w','FontWeight','bold',...
+             'Tooltip',['Calibra el cero del encoder del péndulo (envía comando ''z'').' newline ...
+                        'Posicioná el péndulo en la vertical y presioná este botón ANTES de Start.' newline ...
+                        'Ya no se reinicia automáticamente al iniciar el control.'], ...
+             'ButtonPushedFcn',@onSetZero);
 
 cbAutoStop = uicheckbox(pCtrl,'Text','Auto-stop en frames:','Value',false,...
              'Position',[PP_PX yC3 148 22],'ValueChangedFcn',@onAutoStopToggle);
@@ -488,7 +495,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         if ~exist('edtRef','var') || isempty(edtRef) || ~isvalid(edtRef), return; end
         if S.cfg(1).ref_in_volts
             edtRef.Limits = [-12 12];
-        elseif strcmp(S.cfg(1).mode,'TF') || strcmp(S.cfg(1).mode,'SS')
+        elseif strcmp(S.cfg(1).mode,'TF') || strcmp(S.cfg(1).mode,'SS') || strcmp(S.cfg(1).mode,'PID')
             edtRef.Limits = [-500 500];   % [rad/s] — supera holgado la vel. máx. del motor
         else  % Open-loop, Off
             edtRef.Limits = [-1264 1264]; % [PWM]
@@ -503,7 +510,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         if S.cfg(1).ref_in_volts
             lblRef.Text    = 'Ref [V]:';
             edtRef.Tooltip = 'Referencia en Voltios. El PSoC convierte a PWM internamente.';
-        elseif strcmp(S.cfg(1).mode, 'TF') || strcmp(S.cfg(1).mode, 'SS')
+        elseif strcmp(S.cfg(1).mode, 'TF') || strcmp(S.cfg(1).mode, 'SS') || strcmp(S.cfg(1).mode, 'PID')
             lblRef.Text    = 'Ref [rad/s]:';
             if S.cfg(1).output_in_volts
                 edtRef.Tooltip = sprintf(['Modo "Salida en [V]": referencia en rad/s.\n' ...
@@ -579,6 +586,14 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                     lblCfgStat(pp).Text = sprintf('TF  ord=%d  N=%d', c.tf_ord, c.N);
                 else
                     lblCfgStat(pp).Text = sprintf('TF  ord=%d', c.tf_ord);
+                end
+            case 'PID'
+                pid_str = sprintf('PID Kp=%.3g Ki=%.3g Kd=%.3g N=%g', ...
+                                  c.pid_Kp, c.pid_Ki, c.pid_Kd, c.pid_N);
+                if pp == 2
+                    lblCfgStat(pp).Text = sprintf('%s  N=%d', pid_str, c.N);
+                else
+                    lblCfgStat(pp).Text = pid_str;
                 end
             otherwise
                 if pp == 2
@@ -761,6 +776,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             'ss_A',eye(2),  'ss_B',zeros(2,1),  'ss_C',zeros(1,2),...
             'ss_D',0,  'ss_L',zeros(2,1),  'ss_K',zeros(1,2),...
             'ss_Ki',0,  'ss_Nbar',1,...
+            'pid_Kp',0,  'pid_Ki',0,  'pid_Kd',0,  'pid_N',10,...
             'q_scale',1.0,...
             'sim_enabled',false,...
             'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],'sim_cnt',0,...
@@ -886,6 +902,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 elseif  strcmp(c.obs,'Actual') && ~c.has_int, mv = 2;
                 elseif ~strcmp(c.obs,'Actual') &&  c.has_int, mv = 3;
                 else,                                          mv = 4; end
+            case 'PID',       mv = 0;     % PID se envía al PSoC como TF (mismo formato)
             case 'Open-loop', mv = 5;
             otherwise,        mv = 6;
         end
@@ -1069,6 +1086,46 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 'FontSize',10,'FontColor',[0.4 0.4 0.4],...
                 'Position',[EF_X+128 r5 STA_W+100 22]);
 
+        % ── PID panel ────────────────────────────────────────────────────
+        p_PID = uipanel(pf,...
+            'Title','PID  C(s) = Kp + Ki/s + Kd·s/(Td·s+1)   con  Td = Kd/(Kp·N) — discretizado Tustin',...
+            'Position',[5 BODY_Y PW-10 BODY_H]);
+
+        % Row 1 — Kp
+        uilabel(p_PID,'Text','Kp:','FontWeight','bold',...
+                'Position',[LBL_X r1 LBL_W 22]);
+        et_pKp = uieditfield(p_PID,'numeric','Value',c.pid_Kp, ...
+                  'Limits',[-1e9 1e9], 'Position',[EF_X r1 200 22]);
+
+        % Row 2 — Ki
+        uilabel(p_PID,'Text','Ki:','FontWeight','bold',...
+                'Position',[LBL_X r2 LBL_W 22]);
+        et_pKi = uieditfield(p_PID,'numeric','Value',c.pid_Ki, ...
+                  'Limits',[-1e9 1e9], 'Position',[EF_X r2 200 22], ...
+                  'Tooltip','Ganancia integral en convención continua (Ki·∫e dt). Poné 0 para PD puro.');
+
+        % Row 3 — Kd
+        uilabel(p_PID,'Text','Kd:','FontWeight','bold',...
+                'Position',[LBL_X r3 LBL_W 22]);
+        et_pKd = uieditfield(p_PID,'numeric','Value',c.pid_Kd, ...
+                  'Limits',[-1e9 1e9], 'Position',[EF_X r3 200 22]);
+
+        % Row 4 — N (filtro derivativo)
+        uilabel(p_PID,'Text','N filt deriv:','FontWeight','bold',...
+                'Position',[LBL_X r4 LBL_W 22]);
+        et_pN = uieditfield(p_PID,'numeric','Value',c.pid_N, ...
+                  'Limits',[1 1e6], 'Position',[EF_X r4 200 22], ...
+                  'Tooltip','Td = Kd/(Kp·N). Rango típico 5–20.');
+
+        % Row 5 — botones de preset + status
+        btn_loadMich = uibutton(p_PID,'Text','📥 Cargar Michigan', ...
+                'Position',[LBL_X r5 168 22], ...
+                'BackgroundColor',[0.85 0.92 1.0], ...
+                'Tooltip','Toma C_out_michigan del workspace (correr Pend_invert_michigan primero).', ...
+                'ButtonPushedFcn',@(~,~) pidLoadMichigan());
+        sl_pid = uilabel(p_PID,'Text','—','FontSize',10, ...
+                'Position',[LBL_X+180 r5 EF_W+STA_W-180 22]);
+
         % ── Bottom buttons ────────────────────────────────────────────────
         pcb_ref_v = [];  pcb_out_v = [];
         if pp == 1
@@ -1176,10 +1233,41 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function pRefresh(~,~)
-            p_TF.Visible = strcmp(c.mode,'TF');
-            p_SS.Visible = strcmp(c.mode,'SS');
-            pd_o.Enable  = strcmp(c.mode,'SS');
-            pc_i.Enable  = strcmp(c.mode,'SS');
+            p_TF.Visible  = strcmp(c.mode,'TF');
+            p_SS.Visible  = strcmp(c.mode,'SS');
+            p_PID.Visible = strcmp(c.mode,'PID');
+            pd_o.Enable   = strcmp(c.mode,'SS');
+            pc_i.Enable   = strcmp(c.mode,'SS');
+        end
+
+        function pidLoadMichigan()
+            % Toma C_out_michigan del workspace y rellena Kp/Ki/Kd/N.
+            try
+                Cm = evalin('base','C_out_michigan');
+            catch
+                setStat(sl_pid, '✗ correr Pend_invert_michigan.m primero', false);
+                return;
+            end
+            try
+                Kp_v = double(Cm.Kp);
+                Ki_v = double(Cm.Ki);
+                Kd_v = double(Cm.Kd);
+                Tf_v = double(Cm.Tf);
+                if Kp_v ~= 0 && Tf_v > 0
+                    N_v = Kd_v / (Kp_v * Tf_v);
+                else
+                    N_v = 10;
+                end
+                if N_v < 1 || ~isfinite(N_v), N_v = 10; end
+                et_pKp.Value = Kp_v;
+                et_pKi.Value = Ki_v;
+                et_pKd.Value = Kd_v;
+                et_pN.Value  = N_v;
+                setStat(sl_pid, sprintf('✓ Michigan cargado (Kp=%.3g Kd=%.3g N=%.2g)', ...
+                                         Kp_v, Kd_v, N_v), true);
+            catch e
+                setStat(sl_pid, ['✗ ' e.message], false);
+            end
         end
 
         function pSyncKiNbar()
@@ -1233,6 +1321,48 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                     c2.tf_b   = b_p;
                     c2.tf_a   = a_p;
                     c2.tf_ord = N_ord;
+
+                elseif strcmp(c2.mode, 'PID')
+                    % ── PID → TF discreta ────────────────────────────────
+                    Kp_v = double(et_pKp.Value);
+                    Ki_v = double(et_pKi.Value);
+                    Kd_v = double(et_pKd.Value);
+                    N_v  = double(et_pN.Value);
+                    if N_v < 1, N_v = 10; end
+
+                    Fs_in_ = max(edtFs(1).Value, 0.1);
+                    if pp == 2
+                        Ts_cur = max(1, round(c2.N)) / Fs_in_;
+                    else
+                        Ts_cur = 1 / Fs_in_;
+                    end
+
+                    % C(s) = Kp + Ki/s + Kd*s/(Td*s+1)  con  Td = Kd/(Kp*N)
+                    if Kp_v ~= 0 && Kd_v ~= 0
+                        Tf_v = Kd_v / (Kp_v * N_v);
+                    else
+                        Tf_v = 0;   % sin filtro derivativo si no hay D
+                    end
+                    Cc = pid(Kp_v, Ki_v, Kd_v, Tf_v);
+                    Cz = c2d(Cc, Ts_cur, 'tustin');
+                    v  = tf(Cz);
+
+                    [num_v, den_v] = tfdata(v,'v');
+                    d0 = den_v(1);
+                    num_v = num_v / d0;
+                    den_v = den_v / d0;
+                    N_ord = length(den_v) - 1;
+                    if N_ord > 5, error('Orden %d > 5 (máx PSoC)', N_ord); end
+                    M_ord = length(num_v) - 1;
+                    shift = N_ord - M_ord;
+                    b_p = zeros(6,1);  a_p = zeros(6,1);
+                    b_p(shift+1 : shift+length(num_v)) = num_v(:);
+                    a_p(1:length(den_v))               = den_v(:);
+                    c2.tf_b   = b_p;
+                    c2.tf_a   = a_p;
+                    c2.tf_ord = N_ord;
+                    c2.pid_Kp = Kp_v;  c2.pid_Ki = Ki_v;
+                    c2.pid_Kd = Kd_v;  c2.pid_N  = N_v;
 
                 elseif strcmp(c2.mode, 'SS')
                     % ── Extraer SS ───────────────────────────────────────
@@ -1619,6 +1749,14 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         if rsp ~= uint8('K'), error("start: rsp=%c",char(rsp)); end
     end
 
+    function uartp_zero()
+        % Envía 'z' al PSoC: resetea solo el encoder del péndulo (QuadDec_2),
+        % sin tocar los estados del controlador. Para usar con el péndulo
+        % posicionado en la vertical antes de iniciar el control.
+        ll_flush();  rsp = ll_cmd_wait('z');
+        if rsp ~= uint8('K'), error("zero: rsp=%c",char(rsp)); end
+    end
+
     function uartp_stop()
         if isempty(S.sp), return; end
         try, write(S.sp, uint8('s'), "uint8"); catch, return; end
@@ -1848,6 +1986,22 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         S.autoStopN  = edtAutoN.Value;
     end
 
+    function onSetZero(~,~)
+        % Calibra el cero del encoder del péndulo. El operador posiciona el
+        % péndulo en la vertical y presiona este botón → comando 'z' al PSoC.
+        if ~reqConn(), return; end
+        if S.inLoop
+            logMsg("⚠ Detener el control antes de calibrar el cero.");
+            return;
+        end
+        try
+            uartp_zero();
+            logMsg("📍 Cero del péndulo calibrado (encoder QuadDec_2 → 0).");
+        catch e
+            logMsg("Setear 0 FAIL: " + string(e.message));
+        end
+    end
+
 %% ═══ LOOP DE RECEPCIÓN (v6 — PSoC controla, MATLAB recibe) ══════════════════
 
     function runStreamLoop()
@@ -1967,8 +2121,22 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         x2i    = double(typecast(uint8(frame(21:24)), 'single'));
         x1o    = double(typecast(uint8(frame(25:28)), 'single'));
         x2o    = double(typecast(uint8(frame(29:32)), 'single'));
-        elapsed_ticks = double(typecast(uint8(frame(33:36)), 'uint32'));
+        elapsed_raw = typecast(uint8(frame(33:36)), 'uint32');
+        % Bit 31 de elapsed = flag de stall (choque contra topes detectado por
+        % el firmware). Lo extraemos y limpiamos antes de calcular el tiempo.
+        stall_bit     = bitand(elapsed_raw, uint32(2147483648)) ~= 0;   % 2^31
+        elapsed_ticks = double(bitand(elapsed_raw, uint32(2147483647))); % 2^31 - 1
         S.last_vuelo_us = elapsed_ticks / 24.0;   % µs
+
+        if stall_bit
+            % El PSoC detectó stall (carro contra los topes mecánicos):
+            % aplicó esfuerzo significativo durante la ventana sin movimiento
+            % del motor. Ya volvió a COMMAND mode → solo paramos el stream
+            % de MATLAB y logueamos para que el operador lo vea.
+            logMsg("⛔ STALL detectado: el motor no respondió al esfuerzo (choque). Control detenido.");
+            S.streamOn = false;
+            lblRunSt.Text = '⛔ STALL';  lblRunSt.FontColor = [0.78 0.10 0.10];
+        end
 
         % Saturar u1 con los límites configurados (PSoC ya lo hace, aquí para display)
         u1_sat   = max(S.ctrl.sat_min, min(S.ctrl.sat_max, u1_raw));
@@ -2017,7 +2185,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         % El PSoC ejecuta la TF/SS outer y manda u₂ por telemetría → lo logueamos
         % cada 200ms para verificar que la salida del controlador tiene sentido.
         if strcmp(S.cfg(1).mode, 'Off') && ...
-           (strcmp(S.cfg(2).mode, 'TF') || strcmp(S.cfg(2).mode, 'SS'))
+           (strcmp(S.cfg(2).mode, 'TF') || strcmp(S.cfg(2).mode, 'SS') || strcmp(S.cfg(2).mode, 'PID'))
             Fs_in   = max(edtFs(1).Value, 0.1);
             N_print = max(1, round(0.2 * Fs_in));
             S.ol_print_cnt = S.ol_print_cnt + 1;

@@ -49,6 +49,17 @@
 #define CTRL_COEF_COUNT  25u
 #define CTRL_COEF_BYTES  100u   /* 25 * sizeof(float) */
 
+/* ---- Detección de stall (choque contra topes mecánicos) ----
+   Si |u_pwm| >= STALL_PWM_THRESH durante STALL_WINDOW_TICKS ticks
+   consecutivos pero |delta_om_cnt| <= STALL_DELTA_THRESH (motor no
+   se mueve), levantamos ctrl_stall_flag y forzamos stop del control.
+   Ajustar thresholds desde aquí (no requiere cambio en MATLAB). */
+#define STALL_PWM_THRESH    800.0f   /* esfuerzo "alto" — ~63% de PWM_MAX */
+#define STALL_DELTA_THRESH  2        /* movimiento "nulo" — cuentas de encoder/Ts */
+#define STALL_WINDOW_TICKS  20u     /* ventana — 100 ticks × 5 ms = 500 ms */
+
+extern volatile uint8 ctrl_stall_flag;  /* 1 = stall detectado, main lo resetea tras notificar */
+
 /* ---- Telemetría (escritas en ctrl_step, leídas en main) ---- */
 extern volatile float ctrl_telem_u1;
 extern volatile float ctrl_telem_y1;

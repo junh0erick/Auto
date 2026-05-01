@@ -55,8 +55,12 @@ void pendulo_read(int32 *theta_counts, int16 *delta_omega_counts);
 
 /* Resetea el encoder del péndulo (QuadDec_2) a 0 y resincroniza el
    conteo previo del motor (QuadDec_1) para evitar un delta espurio en
-   el primer tick. Llamar en ctrl_start tras posicionar el péndulo. */
+   el primer tick. Invocar via comando 'z' (botón "Setear 0" en GUI). */
 void pendulo_reset_encoders(void);
+
+/* Solo resincroniza el conteo previo del motor (sin tocar el encoder
+   del péndulo). Llamado por ctrl_start para arrancar limpio. */
+void pendulo_resync_motor(void);
 
 /* Reconfigura el periodo del Timer_1 para la frecuencia indicada. */
 void pendulo_timer_set_fs(float fs_inner_hz);

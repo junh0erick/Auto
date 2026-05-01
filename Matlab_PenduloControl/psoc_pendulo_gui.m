@@ -243,6 +243,9 @@ lblAutoSave = uilabel(pSess,'Text','Auto-save: —',   'Position',[272 10 180 26
 txtLog = uitextarea(fig,'Editable','off','Position',[RX 5 RW 72],'FontSize',9);
 txtLog.Value = strings(0,1);
 
+% Estado inicial: sin controladores cargados → Iniciar/Enviar Ts deshabilitados
+updateTsDisplay();
+
 %% ── Helpers UI ───────────────────────────────────────────────────────────────
     function logMsg(msg)
         ts   = string(datestr(now,'HH:MM:SS.FFF'));
@@ -312,29 +315,45 @@ txtLog.Value = strings(0,1);
     end
 
     % ── Ts validation ─────────────────────────────────────────────────────────
+    function setTsValid(ok)
+        if ok
+            btnStart.Enable  = 'on';
+            btnSendTs.Enable = 'on';
+        else
+            btnStart.Enable  = 'off';
+            btnSendTs.Enable = 'off';
+        end
+    end
+
     function updateTsDisplay()
+        % Invalidar por defecto — sólo se setea en las ramas de éxito
+        S.Ts_inner = 0; S.Ts_outer = 0; S.N = 0;
+
         if isempty(S.ctrl_inner)
             lblTsInf.Text = 'Ts_inner: —    Ts_outer: —    N: —';
-            lblTsVal.Text = ''; return;
+            lblTsVal.Text = ''; setTsValid(false); return;
         end
         ti = S.ctrl_inner.Ts;
         if ti <= 0
             lblTsInf.Text = 'Ts_inner inválido';
-            lblTsVal.Text = '✗'; lblTsVal.FontColor = [0.8 0 0]; return;
+            lblTsVal.Text = '✗'; lblTsVal.FontColor = [0.8 0 0];
+            setTsValid(false); return;
         end
         if S.innerOnly
             S.Ts_inner = ti; S.Ts_outer = ti; S.N = 1;
             lblTsInf.Text = sprintf('Ts_inner: %.1f ms    [solo lazo interno]', ti*1000);
-            lblTsVal.Text = '✓  OK'; lblTsVal.FontColor = [0 0.55 0]; return;
+            lblTsVal.Text = '✓  OK'; lblTsVal.FontColor = [0 0.55 0];
+            setTsValid(true); return;
         end
         if isempty(S.ctrl_outer)
             lblTsInf.Text = sprintf('Ts_inner: %.1f ms    Ts_outer: —    N: —', ti*1000);
-            lblTsVal.Text = ''; return;
+            lblTsVal.Text = ''; setTsValid(false); return;
         end
         to  = S.ctrl_outer.Ts;
         if to <= 0
             lblTsInf.Text = 'Ts_outer inválido';
-            lblTsVal.Text = '✗'; lblTsVal.FontColor = [0.8 0 0]; return;
+            lblTsVal.Text = '✗'; lblTsVal.FontColor = [0.8 0 0];
+            setTsValid(false); return;
         end
         N_f = to / ti;
         N_i = round(N_f);
@@ -344,9 +363,11 @@ txtLog.Value = strings(0,1);
         if err < 0.005 && N_i >= 1
             S.Ts_inner = ti; S.Ts_outer = to; S.N = N_i;
             lblTsVal.Text = '✓  OK'; lblTsVal.FontColor = [0 0.55 0];
+            setTsValid(true);
         else
             lblTsVal.Text = sprintf('✗  N=%.2f (no entero)', N_f);
             lblTsVal.FontColor = [0.8 0 0];
+            setTsValid(false);
         end
     end
 

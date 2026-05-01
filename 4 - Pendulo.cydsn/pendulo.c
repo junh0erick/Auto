@@ -71,6 +71,17 @@ void pendulo_reset_encoders(void)
 }
 
 /* ============================================================
+   pendulo_resync_motor()
+   Solo resincroniza el conteo previo del motor (sin tocar el
+   encoder del péndulo). Usado al iniciar el control para que el
+   primer tick no devuelva un delta espurio acumulado durante stop.
+   ============================================================ */
+void pendulo_resync_motor(void)
+{
+    g_prev_motor_count = (int32)QuadDec_1_GetCounter();
+}
+
+/* ============================================================
    pendulo_read()
    Lee ambos encoders y calcula el delta de velocidad del motor.
    Llamar UNA vez por tick de control.
