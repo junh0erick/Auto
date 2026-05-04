@@ -984,11 +984,11 @@ void ctrl_start(float ref_inner)
     g_lp[PLANT_INNER].ref = ref_inner;
     g_lp[PLANT_OUTER].ref = 0.0f;     /* péndulo vertical = 0 rad */
 
-    /* NOTA: el reset del encoder del péndulo ya NO se hace aquí.
-       El operador debe calibrar el cero con el comando 'z' (botón
-       "Setear 0" en la GUI) cuando el péndulo esté en la vertical.
-       Solo resincronizamos el conteo previo del motor para que el primer
-       tick no acumule movimiento ocurrido durante el Stop. */
+    /* NOTA: la calibración del péndulo NO se hace aquí. El operador deja
+       el péndulo colgando libremente y manda 'z' (botón "Calibrar reposo"
+       en la GUI) ANTES de levantarlo a la vertical y presionar Start.
+       Acá solo resincronizamos el conteo previo del motor para que el
+       primer tick no acumule movimiento ocurrido durante el Stop. */
     pendulo_resync_motor();
 
     g_y1_filt        = 0.0f;          /* arranque limpio de los filtros Åström */
@@ -1092,15 +1092,23 @@ void ctrl_step(void)
     }
 
     /* --- Watchdog de stall (choque contra topes mecánicos) ---
-       Si |u1| >= STALL_PWM_THRESH y |delta_om_cnt| <= STALL_DELTA_THRESH
-       durante STALL_WINDOW_TICKS ticks consecutivos, levantamos el flag.
-       main.c detecta el flag, lo señaliza en la telemetría (bit 31 de
-       elapsed) y vuelve a COMMAND mode tras enviar el último frame. */
+       Tres condiciones simultáneas durante STALL_WINDOW_TICKS ticks:
+         (1) |u1|           >= STALL_PWM_THRESH    (esfuerzo alto)
+         (2) |delta_om_cnt| <= STALL_DELTA_THRESH  (motor quieto)
+         (3) |y2_raw|       >= STALL_THETA_THRESH  (péndulo caído ~45°)
+       (3) evita falsos positivos cuando el sistema está balanceado y
+       centrado: ahí el motor puede quedar momentáneamente quieto con
+       algo de esfuerzo, pero el péndulo está cerca de la vertical y NO
+       es un choque. main.c detecta el flag y lo señaliza por telemetría
+       (bit 31 de elapsed) volviendo a COMMAND mode. */
     {
         static uint32 stall_cnt = 0u;
-        int16 d_abs = (delta_om_cnt < 0) ? (int16)(-delta_om_cnt) : delta_om_cnt;
-        float u_abs = (u1 < 0.0f) ? -u1 : u1;
-        if (u_abs >= STALL_PWM_THRESH && d_abs <= STALL_DELTA_THRESH) {
+        int16 d_abs    = (delta_om_cnt < 0) ? (int16)(-delta_om_cnt) : delta_om_cnt;
+        float u_abs    = (u1     < 0.0f) ? -u1     : u1;
+        float th_abs   = (y2_raw < 0.0f) ? -y2_raw : y2_raw;
+        if (u_abs  >= STALL_PWM_THRESH &&
+            d_abs  <= STALL_DELTA_THRESH &&
+            th_abs >= STALL_THETA_THRESH) {
             stall_cnt++;
             if (stall_cnt >= STALL_WINDOW_TICKS) {
                 ctrl_stall_flag = 1u;

@@ -220,9 +220,12 @@ void UARTP_ProcessCommand(void)
             ll_putchar((uint8)'K');
             break;
 
-        /* ---- Zero (calibrar cero del pendulo: solo encoders, no estados) ---- */
+        /* ---- Calibrar reposo (180°): el operador deja el péndulo colgando
+                libremente y manda 'z'. El firmware almacena el conteo de
+                QuadDec_2 como referencia de π; pendulo_read calcula θ=0 al
+                rotar ±media vuelta desde ese punto (cualquier dirección). */
         case (uint8)'z':
-            pendulo_reset_encoders();
+            pendulo_calibrate_rest();
             ll_putchar((uint8)'K');
             break;
 

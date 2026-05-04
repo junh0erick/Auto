@@ -53,10 +53,13 @@ void pendulo_init(void);
    delta_omega_counts: delta QuadDec_1 (motor, int16, cuentas/Ts_inner) */
 void pendulo_read(int32 *theta_counts, int16 *delta_omega_counts);
 
-/* Resetea el encoder del péndulo (QuadDec_2) a 0 y resincroniza el
-   conteo previo del motor (QuadDec_1) para evitar un delta espurio en
-   el primer tick. Invocar via comando 'z' (botón "Setear 0" en GUI). */
-void pendulo_reset_encoders(void);
+/* Marca la posición ACTUAL del péndulo como reposo (180° = π). El operador
+   deja el péndulo colgando libremente y presiona "Calibrar reposo" (envía
+   'z'); internamente se almacena el conteo actual de QuadDec_2 como
+   referencia y se resincroniza g_prev_motor_count.
+   pendulo_read() devuelve θ=0 cuando el péndulo está en la vertical
+   (rotado ±π desde el reposo, en cualquier dirección — wrap interno). */
+void pendulo_calibrate_rest(void);
 
 /* Solo resincroniza el conteo previo del motor (sin tocar el encoder
    del péndulo). Llamado por ctrl_start para arrancar limpio. */

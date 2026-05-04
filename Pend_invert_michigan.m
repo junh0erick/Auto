@@ -119,17 +119,23 @@ Ts = 4e-3;        % 5 ms -> 200 Hz (igual que tu cascada actual)
 % Forma estandar del PID:  C(s) = Kp*(1 + 1/(Ti*s) + Td*s/(Td/N*s + 1))
 % Convencion de los alumnos (Armstrong, salida en VOLTIOS): Kp=120, Ti=0.06, Td=0.055.
 
+% Parametros base (en VOLTIOS, como Armstrong)
+Kp_volt = 150;        % [V/rad]
+Ti      = 0.04*150/120;       % [s]
+Td      = 0.09*120/150;      % [s]
+N_filt  = 10;         % filtro derivativo
+
 % % Parametros base (en VOLTIOS, como Armstrong)
-% Kp_volt = 150;        % [V/rad]
-% Ti      = 0.04*150/120;       % [s]
-% Td      = 0.09*120/150;      % [s]
+% Kp_volt = 170;        % [V/rad]
+% Ti      = 0.0275*170/120;       % [s]
+% Td      = 0.09*120/170;      % [s]
 % N_filt  = 10;         % filtro derivativo
 
-% Parametros base (en VOLTIOS, como Armstrong)
-Kp_volt = 170;        % [V/rad]
-Ti      = 0.0275*170/120;       % [s]
-Td      = 0.09*120/170;      % [s]
-N_filt  = 10;         % filtro derivativo
+% % Parametros base (en VOLTIOS, como Armstrong)
+% Kp_volt = 170;        % [V/rad]
+% Ti      = 0.0389583;       % [s]
+% Td      = 0.0635294;      % [s]
+% N_filt  = 10;         % filtro derivativo
 
 % % % % % % % tf(2,1,0.0025)
 

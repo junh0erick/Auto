@@ -1,4 +1,4 @@
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 1
 
 
    1              		.syntax unified
@@ -58,7 +58,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
   29:uartp_pend.c  **** static uint8 s_rx_state   = RX_IDLE;
   30:uartp_pend.c  **** static uint8 s_rx_ubuf[4];
   31:uartp_pend.c  **** static uint8 s_rx_ucnt    = 0u;
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 2
 
 
   32:uartp_pend.c  **** 
@@ -118,7 +118,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
   55              	.LVL5:
   56              	.L2:
   54:uartp_pend.c  ****     while (UART_1_GetRxBufferSize() == 0u)
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 3
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 3
 
 
   57              		.loc 1 54 0
@@ -178,7 +178,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
   61:uartp_pend.c  **** 
   62:uartp_pend.c  **** /* Recibe una word de 4 bytes con eco-confirmación (para comando 'f'). */
   63:uartp_pend.c  **** static uint8 ll_recv_word4(uint8 *out4)
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 4
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 4
 
 
   64:uartp_pend.c  **** {
@@ -238,7 +238,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  148 002a E4B2     		uxtb	r4, r4
  149              	.LVL19:
  150              	.L11:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 5
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 5
 
 
   71:uartp_pend.c  ****         for (i = 0u; i < 4u; i++) {
@@ -298,7 +298,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  196 0074 0120     		movs	r0, #1
  197 0076 08E0     		b	.L10
  198              	.LVL27:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 6
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 6
 
 
  199              	.L15:
@@ -358,7 +358,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
   93:uartp_pend.c  **** static void handle_cmd_p(void)
   94:uartp_pend.c  **** {
  239              		.loc 1 94 0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 7
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 7
 
 
  240              		.cfi_startproc
@@ -418,7 +418,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  277              		.loc 1 111 0 is_stmt 1
  278 0026 44EA0025 		orr	r5, r4, r0, lsl #8
  279 002a ADB2     		uxth	r5, r5
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 8
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 8
 
 
  280              	.LVL41:
@@ -478,7 +478,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  323              		.loc 1 122 0 discriminator 3
  324 005e 4540     		eors	r5, r5, r0
  325              	.LVL53:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 9
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 9
 
 
  120:uartp_pend.c  ****         s_p_buf[i] = ll_wait_byte(WORD_TIMEOUT_MS);
@@ -538,7 +538,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  364              		.loc 1 136 0
  365 0088 EB78     		ldrb	r3, [r5, #3]	@ zero_extendqisi2
  366 008a 85F8D830 		strb	r3, [r5, #216]
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 10
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 10
 
 
  137:uartp_pend.c  **** 
@@ -598,7 +598,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  408              		.loc 1 147 0 is_stmt 1
  409 00d0 1922     		movs	r2, #25
  410 00d2 6946     		mov	r1, sp
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 11
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 11
 
 
  411 00d4 0020     		movs	r0, #0
@@ -658,7 +658,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  454 0122 182B     		cmp	r3, #24
  455 0124 DFD9     		bls	.L33
  157:uartp_pend.c  ****     }
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 12
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 12
 
 
  158:uartp_pend.c  ****     ctrl_apply_coeffs(PLANT_OUTER, coeffs, CTRL_COEF_COUNT);
@@ -718,7 +718,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  170:uartp_pend.c  ****     sat_max = tmp_f;
  171:uartp_pend.c  **** 
  172:uartp_pend.c  ****     /* --- Aplicar saturación y guardar ref para ctrl_start() --- */
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 13
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 13
 
 
  173:uartp_pend.c  ****     ctrl_set_sat(sat_min, sat_max);
@@ -778,7 +778,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  543              		.thumb_func
  544              		.type	UARTP_Rx_ISR, %function
  545              	UARTP_Rx_ISR:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 14
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 14
 
 
  546              	.LFB69:
@@ -824,116 +824,119 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  220:uartp_pend.c  ****             ll_putchar((uint8)'K');
  221:uartp_pend.c  ****             break;
  222:uartp_pend.c  **** 
- 223:uartp_pend.c  ****         /* ---- Zero (calibrar cero del pendulo: solo encoders, no estados) ---- */
- 224:uartp_pend.c  ****         case (uint8)'z':
- 225:uartp_pend.c  ****             pendulo_reset_encoders();
- 226:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 227:uartp_pend.c  ****             break;
- 228:uartp_pend.c  **** 
- 229:uartp_pend.c  ****         /* ---- Set Fs_inner (compatibilidad) ---- */
- 230:uartp_pend.c  ****         case (uint8)'f':
- 231:uartp_pend.c  ****             ll_putchar((uint8)'R');
- 232:uartp_pend.c  ****             if (ll_recv_word4(payload))
- 233:uartp_pend.c  ****             {
- 234:uartp_pend.c  ****                 pf    = (uint8*)&fs_hz;
- 235:uartp_pend.c  ****                 pf[0] = payload[0]; pf[1] = payload[1];
- 236:uartp_pend.c  ****                 pf[2] = payload[2]; pf[3] = payload[3];
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 15
+ 223:uartp_pend.c  ****         /* ---- Calibrar reposo (180°): el operador deja el péndulo colgando
+ 224:uartp_pend.c  ****                 libremente y manda 'z'. El firmware almacena el conteo de
+ 225:uartp_pend.c  ****                 QuadDec_2 como referencia de π; pendulo_read calcula θ=0 al
+ 226:uartp_pend.c  ****                 rotar ±media vuelta desde ese punto (cualquier dirección). */
+ 227:uartp_pend.c  ****         case (uint8)'z':
+ 228:uartp_pend.c  ****             pendulo_calibrate_rest();
+ 229:uartp_pend.c  ****             ll_putchar((uint8)'K');
+ 230:uartp_pend.c  ****             break;
+ 231:uartp_pend.c  **** 
+ 232:uartp_pend.c  ****         /* ---- Set Fs_inner (compatibilidad) ---- */
+ 233:uartp_pend.c  ****         case (uint8)'f':
+ 234:uartp_pend.c  ****             ll_putchar((uint8)'R');
+ 235:uartp_pend.c  ****             if (ll_recv_word4(payload))
+ 236:uartp_pend.c  ****             {
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 15
 
 
- 237:uartp_pend.c  ****                 /* Actualizar timer directamente */
- 238:uartp_pend.c  ****                 if (fs_hz > 0.5f && fs_hz <= 10000.0f) {
- 239:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
- 240:uartp_pend.c  ****                     Timer_1_Stop();
- 241:uartp_pend.c  ****                     Timer_1_WritePeriod(period);
- 242:uartp_pend.c  ****                     Timer_1_Start();
- 243:uartp_pend.c  ****                 }
- 244:uartp_pend.c  ****                 ll_putchar((uint8)'K');
- 245:uartp_pend.c  ****             }
- 246:uartp_pend.c  ****             else
- 247:uartp_pend.c  ****             {
- 248:uartp_pend.c  ****                 ll_putchar((uint8)'!');
- 249:uartp_pend.c  ****             }
- 250:uartp_pend.c  ****             break;
- 251:uartp_pend.c  **** 
- 252:uartp_pend.c  ****         /* ---- Set params (NUEVO v6) ---- */
- 253:uartp_pend.c  ****         case (uint8)'p':
- 254:uartp_pend.c  ****             handle_cmd_p();
- 255:uartp_pend.c  ****             break;
- 256:uartp_pend.c  **** 
- 257:uartp_pend.c  ****         /* ---- Verificar params almacenados (eco de s_p_buf) ---- */
- 258:uartp_pend.c  ****         /* MATLAB envía 'v' tras 'p' para confirmar que el PSoC almacenó         */
- 259:uartp_pend.c  ****         /* exactamente lo que se envió. PSoC responde: [216 bytes] + [xsum XOR]. */
- 260:uartp_pend.c  ****         case (uint8)'v':
- 261:uartp_pend.c  ****         {
- 262:uartp_pend.c  ****             uint16 vi;
- 263:uartp_pend.c  ****             uint8  vxs = 0u;
- 264:uartp_pend.c  ****             for (vi = 0u; vi < P_PAYLOAD_SZ; vi++) {
- 265:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
- 266:uartp_pend.c  ****                 vxs ^= s_p_buf[vi];
- 267:uartp_pend.c  ****             }
- 268:uartp_pend.c  ****             ll_putchar(vxs);   /* checksum del payload almacenado */
- 269:uartp_pend.c  ****             break;
- 270:uartp_pend.c  ****         }
- 271:uartp_pend.c  **** 
- 272:uartp_pend.c  ****         /* ---- Iniciar STREAM (control en PSoC) ---- */
- 273:uartp_pend.c  ****         case (uint8)'i':
- 274:uartp_pend.c  ****             Motor_Free();
- 275:uartp_pend.c  ****             g_flag_control = 0u;
- 276:uartp_pend.c  ****             s_rx_state     = RX_IDLE;
- 277:uartp_pend.c  ****             s_rx_ucnt      = 0u;
- 278:uartp_pend.c  ****             ctrl_start(UARTP_PendingRef);
- 279:uartp_pend.c  ****             UARTP_SysMode  = UARTP_SYS_CONTROL;
- 280:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 281:uartp_pend.c  ****             break;
- 282:uartp_pend.c  **** 
- 283:uartp_pend.c  ****         /* ---- Stop ---- */
- 284:uartp_pend.c  ****         case (uint8)'s':
- 285:uartp_pend.c  ****             Motor_Free();
- 286:uartp_pend.c  ****             ctrl_stop();
- 287:uartp_pend.c  ****             UARTP_SysMode = UARTP_SYS_COMMAND;
- 288:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 289:uartp_pend.c  ****             break;
- 290:uartp_pend.c  **** 
- 291:uartp_pend.c  ****         default:
+ 237:uartp_pend.c  ****                 pf    = (uint8*)&fs_hz;
+ 238:uartp_pend.c  ****                 pf[0] = payload[0]; pf[1] = payload[1];
+ 239:uartp_pend.c  ****                 pf[2] = payload[2]; pf[3] = payload[3];
+ 240:uartp_pend.c  ****                 /* Actualizar timer directamente */
+ 241:uartp_pend.c  ****                 if (fs_hz > 0.5f && fs_hz <= 10000.0f) {
+ 242:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
+ 243:uartp_pend.c  ****                     Timer_1_Stop();
+ 244:uartp_pend.c  ****                     Timer_1_WritePeriod(period);
+ 245:uartp_pend.c  ****                     Timer_1_Start();
+ 246:uartp_pend.c  ****                 }
+ 247:uartp_pend.c  ****                 ll_putchar((uint8)'K');
+ 248:uartp_pend.c  ****             }
+ 249:uartp_pend.c  ****             else
+ 250:uartp_pend.c  ****             {
+ 251:uartp_pend.c  ****                 ll_putchar((uint8)'!');
+ 252:uartp_pend.c  ****             }
+ 253:uartp_pend.c  ****             break;
+ 254:uartp_pend.c  **** 
+ 255:uartp_pend.c  ****         /* ---- Set params (NUEVO v6) ---- */
+ 256:uartp_pend.c  ****         case (uint8)'p':
+ 257:uartp_pend.c  ****             handle_cmd_p();
+ 258:uartp_pend.c  ****             break;
+ 259:uartp_pend.c  **** 
+ 260:uartp_pend.c  ****         /* ---- Verificar params almacenados (eco de s_p_buf) ---- */
+ 261:uartp_pend.c  ****         /* MATLAB envía 'v' tras 'p' para confirmar que el PSoC almacenó         */
+ 262:uartp_pend.c  ****         /* exactamente lo que se envió. PSoC responde: [216 bytes] + [xsum XOR]. */
+ 263:uartp_pend.c  ****         case (uint8)'v':
+ 264:uartp_pend.c  ****         {
+ 265:uartp_pend.c  ****             uint16 vi;
+ 266:uartp_pend.c  ****             uint8  vxs = 0u;
+ 267:uartp_pend.c  ****             for (vi = 0u; vi < P_PAYLOAD_SZ; vi++) {
+ 268:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
+ 269:uartp_pend.c  ****                 vxs ^= s_p_buf[vi];
+ 270:uartp_pend.c  ****             }
+ 271:uartp_pend.c  ****             ll_putchar(vxs);   /* checksum del payload almacenado */
+ 272:uartp_pend.c  ****             break;
+ 273:uartp_pend.c  ****         }
+ 274:uartp_pend.c  **** 
+ 275:uartp_pend.c  ****         /* ---- Iniciar STREAM (control en PSoC) ---- */
+ 276:uartp_pend.c  ****         case (uint8)'i':
+ 277:uartp_pend.c  ****             Motor_Free();
+ 278:uartp_pend.c  ****             g_flag_control = 0u;
+ 279:uartp_pend.c  ****             s_rx_state     = RX_IDLE;
+ 280:uartp_pend.c  ****             s_rx_ucnt      = 0u;
+ 281:uartp_pend.c  ****             ctrl_start(UARTP_PendingRef);
+ 282:uartp_pend.c  ****             UARTP_SysMode  = UARTP_SYS_CONTROL;
+ 283:uartp_pend.c  ****             ll_putchar((uint8)'K');
+ 284:uartp_pend.c  ****             break;
+ 285:uartp_pend.c  **** 
+ 286:uartp_pend.c  ****         /* ---- Stop ---- */
+ 287:uartp_pend.c  ****         case (uint8)'s':
+ 288:uartp_pend.c  ****             Motor_Free();
+ 289:uartp_pend.c  ****             ctrl_stop();
+ 290:uartp_pend.c  ****             UARTP_SysMode = UARTP_SYS_COMMAND;
+ 291:uartp_pend.c  ****             ll_putchar((uint8)'K');
  292:uartp_pend.c  ****             break;
- 293:uartp_pend.c  ****     }
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 16
+ 293:uartp_pend.c  **** 
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 16
 
 
- 294:uartp_pend.c  **** }
- 295:uartp_pend.c  **** 
- 296:uartp_pend.c  **** /* ============================================================
- 297:uartp_pend.c  ****    UARTP_Rx_ISR()
- 298:uartp_pend.c  ****    ISR conectado a isr_2 → UART_1 rx_interrupt.
- 299:uartp_pend.c  ****    Se ejecuta inmediatamente al llegar cada byte en STREAM mode.
- 300:uartp_pend.c  ****    En COMMAND mode: no consume bytes (los deja en el buffer de UART_1
- 301:uartp_pend.c  ****    para que UARTP_ProcessCommand los procese).
- 302:uartp_pend.c  **** 
- 303:uartp_pend.c  ****    Protocolo STREAM:
- 304:uartp_pend.c  ****      's'            → stop inmediato + 'K' + vuelve a COMMAND
- 305:uartp_pend.c  ****      'u' + [4B f32] → actualizar ref_inner live (sin respuesta)
- 306:uartp_pend.c  ****    ============================================================ */
- 307:uartp_pend.c  **** CY_ISR(UARTP_Rx_ISR)
- 308:uartp_pend.c  **** {
- 547              		.loc 1 308 0
+ 294:uartp_pend.c  ****         default:
+ 295:uartp_pend.c  ****             break;
+ 296:uartp_pend.c  ****     }
+ 297:uartp_pend.c  **** }
+ 298:uartp_pend.c  **** 
+ 299:uartp_pend.c  **** /* ============================================================
+ 300:uartp_pend.c  ****    UARTP_Rx_ISR()
+ 301:uartp_pend.c  ****    ISR conectado a isr_2 → UART_1 rx_interrupt.
+ 302:uartp_pend.c  ****    Se ejecuta inmediatamente al llegar cada byte en STREAM mode.
+ 303:uartp_pend.c  ****    En COMMAND mode: no consume bytes (los deja en el buffer de UART_1
+ 304:uartp_pend.c  ****    para que UARTP_ProcessCommand los procese).
+ 305:uartp_pend.c  **** 
+ 306:uartp_pend.c  ****    Protocolo STREAM:
+ 307:uartp_pend.c  ****      's'            → stop inmediato + 'K' + vuelve a COMMAND
+ 308:uartp_pend.c  ****      'u' + [4B f32] → actualizar ref_inner live (sin respuesta)
+ 309:uartp_pend.c  ****    ============================================================ */
+ 310:uartp_pend.c  **** CY_ISR(UARTP_Rx_ISR)
+ 311:uartp_pend.c  **** {
+ 547              		.loc 1 311 0
  548              		.cfi_startproc
  549              		@ args = 0, pretend = 0, frame = 8
  550              		@ frame_needed = 0, uses_anonymous_args = 0
  551              	.LVL84:
- 309:uartp_pend.c  ****     uint8  b;
- 310:uartp_pend.c  ****     float  ref_val;
- 311:uartp_pend.c  ****     uint8 *pf = (uint8*)&ref_val;
- 312:uartp_pend.c  **** 
- 313:uartp_pend.c  ****     if (UARTP_SysMode != UARTP_SYS_CONTROL) return;
- 552              		.loc 1 313 0
+ 312:uartp_pend.c  ****     uint8  b;
+ 313:uartp_pend.c  ****     float  ref_val;
+ 314:uartp_pend.c  ****     uint8 *pf = (uint8*)&ref_val;
+ 315:uartp_pend.c  **** 
+ 316:uartp_pend.c  ****     if (UARTP_SysMode != UARTP_SYS_CONTROL) return;
+ 552              		.loc 1 316 0
  553 0000 2F4B     		ldr	r3, .L53
  554 0002 93F8E030 		ldrb	r3, [r3, #224]	@ zero_extendqisi2
  555 0006 DBB2     		uxtb	r3, r3
  556 0008 012B     		cmp	r3, #1
  557 000a 58D1     		bne	.L52
- 308:uartp_pend.c  ****     uint8  b;
- 558              		.loc 1 308 0
+ 311:uartp_pend.c  ****     uint8  b;
+ 558              		.loc 1 311 0
  559 000c 30B5     		push	{r4, r5, lr}
  560              		.cfi_def_cfa_offset 12
  561              		.cfi_offset 4, -12
@@ -943,113 +946,113 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  565              		.cfi_def_cfa_offset 24
  566 0010 4FE0     		b	.L43
  567              	.L49:
- 314:uartp_pend.c  **** 
- 315:uartp_pend.c  ****     while (UART_1_GetRxBufferSize() > 0u)
- 316:uartp_pend.c  ****     {
- 317:uartp_pend.c  ****         b = UART_1_ReadRxData();
- 568              		.loc 1 317 0
+ 317:uartp_pend.c  **** 
+ 318:uartp_pend.c  ****     while (UART_1_GetRxBufferSize() > 0u)
+ 319:uartp_pend.c  ****     {
+ 320:uartp_pend.c  ****         b = UART_1_ReadRxData();
+ 568              		.loc 1 320 0
  569 0012 FFF7FEFF 		bl	UART_1_ReadRxData
  570              	.LVL85:
- 318:uartp_pend.c  **** 
- 319:uartp_pend.c  ****         if (s_rx_state == RX_IDLE)
- 571              		.loc 1 319 0
+ 321:uartp_pend.c  **** 
+ 322:uartp_pend.c  ****         if (s_rx_state == RX_IDLE)
+ 571              		.loc 1 322 0
  572 0016 2A4B     		ldr	r3, .L53
  573 0018 93F8E130 		ldrb	r3, [r3, #225]	@ zero_extendqisi2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 17
+
+
  574 001c CBB9     		cbnz	r3, .L44
- 320:uartp_pend.c  ****         {
- 321:uartp_pend.c  ****             if (b == (uint8)'s')
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 17
-
-
- 575              		.loc 1 321 0
+ 323:uartp_pend.c  ****         {
+ 324:uartp_pend.c  ****             if (b == (uint8)'s')
+ 575              		.loc 1 324 0
  576 001e 7328     		cmp	r0, #115
  577 0020 0DD1     		bne	.L45
- 322:uartp_pend.c  ****             {
- 323:uartp_pend.c  ****                 Motor_Free();
- 578              		.loc 1 323 0
+ 325:uartp_pend.c  ****             {
+ 326:uartp_pend.c  ****                 Motor_Free();
+ 578              		.loc 1 326 0
  579 0022 FFF7FEFF 		bl	Motor_Free
  580              	.LVL86:
- 324:uartp_pend.c  ****                 ctrl_stop();
- 581              		.loc 1 324 0
+ 327:uartp_pend.c  ****                 ctrl_stop();
+ 581              		.loc 1 327 0
  582 0026 FFF7FEFF 		bl	ctrl_stop
  583              	.LVL87:
- 325:uartp_pend.c  ****                 UARTP_SysMode = UARTP_SYS_COMMAND;
- 584              		.loc 1 325 0
+ 328:uartp_pend.c  ****                 UARTP_SysMode = UARTP_SYS_COMMAND;
+ 584              		.loc 1 328 0
  585 002a 254C     		ldr	r4, .L53
  586 002c 0025     		movs	r5, #0
  587 002e 84F8E050 		strb	r5, [r4, #224]
- 326:uartp_pend.c  ****                 ll_putchar((uint8)'K');
- 588              		.loc 1 326 0
+ 329:uartp_pend.c  ****                 ll_putchar((uint8)'K');
+ 588              		.loc 1 329 0
  589 0032 4B20     		movs	r0, #75
  590 0034 FFF7FEFF 		bl	ll_putchar
  591              	.LVL88:
- 327:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
- 592              		.loc 1 327 0
+ 330:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
+ 592              		.loc 1 330 0
  593 0038 84F8E150 		strb	r5, [r4, #225]
- 328:uartp_pend.c  ****                 return;
- 594              		.loc 1 328 0
+ 331:uartp_pend.c  ****                 return;
+ 594              		.loc 1 331 0
  595 003c 3DE0     		b	.L41
  596              	.LVL89:
  597              	.L45:
- 329:uartp_pend.c  ****             }
- 330:uartp_pend.c  ****             else if (b == (uint8)'u')
- 598              		.loc 1 330 0
+ 332:uartp_pend.c  ****             }
+ 333:uartp_pend.c  ****             else if (b == (uint8)'u')
+ 598              		.loc 1 333 0
  599 003e 7528     		cmp	r0, #117
  600 0040 37D1     		bne	.L43
- 331:uartp_pend.c  ****             {
- 332:uartp_pend.c  ****                 s_rx_state = RX_GOT_U;
- 601              		.loc 1 332 0
+ 334:uartp_pend.c  ****             {
+ 335:uartp_pend.c  ****                 s_rx_state = RX_GOT_U;
+ 601              		.loc 1 335 0
  602 0042 1F4B     		ldr	r3, .L53
  603 0044 0122     		movs	r2, #1
  604 0046 83F8E120 		strb	r2, [r3, #225]
- 333:uartp_pend.c  ****                 s_rx_ucnt  = 0u;
- 605              		.loc 1 333 0
+ 336:uartp_pend.c  ****                 s_rx_ucnt  = 0u;
+ 605              		.loc 1 336 0
  606 004a 0022     		movs	r2, #0
  607 004c 83F8E220 		strb	r2, [r3, #226]
  608 0050 2FE0     		b	.L43
  609              	.L44:
- 334:uartp_pend.c  ****             }
- 335:uartp_pend.c  ****             /* otros bytes: ignorar */
- 336:uartp_pend.c  ****         }
- 337:uartp_pend.c  ****         else  /* RX_GOT_U: acumulando 4 bytes del nuevo ref */
- 338:uartp_pend.c  ****         {
- 339:uartp_pend.c  ****             s_rx_ubuf[s_rx_ucnt++] = b;
- 610              		.loc 1 339 0
+ 337:uartp_pend.c  ****             }
+ 338:uartp_pend.c  ****             /* otros bytes: ignorar */
+ 339:uartp_pend.c  ****         }
+ 340:uartp_pend.c  ****         else  /* RX_GOT_U: acumulando 4 bytes del nuevo ref */
+ 341:uartp_pend.c  ****         {
+ 342:uartp_pend.c  ****             s_rx_ubuf[s_rx_ucnt++] = b;
+ 610              		.loc 1 342 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 18
+
+
  611 0052 1B49     		ldr	r1, .L53
  612 0054 91F8E220 		ldrb	r2, [r1, #226]	@ zero_extendqisi2
  613 0058 531C     		adds	r3, r2, #1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 18
-
-
  614 005a DBB2     		uxtb	r3, r3
  615 005c 81F8E230 		strb	r3, [r1, #226]
  616 0060 0A44     		add	r2, r2, r1
  617 0062 82F8E400 		strb	r0, [r2, #228]
- 340:uartp_pend.c  ****             if (s_rx_ucnt >= 4u)
- 618              		.loc 1 340 0
+ 343:uartp_pend.c  ****             if (s_rx_ucnt >= 4u)
+ 618              		.loc 1 343 0
  619 0066 032B     		cmp	r3, #3
  620 0068 23D9     		bls	.L43
- 341:uartp_pend.c  ****             {
- 342:uartp_pend.c  ****                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
- 621              		.loc 1 342 0
+ 344:uartp_pend.c  ****             {
+ 345:uartp_pend.c  ****                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
+ 621              		.loc 1 345 0
  622 006a 91F8E420 		ldrb	r2, [r1, #228]	@ zero_extendqisi2
  623 006e 8DF80420 		strb	r2, [sp, #4]
  624 0072 91F8E520 		ldrb	r2, [r1, #229]	@ zero_extendqisi2
  625 0076 8DF80520 		strb	r2, [sp, #5]
- 343:uartp_pend.c  ****                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
- 626              		.loc 1 343 0
+ 346:uartp_pend.c  ****                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
+ 626              		.loc 1 346 0
  627 007a 91F8E620 		ldrb	r2, [r1, #230]	@ zero_extendqisi2
  628 007e 8DF80620 		strb	r2, [sp, #6]
  629 0082 91F8E720 		ldrb	r2, [r1, #231]	@ zero_extendqisi2
  630 0086 8DF80720 		strb	r2, [sp, #7]
- 344:uartp_pend.c  ****                 /* Convertir ref si bit0 activo (ref enviada en Voltios) */
- 345:uartp_pend.c  ****                 if (g_ref_in_volts & 0x01u)
- 631              		.loc 1 345 0
+ 347:uartp_pend.c  ****                 /* Convertir ref si bit0 activo (ref enviada en Voltios) */
+ 348:uartp_pend.c  ****                 if (g_ref_in_volts & 0x01u)
+ 631              		.loc 1 348 0
  632 008a 91F8D830 		ldrb	r3, [r1, #216]	@ zero_extendqisi2
  633 008e 13F0010F 		tst	r3, #1
  634 0092 07D0     		beq	.L47
- 346:uartp_pend.c  ****                     ctrl_update_ref((float)PWM_Desde_Voltaje(ref_val));
- 635              		.loc 1 346 0
+ 349:uartp_pend.c  ****                     ctrl_update_ref((float)PWM_Desde_Voltaje(ref_val));
+ 635              		.loc 1 349 0
  636 0094 0198     		ldr	r0, [sp, #4]	@ float
  637              	.LVL90:
  638 0096 FFF7FEFF 		bl	PWM_Desde_Voltaje
@@ -1061,35 +1064,35 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  644 00a2 02E0     		b	.L48
  645              	.LVL94:
  646              	.L47:
- 347:uartp_pend.c  ****                 else
- 348:uartp_pend.c  ****                     ctrl_update_ref(ref_val);
- 647              		.loc 1 348 0
+ 350:uartp_pend.c  ****                 else
+ 351:uartp_pend.c  ****                     ctrl_update_ref(ref_val);
+ 647              		.loc 1 351 0
  648 00a4 0198     		ldr	r0, [sp, #4]	@ float
  649              	.LVL95:
  650 00a6 FFF7FEFF 		bl	ctrl_update_ref
  651              	.LVL96:
  652              	.L48:
- 349:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
- 653              		.loc 1 349 0
+ 352:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
+ 653              		.loc 1 352 0
  654 00aa 0022     		movs	r2, #0
  655 00ac 044B     		ldr	r3, .L53
  656 00ae 83F8E120 		strb	r2, [r3, #225]
  657              	.L43:
- 315:uartp_pend.c  ****     {
- 658              		.loc 1 315 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 19
+
+
+ 318:uartp_pend.c  ****     {
+ 658              		.loc 1 318 0
  659 00b2 FFF7FEFF 		bl	UART_1_GetRxBufferSize
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 19
-
-
  660              	.LVL97:
  661 00b6 0028     		cmp	r0, #0
  662 00b8 ABD1     		bne	.L49
  663              	.L41:
- 350:uartp_pend.c  ****             }
- 351:uartp_pend.c  ****         }
- 352:uartp_pend.c  ****     }
- 353:uartp_pend.c  **** }
- 664              		.loc 1 353 0
+ 353:uartp_pend.c  ****             }
+ 354:uartp_pend.c  ****         }
+ 355:uartp_pend.c  ****     }
+ 356:uartp_pend.c  **** }
+ 664              		.loc 1 356 0
  665 00ba 03B0     		add	sp, sp, #12
  666              		.cfi_def_cfa_offset 12
  667              		@ sp needed
@@ -1135,12 +1138,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  704 0008 FFF7FEFF 		bl	isr_2_StartEx
  705              	.LVL100:
  189:uartp_pend.c  ****     s_rx_state     = RX_IDLE;
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 20
+
+
  706              		.loc 1 189 0
  707 000c 054B     		ldr	r3, .L57+4
  708 000e 0022     		movs	r2, #0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 20
-
-
  709 0010 83F8E020 		strb	r2, [r3, #224]
  190:uartp_pend.c  ****     s_rx_ucnt      = 0u;
  710              		.loc 1 190 0
@@ -1195,12 +1198,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  210:uartp_pend.c  ****     {
  755              		.loc 1 210 0
  756 0012 6638     		subs	r0, r0, #102
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 21
+
+
  757              	.LVL103:
  758 0014 1428     		cmp	r0, #20
  759 0016 00F29380 		bhi	.L59
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 21
-
-
  760 001a DFE800F0 		tbb	[pc, r0]
  761              	.L63:
  762 001e 24       		.byte	(.L62-.L63)/2
@@ -1255,72 +1258,72 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  804 0052 4B20     		movs	r0, #75
  805 0054 FFF7FEFF 		bl	ll_putchar
  806              	.LVL106:
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 22
+
+
  221:uartp_pend.c  **** 
  807              		.loc 1 221 0
  808 0058 72E0     		b	.L59
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 22
-
-
  809              	.L69:
- 225:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 810              		.loc 1 225 0
- 811 005a FFF7FEFF 		bl	pendulo_reset_encoders
+ 228:uartp_pend.c  ****             ll_putchar((uint8)'K');
+ 810              		.loc 1 228 0
+ 811 005a FFF7FEFF 		bl	pendulo_calibrate_rest
  812              	.LVL107:
- 226:uartp_pend.c  ****             break;
- 813              		.loc 1 226 0
+ 229:uartp_pend.c  ****             break;
+ 813              		.loc 1 229 0
  814 005e 4B20     		movs	r0, #75
  815 0060 FFF7FEFF 		bl	ll_putchar
  816              	.LVL108:
- 227:uartp_pend.c  **** 
- 817              		.loc 1 227 0
+ 230:uartp_pend.c  **** 
+ 817              		.loc 1 230 0
  818 0064 6CE0     		b	.L59
  819              	.L62:
- 231:uartp_pend.c  ****             if (ll_recv_word4(payload))
- 820              		.loc 1 231 0
+ 234:uartp_pend.c  ****             if (ll_recv_word4(payload))
+ 820              		.loc 1 234 0
  821 0066 5220     		movs	r0, #82
  822 0068 FFF7FEFF 		bl	ll_putchar
  823              	.LVL109:
- 232:uartp_pend.c  ****             {
- 824              		.loc 1 232 0
+ 235:uartp_pend.c  ****             {
+ 824              		.loc 1 235 0
  825 006c 01A8     		add	r0, sp, #4
  826 006e FFF7FEFF 		bl	ll_recv_word4
  827              	.LVL110:
  828 0072 68B3     		cbz	r0, .L70
  829              	.LVL111:
- 235:uartp_pend.c  ****                 pf[2] = payload[2]; pf[3] = payload[3];
- 830              		.loc 1 235 0
+ 238:uartp_pend.c  ****                 pf[2] = payload[2]; pf[3] = payload[3];
+ 830              		.loc 1 238 0
  831 0074 9DF80430 		ldrb	r3, [sp, #4]	@ zero_extendqisi2
  832 0078 8DF80030 		strb	r3, [sp]
  833 007c 9DF80530 		ldrb	r3, [sp, #5]	@ zero_extendqisi2
  834 0080 8DF80130 		strb	r3, [sp, #1]
- 236:uartp_pend.c  ****                 /* Actualizar timer directamente */
- 835              		.loc 1 236 0
+ 239:uartp_pend.c  ****                 /* Actualizar timer directamente */
+ 835              		.loc 1 239 0
  836 0084 9DF80630 		ldrb	r3, [sp, #6]	@ zero_extendqisi2
  837 0088 8DF80230 		strb	r3, [sp, #2]
  838 008c 9DF80730 		ldrb	r3, [sp, #7]	@ zero_extendqisi2
  839 0090 8DF80330 		strb	r3, [sp, #3]
- 238:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
- 840              		.loc 1 238 0
+ 241:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
+ 840              		.loc 1 241 0
  841 0094 009C     		ldr	r4, [sp]	@ float
  842 0096 4FF07C51 		mov	r1, #1056964608
  843 009a 2046     		mov	r0, r4
  844 009c FFF7FEFF 		bl	__aeabi_fcmpgt
  845              	.LVL112:
  846 00a0 90B1     		cbz	r0, .L71
- 238:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
- 847              		.loc 1 238 0 is_stmt 0 discriminator 1
+ 241:uartp_pend.c  ****                     uint32 period = (uint32)((float)TIMER_CLOCK_HZ / fs_hz) - 1u;
+ 847              		.loc 1 241 0 is_stmt 0 discriminator 1
  848 00a2 2A49     		ldr	r1, .L80+8
  849 00a4 2046     		mov	r0, r4
  850 00a6 FFF7FEFF 		bl	__aeabi_fcmple
  851              	.LVL113:
  852 00aa 68B1     		cbz	r0, .L71
  853              	.LBB2:
- 239:uartp_pend.c  ****                     Timer_1_Stop();
- 854              		.loc 1 239 0 is_stmt 1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 23
+
+
+ 242:uartp_pend.c  ****                     Timer_1_Stop();
+ 854              		.loc 1 242 0 is_stmt 1
  855 00ac 2146     		mov	r1, r4
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 23
-
-
  856 00ae 2848     		ldr	r0, .L80+12
  857 00b0 FFF7FEFF 		bl	__aeabi_fdiv
  858              	.LVL114:
@@ -1328,62 +1331,62 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  860              	.LVL115:
  861 00b8 441E     		subs	r4, r0, #1
  862              	.LVL116:
- 240:uartp_pend.c  ****                     Timer_1_WritePeriod(period);
- 863              		.loc 1 240 0
+ 243:uartp_pend.c  ****                     Timer_1_WritePeriod(period);
+ 863              		.loc 1 243 0
  864 00ba FFF7FEFF 		bl	Timer_1_Stop
  865              	.LVL117:
- 241:uartp_pend.c  ****                     Timer_1_Start();
- 866              		.loc 1 241 0
+ 244:uartp_pend.c  ****                     Timer_1_Start();
+ 866              		.loc 1 244 0
  867 00be 2046     		mov	r0, r4
  868 00c0 FFF7FEFF 		bl	Timer_1_WritePeriod
  869              	.LVL118:
- 242:uartp_pend.c  ****                 }
- 870              		.loc 1 242 0
+ 245:uartp_pend.c  ****                 }
+ 870              		.loc 1 245 0
  871 00c4 FFF7FEFF 		bl	Timer_1_Start
  872              	.LVL119:
  873              	.L71:
  874              	.LBE2:
- 244:uartp_pend.c  ****             }
- 875              		.loc 1 244 0
+ 247:uartp_pend.c  ****             }
+ 875              		.loc 1 247 0
  876 00c8 4B20     		movs	r0, #75
  877 00ca FFF7FEFF 		bl	ll_putchar
  878              	.LVL120:
  879 00ce 37E0     		b	.L59
  880              	.LVL121:
  881              	.L70:
- 248:uartp_pend.c  ****             }
- 882              		.loc 1 248 0
+ 251:uartp_pend.c  ****             }
+ 882              		.loc 1 251 0
  883 00d0 2120     		movs	r0, #33
  884 00d2 FFF7FEFF 		bl	ll_putchar
  885              	.LVL122:
  886 00d6 33E0     		b	.L59
  887              	.L65:
- 254:uartp_pend.c  ****             break;
- 888              		.loc 1 254 0
+ 257:uartp_pend.c  ****             break;
+ 888              		.loc 1 257 0
  889 00d8 FFF7FEFF 		bl	handle_cmd_p
  890              	.LVL123:
- 255:uartp_pend.c  **** 
- 891              		.loc 1 255 0
+ 258:uartp_pend.c  **** 
+ 891              		.loc 1 258 0
  892 00dc 30E0     		b	.L59
  893              	.LVL124:
  894              	.L74:
  895              	.LBB3:
- 265:uartp_pend.c  ****                 vxs ^= s_p_buf[vi];
- 896              		.loc 1 265 0 discriminator 3
+ 268:uartp_pend.c  ****                 vxs ^= s_p_buf[vi];
+ 896              		.loc 1 268 0 discriminator 3
  897 00de 1A4D     		ldr	r5, .L80+4
  898 00e0 285D     		ldrb	r0, [r5, r4]	@ zero_extendqisi2
  899 00e2 FFF7FEFF 		bl	ll_putchar
  900              	.LVL125:
- 266:uartp_pend.c  ****             }
- 901              		.loc 1 266 0 discriminator 3
+ 269:uartp_pend.c  ****             }
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 24
+
+
+ 901              		.loc 1 269 0 discriminator 3
  902 00e6 2B5D     		ldrb	r3, [r5, r4]	@ zero_extendqisi2
  903 00e8 5E40     		eors	r6, r6, r3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 24
-
-
  904              	.LVL126:
- 264:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
- 905              		.loc 1 264 0 discriminator 3
+ 267:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
+ 905              		.loc 1 267 0 discriminator 3
  906 00ea 0134     		adds	r4, r4, #1
  907              	.LVL127:
  908 00ec A4B2     		uxth	r4, r4
@@ -1399,79 +1402,79 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  917              	.L68:
  918              	.LVL130:
  919              	.LBB4:
- 264:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
- 920              		.loc 1 264 0 discriminator 1
+ 267:uartp_pend.c  ****                 ll_putchar(s_p_buf[vi]);
+ 920              		.loc 1 267 0 discriminator 1
  921 00f4 D72C     		cmp	r4, #215
  922 00f6 F2D9     		bls	.L74
- 268:uartp_pend.c  ****             break;
- 923              		.loc 1 268 0
+ 271:uartp_pend.c  ****             break;
+ 923              		.loc 1 271 0
  924 00f8 3046     		mov	r0, r6
  925 00fa FFF7FEFF 		bl	ll_putchar
  926              	.LVL131:
- 269:uartp_pend.c  ****         }
- 927              		.loc 1 269 0
+ 272:uartp_pend.c  ****         }
+ 927              		.loc 1 272 0
  928 00fe 1FE0     		b	.L59
  929              	.LVL132:
  930              	.L64:
  931              	.LBE4:
- 274:uartp_pend.c  ****             g_flag_control = 0u;
- 932              		.loc 1 274 0
+ 277:uartp_pend.c  ****             g_flag_control = 0u;
+ 932              		.loc 1 277 0
  933 0100 FFF7FEFF 		bl	Motor_Free
  934              	.LVL133:
- 275:uartp_pend.c  ****             s_rx_state     = RX_IDLE;
- 935              		.loc 1 275 0
+ 278:uartp_pend.c  ****             s_rx_state     = RX_IDLE;
+ 935              		.loc 1 278 0
  936 0104 0023     		movs	r3, #0
  937 0106 0F4A     		ldr	r2, .L80
  938 0108 1370     		strb	r3, [r2]
- 276:uartp_pend.c  ****             s_rx_ucnt      = 0u;
- 939              		.loc 1 276 0
+ 279:uartp_pend.c  ****             s_rx_ucnt      = 0u;
+ 939              		.loc 1 279 0
  940 010a 0F4C     		ldr	r4, .L80+4
  941 010c 84F8E130 		strb	r3, [r4, #225]
- 277:uartp_pend.c  ****             ctrl_start(UARTP_PendingRef);
- 942              		.loc 1 277 0
+ 280:uartp_pend.c  ****             ctrl_start(UARTP_PendingRef);
+ 942              		.loc 1 280 0
  943 0110 84F8E230 		strb	r3, [r4, #226]
- 278:uartp_pend.c  ****             UARTP_SysMode  = UARTP_SYS_CONTROL;
- 944              		.loc 1 278 0
+ 281:uartp_pend.c  ****             UARTP_SysMode  = UARTP_SYS_CONTROL;
+ 944              		.loc 1 281 0
  945 0114 D4F8DC00 		ldr	r0, [r4, #220]	@ float
  946 0118 FFF7FEFF 		bl	ctrl_start
  947              	.LVL134:
- 279:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 948              		.loc 1 279 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 25
+
+
+ 282:uartp_pend.c  ****             ll_putchar((uint8)'K');
+ 948              		.loc 1 282 0
  949 011c 0123     		movs	r3, #1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 25
-
-
  950 011e 84F8E030 		strb	r3, [r4, #224]
- 280:uartp_pend.c  ****             break;
- 951              		.loc 1 280 0
+ 283:uartp_pend.c  ****             break;
+ 951              		.loc 1 283 0
  952 0122 4B20     		movs	r0, #75
  953 0124 FFF7FEFF 		bl	ll_putchar
  954              	.LVL135:
- 281:uartp_pend.c  **** 
- 955              		.loc 1 281 0
+ 284:uartp_pend.c  **** 
+ 955              		.loc 1 284 0
  956 0128 0AE0     		b	.L59
  957              	.L67:
- 285:uartp_pend.c  ****             ctrl_stop();
- 958              		.loc 1 285 0
+ 288:uartp_pend.c  ****             ctrl_stop();
+ 958              		.loc 1 288 0
  959 012a FFF7FEFF 		bl	Motor_Free
  960              	.LVL136:
- 286:uartp_pend.c  ****             UARTP_SysMode = UARTP_SYS_COMMAND;
- 961              		.loc 1 286 0
+ 289:uartp_pend.c  ****             UARTP_SysMode = UARTP_SYS_COMMAND;
+ 961              		.loc 1 289 0
  962 012e FFF7FEFF 		bl	ctrl_stop
  963              	.LVL137:
- 287:uartp_pend.c  ****             ll_putchar((uint8)'K');
- 964              		.loc 1 287 0
+ 290:uartp_pend.c  ****             ll_putchar((uint8)'K');
+ 964              		.loc 1 290 0
  965 0132 0022     		movs	r2, #0
  966 0134 044B     		ldr	r3, .L80+4
  967 0136 83F8E020 		strb	r2, [r3, #224]
- 288:uartp_pend.c  ****             break;
- 968              		.loc 1 288 0
+ 291:uartp_pend.c  ****             break;
+ 968              		.loc 1 291 0
  969 013a 4B20     		movs	r0, #75
  970 013c FFF7FEFF 		bl	ll_putchar
  971              	.LVL138:
  972              	.L59:
- 294:uartp_pend.c  **** 
- 973              		.loc 1 294 0
+ 297:uartp_pend.c  **** 
+ 973              		.loc 1 297 0
  974 0140 02B0     		add	sp, sp, #8
  975              		.cfi_def_cfa_offset 16
  976              		@ sp needed
@@ -1494,18 +1497,18 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  993              		.type	UARTP_ControlRxPoll, %function
  994              	UARTP_ControlRxPoll:
  995              	.LFB70:
- 354:uartp_pend.c  **** 
- 355:uartp_pend.c  **** /* ============================================================
- 356:uartp_pend.c  ****    UARTP_ControlRxPoll()
- 357:uartp_pend.c  ****    Fallback polling — mantenido si isr_2 no está disponible.
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 26
+ 357:uartp_pend.c  **** 
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 26
 
 
- 358:uartp_pend.c  ****    Con isr_2 activo, este código NO debe llamarse.
- 359:uartp_pend.c  ****    ============================================================ */
- 360:uartp_pend.c  **** void UARTP_ControlRxPoll(void)
- 361:uartp_pend.c  **** {
- 996              		.loc 1 361 0
+ 358:uartp_pend.c  **** /* ============================================================
+ 359:uartp_pend.c  ****    UARTP_ControlRxPoll()
+ 360:uartp_pend.c  ****    Fallback polling — mantenido si isr_2 no está disponible.
+ 361:uartp_pend.c  ****    Con isr_2 activo, este código NO debe llamarse.
+ 362:uartp_pend.c  ****    ============================================================ */
+ 363:uartp_pend.c  **** void UARTP_ControlRxPoll(void)
+ 364:uartp_pend.c  **** {
+ 996              		.loc 1 364 0
  997              		.cfi_startproc
  998              		@ args = 0, pretend = 0, frame = 8
  999              		@ frame_needed = 0, uses_anonymous_args = 0
@@ -1517,85 +1520,85 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1005 0002 83B0     		sub	sp, sp, #12
  1006              		.cfi_def_cfa_offset 24
  1007              	.LVL139:
- 362:uartp_pend.c  ****     uint8 b;
- 363:uartp_pend.c  ****     float ref_val;
- 364:uartp_pend.c  ****     uint8 *pf = (uint8*)&ref_val;
- 365:uartp_pend.c  **** 
- 366:uartp_pend.c  ****     while (UART_1_GetRxBufferSize() > 0u)
- 1008              		.loc 1 366 0
+ 365:uartp_pend.c  ****     uint8 b;
+ 366:uartp_pend.c  ****     float ref_val;
+ 367:uartp_pend.c  ****     uint8 *pf = (uint8*)&ref_val;
+ 368:uartp_pend.c  **** 
+ 369:uartp_pend.c  ****     while (UART_1_GetRxBufferSize() > 0u)
+ 1008              		.loc 1 369 0
  1009 0004 42E0     		b	.L83
  1010              	.L88:
- 367:uartp_pend.c  ****     {
- 368:uartp_pend.c  ****         b = UART_1_ReadRxData();
- 1011              		.loc 1 368 0
+ 370:uartp_pend.c  ****     {
+ 371:uartp_pend.c  ****         b = UART_1_ReadRxData();
+ 1011              		.loc 1 371 0
  1012 0006 FFF7FEFF 		bl	UART_1_ReadRxData
  1013              	.LVL140:
- 369:uartp_pend.c  **** 
- 370:uartp_pend.c  ****         if (s_rx_state == RX_IDLE)
- 1014              		.loc 1 370 0
+ 372:uartp_pend.c  **** 
+ 373:uartp_pend.c  ****         if (s_rx_state == RX_IDLE)
+ 1014              		.loc 1 373 0
  1015 000a 234B     		ldr	r3, .L90
  1016 000c 93F8E130 		ldrb	r3, [r3, #225]	@ zero_extendqisi2
  1017 0010 CBB9     		cbnz	r3, .L84
- 371:uartp_pend.c  ****         {
- 372:uartp_pend.c  ****             if (b == (uint8)'s')
- 1018              		.loc 1 372 0
+ 374:uartp_pend.c  ****         {
+ 375:uartp_pend.c  ****             if (b == (uint8)'s')
+ 1018              		.loc 1 375 0
  1019 0012 7328     		cmp	r0, #115
  1020 0014 0DD1     		bne	.L85
- 373:uartp_pend.c  ****             {
- 374:uartp_pend.c  ****                 /* Stop command */
- 375:uartp_pend.c  ****                 Motor_Free();
- 1021              		.loc 1 375 0
+ 376:uartp_pend.c  ****             {
+ 377:uartp_pend.c  ****                 /* Stop command */
+ 378:uartp_pend.c  ****                 Motor_Free();
+ 1021              		.loc 1 378 0
  1022 0016 FFF7FEFF 		bl	Motor_Free
  1023              	.LVL141:
- 376:uartp_pend.c  ****                 ctrl_stop();
- 1024              		.loc 1 376 0
+ 379:uartp_pend.c  ****                 ctrl_stop();
+ 1024              		.loc 1 379 0
  1025 001a FFF7FEFF 		bl	ctrl_stop
  1026              	.LVL142:
- 377:uartp_pend.c  ****                 UARTP_SysMode = UARTP_SYS_COMMAND;
- 1027              		.loc 1 377 0
+ 380:uartp_pend.c  ****                 UARTP_SysMode = UARTP_SYS_COMMAND;
+ 1027              		.loc 1 380 0
  1028 001e 1E4C     		ldr	r4, .L90
  1029 0020 0025     		movs	r5, #0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 27
+
+
  1030 0022 84F8E050 		strb	r5, [r4, #224]
- 378:uartp_pend.c  ****                 ll_putchar((uint8)'K');
- 1031              		.loc 1 378 0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 27
-
-
+ 381:uartp_pend.c  ****                 ll_putchar((uint8)'K');
+ 1031              		.loc 1 381 0
  1032 0026 4B20     		movs	r0, #75
  1033 0028 FFF7FEFF 		bl	ll_putchar
  1034              	.LVL143:
- 379:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
- 1035              		.loc 1 379 0
+ 382:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
+ 1035              		.loc 1 382 0
  1036 002c 84F8E150 		strb	r5, [r4, #225]
  1037 0030 30E0     		b	.L82
  1038              	.LVL144:
  1039              	.L85:
- 380:uartp_pend.c  ****                 return;
- 381:uartp_pend.c  ****             }
- 382:uartp_pend.c  ****             else if (b == (uint8)'u')
- 1040              		.loc 1 382 0
+ 383:uartp_pend.c  ****                 return;
+ 384:uartp_pend.c  ****             }
+ 385:uartp_pend.c  ****             else if (b == (uint8)'u')
+ 1040              		.loc 1 385 0
  1041 0032 7528     		cmp	r0, #117
  1042 0034 2AD1     		bne	.L83
- 383:uartp_pend.c  ****             {
- 384:uartp_pend.c  ****                 /* Inicio de actualización de referencia */
- 385:uartp_pend.c  ****                 s_rx_state = RX_GOT_U;
- 1043              		.loc 1 385 0
+ 386:uartp_pend.c  ****             {
+ 387:uartp_pend.c  ****                 /* Inicio de actualización de referencia */
+ 388:uartp_pend.c  ****                 s_rx_state = RX_GOT_U;
+ 1043              		.loc 1 388 0
  1044 0036 184B     		ldr	r3, .L90
  1045 0038 0122     		movs	r2, #1
  1046 003a 83F8E120 		strb	r2, [r3, #225]
- 386:uartp_pend.c  ****                 s_rx_ucnt  = 0u;
- 1047              		.loc 1 386 0
+ 389:uartp_pend.c  ****                 s_rx_ucnt  = 0u;
+ 1047              		.loc 1 389 0
  1048 003e 0022     		movs	r2, #0
  1049 0040 83F8E220 		strb	r2, [r3, #226]
  1050 0044 22E0     		b	.L83
  1051              	.L84:
- 387:uartp_pend.c  ****             }
- 388:uartp_pend.c  ****             /* otros bytes: ignorar */
- 389:uartp_pend.c  ****         }
- 390:uartp_pend.c  ****         else  /* RX_GOT_U: acumulando 4 bytes del nuevo ref */
- 391:uartp_pend.c  ****         {
- 392:uartp_pend.c  ****             s_rx_ubuf[s_rx_ucnt++] = b;
- 1052              		.loc 1 392 0
+ 390:uartp_pend.c  ****             }
+ 391:uartp_pend.c  ****             /* otros bytes: ignorar */
+ 392:uartp_pend.c  ****         }
+ 393:uartp_pend.c  ****         else  /* RX_GOT_U: acumulando 4 bytes del nuevo ref */
+ 394:uartp_pend.c  ****         {
+ 395:uartp_pend.c  ****             s_rx_ubuf[s_rx_ucnt++] = b;
+ 1052              		.loc 1 395 0
  1053 0046 1449     		ldr	r1, .L90
  1054 0048 91F8E220 		ldrb	r2, [r1, #226]	@ zero_extendqisi2
  1055 004c 531C     		adds	r3, r2, #1
@@ -1603,50 +1606,50 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1057 0050 81F8E230 		strb	r3, [r1, #226]
  1058 0054 0A44     		add	r2, r2, r1
  1059 0056 82F8E400 		strb	r0, [r2, #228]
- 393:uartp_pend.c  ****             if (s_rx_ucnt >= 4u)
- 1060              		.loc 1 393 0
+ 396:uartp_pend.c  ****             if (s_rx_ucnt >= 4u)
+ 1060              		.loc 1 396 0
  1061 005a 032B     		cmp	r3, #3
  1062 005c 16D9     		bls	.L83
- 394:uartp_pend.c  ****             {
- 395:uartp_pend.c  ****                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
- 1063              		.loc 1 395 0
+ 397:uartp_pend.c  ****             {
+ 398:uartp_pend.c  ****                 pf[0]=s_rx_ubuf[0]; pf[1]=s_rx_ubuf[1];
+ 1063              		.loc 1 398 0
  1064 005e 0C46     		mov	r4, r1
  1065 0060 91F8E430 		ldrb	r3, [r1, #228]	@ zero_extendqisi2
  1066 0064 8DF80430 		strb	r3, [sp, #4]
  1067 0068 91F8E530 		ldrb	r3, [r1, #229]	@ zero_extendqisi2
  1068 006c 8DF80530 		strb	r3, [sp, #5]
- 396:uartp_pend.c  ****                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
- 1069              		.loc 1 396 0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 28
+
+
+ 399:uartp_pend.c  ****                 pf[2]=s_rx_ubuf[2]; pf[3]=s_rx_ubuf[3];
+ 1069              		.loc 1 399 0
  1070 0070 91F8E630 		ldrb	r3, [r1, #230]	@ zero_extendqisi2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 28
-
-
  1071 0074 8DF80630 		strb	r3, [sp, #6]
  1072 0078 91F8E730 		ldrb	r3, [r1, #231]	@ zero_extendqisi2
  1073 007c 8DF80730 		strb	r3, [sp, #7]
- 397:uartp_pend.c  ****                 ctrl_update_ref(ref_val);
- 1074              		.loc 1 397 0
+ 400:uartp_pend.c  ****                 ctrl_update_ref(ref_val);
+ 1074              		.loc 1 400 0
  1075 0080 0198     		ldr	r0, [sp, #4]	@ float
  1076              	.LVL145:
  1077 0082 FFF7FEFF 		bl	ctrl_update_ref
  1078              	.LVL146:
- 398:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
- 1079              		.loc 1 398 0
+ 401:uartp_pend.c  ****                 s_rx_state = RX_IDLE;
+ 1079              		.loc 1 401 0
  1080 0086 0023     		movs	r3, #0
  1081 0088 84F8E130 		strb	r3, [r4, #225]
  1082              	.L83:
- 366:uartp_pend.c  ****     {
- 1083              		.loc 1 366 0
+ 369:uartp_pend.c  ****     {
+ 1083              		.loc 1 369 0
  1084 008c FFF7FEFF 		bl	UART_1_GetRxBufferSize
  1085              	.LVL147:
  1086 0090 0028     		cmp	r0, #0
  1087 0092 B8D1     		bne	.L88
  1088              	.L82:
- 399:uartp_pend.c  ****             }
- 400:uartp_pend.c  ****         }
- 401:uartp_pend.c  ****     }
- 402:uartp_pend.c  **** }
- 1089              		.loc 1 402 0
+ 402:uartp_pend.c  ****             }
+ 403:uartp_pend.c  ****         }
+ 404:uartp_pend.c  ****     }
+ 405:uartp_pend.c  **** }
+ 1089              		.loc 1 405 0
  1090 0094 03B0     		add	sp, sp, #12
  1091              		.cfi_def_cfa_offset 12
  1092              		@ sp needed
@@ -1675,12 +1678,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1111      00000000 
  1112              		.type	g_ref_in_volts, %object
  1113              		.size	g_ref_in_volts, 1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 29
+
+
  1114              	g_ref_in_volts:
  1115 00d8 00       		.space	1
  1116 00d9 000000   		.space	3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 29
-
-
  1117              		.type	UARTP_PendingRef, %object
  1118              		.size	UARTP_PendingRef, 4
  1119              	UARTP_PendingRef:
@@ -1723,7 +1726,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1156 0006 00000000 		.4byte	.Ldebug_abbrev0
  1157 000a 04       		.byte	0x4
  1158 000b 01       		.uleb128 0x1
- 1159 000c AE030000 		.4byte	.LASF76
+ 1159 000c 97030000 		.4byte	.LASF76
  1160 0010 0C       		.byte	0xc
  1161 0011 AC000000 		.4byte	.LASF77
  1162 0015 7E010000 		.4byte	.LASF78
@@ -1735,12 +1738,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1168 0027 04       		.byte	0x4
  1169 0028 25010000 		.4byte	.LASF0
  1170 002c 02       		.uleb128 0x2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 30
+
+
  1171 002d 01       		.byte	0x1
  1172 002e 06       		.byte	0x6
  1173 002f 09020000 		.4byte	.LASF1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 30
-
-
  1174 0033 02       		.uleb128 0x2
  1175 0034 01       		.byte	0x1
  1176 0035 08       		.byte	0x8
@@ -1788,19 +1791,19 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1218 0083 2C       		.byte	0x2c
  1219 0084 48000000 		.4byte	0x48
  1220 0088 05       		.uleb128 0x5
- 1221 0089 8C030000 		.4byte	.LASF12
+ 1221 0089 75030000 		.4byte	.LASF12
  1222 008d 04       		.byte	0x4
  1223 008e E901     		.2byte	0x1e9
  1224 0090 33000000 		.4byte	0x33
  1225 0094 05       		.uleb128 0x5
  1226 0095 E9000000 		.4byte	.LASF13
  1227 0099 04       		.byte	0x4
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 31
+
+
  1228 009a EA01     		.2byte	0x1ea
  1229 009c 41000000 		.4byte	0x41
  1230 00a0 05       		.uleb128 0x5
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 31
-
-
  1231 00a1 DA020000 		.4byte	.LASF14
  1232 00a5 04       		.byte	0x4
  1233 00a6 EB01     		.2byte	0x1eb
@@ -1855,12 +1858,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1282 010b CF020000 		.4byte	.LASF22
  1283 010f 01       		.byte	0x1
  1284 0110 33       		.byte	0x33
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 32
+
+
  1285 0111 A0000000 		.4byte	0xa0
  1286 0115 00000000 		.4byte	.LLST0
  1287 0119 0B       		.uleb128 0xb
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 32
-
-
  1288 011a 636E7400 		.ascii	"cnt\000"
  1289 011e 01       		.byte	0x1
  1290 011f 35       		.byte	0x35
@@ -1915,12 +1918,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1339 0193 0A       		.uleb128 0xa
  1340 0194 69020000 		.4byte	.LASF25
  1341 0198 01       		.byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 33
+
+
  1342 0199 3F       		.byte	0x3f
  1343 019a 38020000 		.4byte	0x238
  1344 019e 5E000000 		.4byte	.LLST3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 33
-
-
  1345 01a2 0B       		.uleb128 0xb
  1346 01a3 6900     		.ascii	"i\000"
  1347 01a5 01       		.byte	0x1
@@ -1975,12 +1978,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1396 0205 1C       		.byte	0x1c
  1397 0206 94       		.byte	0x94
  1398 0207 01       		.byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 34
+
+
  1399 0208 00       		.byte	0
  1400 0209 0C       		.uleb128 0xc
  1401 020a 50000000 		.4byte	.LVL25
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 34
-
-
  1402 020e F1000000 		.4byte	0xf1
  1403 0212 1E020000 		.4byte	0x21e
  1404 0216 0D       		.uleb128 0xd
@@ -2035,12 +2038,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1453 0276 60       		.byte	0x60
  1454 0277 88000000 		.4byte	0x88
  1455 027b 86010000 		.4byte	.LLST8
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 35
+
+
  1456 027f 12       		.uleb128 0x12
  1457 0280 9C020000 		.4byte	.LASF30
  1458 0284 01       		.byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 35
-
-
  1459 0285 60       		.byte	0x60
  1460 0286 88000000 		.4byte	0x88
  1461 028a A4010000 		.4byte	.LLST9
@@ -2095,12 +2098,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1510 02fa 01       		.byte	0x1
  1511 02fb 67       		.byte	0x67
  1512 02fc 25000000 		.4byte	0x25
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 36
+
+
  1513 0300 6F020000 		.4byte	.LLST15
  1514 0304 12       		.uleb128 0x12
  1515 0305 6E020000 		.4byte	.LASF37
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 36
-
-
  1516 0309 01       		.byte	0x1
  1517 030a 67       		.byte	0x67
  1518 030b 25000000 		.4byte	0x25
@@ -2155,12 +2158,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1567 0374 F1000000 		.4byte	0xf1
  1568 0378 83030000 		.4byte	0x383
  1569 037c 0D       		.uleb128 0xd
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 37
+
+
  1570 037d 01       		.uleb128 0x1
  1571 037e 50       		.byte	0x50
  1572 037f 02       		.uleb128 0x2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 37
-
-
  1573 0380 08       		.byte	0x8
  1574 0381 32       		.byte	0x32
  1575 0382 00       		.byte	0
@@ -2215,12 +2218,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1624 03df 96000000 		.4byte	.LVL65
  1625 03e3 85080000 		.4byte	0x885
  1626 03e7 F7030000 		.4byte	0x3f7
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 38
+
+
  1627 03eb 0D       		.uleb128 0xd
  1628 03ec 01       		.uleb128 0x1
  1629 03ed 50       		.byte	0x50
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 38
-
-
  1630 03ee 01       		.uleb128 0x1
  1631 03ef 30       		.byte	0x30
  1632 03f0 0D       		.uleb128 0xd
@@ -2275,12 +2278,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1681 043c 01       		.uleb128 0x1
  1682 043d 50       		.byte	0x50
  1683 043e 01       		.uleb128 0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 39
+
+
  1684 043f 31       		.byte	0x31
  1685 0440 0D       		.uleb128 0xd
  1686 0441 01       		.uleb128 0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 39
-
-
  1687 0442 51       		.byte	0x51
  1688 0443 02       		.uleb128 0x2
  1689 0444 7D       		.byte	0x7d
@@ -2327,7 +2330,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1730 048b 19       		.uleb128 0x19
  1731 048c 3A000000 		.4byte	.LASF41
  1732 0490 01       		.byte	0x1
- 1733 0491 3301     		.2byte	0x133
+ 1733 0491 3601     		.2byte	0x136
  1734 0493 00000000 		.4byte	.LFB69
  1735 0497 C4000000 		.4byte	.LFE69-.LFB69
  1736 049b 01       		.uleb128 0x1
@@ -2335,17 +2338,17 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1738 049d 21050000 		.4byte	0x521
  1739 04a1 1A       		.uleb128 0x1a
  1740 04a2 6200     		.ascii	"b\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 40
+
+
  1741 04a4 01       		.byte	0x1
- 1742 04a5 3501     		.2byte	0x135
+ 1742 04a5 3801     		.2byte	0x138
  1743 04a7 88000000 		.4byte	0x88
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 40
-
-
  1744 04ab BC020000 		.4byte	.LLST19
  1745 04af 1B       		.uleb128 0x1b
  1746 04b0 F0000000 		.4byte	.LASF40
  1747 04b4 01       		.byte	0x1
- 1748 04b5 3601     		.2byte	0x136
+ 1748 04b5 3901     		.2byte	0x139
  1749 04b7 25000000 		.4byte	0x25
  1750 04bb 02       		.uleb128 0x2
  1751 04bc 91       		.byte	0x91
@@ -2353,7 +2356,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1753 04be 1C       		.uleb128 0x1c
  1754 04bf 706600   		.ascii	"pf\000"
  1755 04c2 01       		.byte	0x1
- 1756 04c3 3701     		.2byte	0x137
+ 1756 04c3 3A01     		.2byte	0x13a
  1757 04c5 38020000 		.4byte	0x238
  1758 04c9 03       		.uleb128 0x3
  1759 04ca 91       		.byte	0x91
@@ -2395,12 +2398,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1795 0521 1D       		.uleb128 0x1d
  1796 0522 E5010000 		.4byte	.LASF42
  1797 0526 01       		.byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 41
+
+
  1798 0527 B9       		.byte	0xb9
  1799 0528 00000000 		.4byte	.LFB67
  1800 052c 28000000 		.4byte	.LFE67-.LFB67
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 41
-
-
  1801 0530 01       		.uleb128 0x1
  1802 0531 9C       		.byte	0x9c
  1803 0532 53050000 		.4byte	0x553
@@ -2455,17 +2458,17 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1852 0598 CC       		.byte	0xcc
  1853 0599 38020000 		.4byte	0x238
  1854 059d 2C030000 		.4byte	.LLST21
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 42
+
+
  1855 05a1 1F       		.uleb128 0x1f
  1856 05a2 AC000000 		.4byte	.LBB2
  1857 05a6 1C000000 		.4byte	.LBE2-.LBB2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 42
-
-
  1858 05aa E4050000 		.4byte	0x5e4
  1859 05ae 12       		.uleb128 0x12
  1860 05af 5B010000 		.4byte	.LASF46
  1861 05b3 01       		.byte	0x1
- 1862 05b4 EF       		.byte	0xef
+ 1862 05b4 F2       		.byte	0xf2
  1863 05b5 A0000000 		.4byte	0xa0
  1864 05b9 3F030000 		.4byte	.LLST22
  1865 05bd 0E       		.uleb128 0xe
@@ -2492,13 +2495,13 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1886 05ed 1A       		.uleb128 0x1a
  1887 05ee 766900   		.ascii	"vi\000"
  1888 05f1 01       		.byte	0x1
- 1889 05f2 0601     		.2byte	0x106
+ 1889 05f2 0901     		.2byte	0x109
  1890 05f4 94000000 		.4byte	0x94
  1891 05f8 52030000 		.4byte	.LLST23
  1892 05fc 1A       		.uleb128 0x1a
  1893 05fd 76787300 		.ascii	"vxs\000"
  1894 0601 01       		.byte	0x1
- 1895 0602 0701     		.2byte	0x107
+ 1895 0602 0A01     		.2byte	0x10a
  1896 0604 88000000 		.4byte	0x88
  1897 0608 7B030000 		.4byte	.LLST24
  1898 060c 0E       		.uleb128 0xe
@@ -2515,12 +2518,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1909 0623 00       		.sleb128 0
  1910 0624 00       		.byte	0
  1911 0625 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 43
+
+
  1912 0626 0E       		.uleb128 0xe
  1913 0627 08000000 		.4byte	.LVL101
  1914 062b 59080000 		.4byte	0x859
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 43
-
-
  1915 062f 0E       		.uleb128 0xe
  1916 0630 12000000 		.4byte	.LVL102
  1917 0634 64080000 		.4byte	0x864
@@ -2575,12 +2578,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  1966 069e 50       		.byte	0x50
  1967 069f 02       		.uleb128 0x2
  1968 06a0 91       		.byte	0x91
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 44
+
+
  1969 06a1 6C       		.sleb128 -20
  1970 06a2 00       		.byte	0
  1971 06a3 0C       		.uleb128 0xc
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 44
-
-
  1972 06a4 CE000000 		.4byte	.LVL120
  1973 06a8 4E010000 		.4byte	0x14e
  1974 06ac B7060000 		.4byte	0x6b7
@@ -2635,17 +2638,17 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2023 0716 01       		.uleb128 0x1
  2024 0717 50       		.byte	0x50
  2025 0718 02       		.uleb128 0x2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 45
+
+
  2026 0719 08       		.byte	0x8
  2027 071a 4B       		.byte	0x4b
  2028 071b 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 45
-
-
  2029 071c 00       		.byte	0
  2030 071d 21       		.uleb128 0x21
  2031 071e 72000000 		.4byte	.LASF47
  2032 0722 01       		.byte	0x1
- 2033 0723 6801     		.2byte	0x168
+ 2033 0723 6B01     		.2byte	0x16b
  2034 0725 00000000 		.4byte	.LFB70
  2035 0729 9C000000 		.4byte	.LFE70-.LFB70
  2036 072d 01       		.uleb128 0x1
@@ -2654,13 +2657,13 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2039 0733 1A       		.uleb128 0x1a
  2040 0734 6200     		.ascii	"b\000"
  2041 0736 01       		.byte	0x1
- 2042 0737 6A01     		.2byte	0x16a
+ 2042 0737 6D01     		.2byte	0x16d
  2043 0739 88000000 		.4byte	0x88
  2044 073d 99030000 		.4byte	.LLST25
  2045 0741 1B       		.uleb128 0x1b
  2046 0742 F0000000 		.4byte	.LASF40
  2047 0746 01       		.byte	0x1
- 2048 0747 6B01     		.2byte	0x16b
+ 2048 0747 6E01     		.2byte	0x16e
  2049 0749 25000000 		.4byte	0x25
  2050 074d 02       		.uleb128 0x2
  2051 074e 91       		.byte	0x91
@@ -2668,7 +2671,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2053 0750 1A       		.uleb128 0x1a
  2054 0751 706600   		.ascii	"pf\000"
  2055 0754 01       		.byte	0x1
- 2056 0755 6C01     		.2byte	0x16c
+ 2056 0755 6F01     		.2byte	0x16f
  2057 0757 38020000 		.4byte	0x238
  2058 075b C4030000 		.4byte	.LLST26
  2059 075f 0E       		.uleb128 0xe
@@ -2695,12 +2698,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2080 078f 86000000 		.4byte	.LVL146
  2081 0793 C7080000 		.4byte	0x8c7
  2082 0797 0E       		.uleb128 0xe
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 46
+
+
  2083 0798 90000000 		.4byte	.LVL147
  2084 079c 59080000 		.4byte	0x859
  2085 07a0 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 46
-
-
  2086 07a1 18       		.uleb128 0x18
  2087 07a2 FE010000 		.4byte	.LASF48
  2088 07a6 01       		.byte	0x1
@@ -2733,7 +2736,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2115 07e2 D7       		.byte	0xd7
  2116 07e3 00       		.byte	0
  2117 07e4 18       		.uleb128 0x18
- 2118 07e5 44040000 		.4byte	.LASF51
+ 2118 07e5 2D040000 		.4byte	.LASF51
  2119 07e9 01       		.byte	0x1
  2120 07ea 25       		.byte	0x25
  2121 07eb D4070000 		.4byte	0x7d4
@@ -2755,12 +2758,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2137 0811 05       		.uleb128 0x5
  2138 0812 03       		.byte	0x3
  2139 0813 00000000 		.4byte	UARTP_SysMode
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 47
+
+
  2140 0817 06       		.uleb128 0x6
  2141 0818 E6000000 		.4byte	0xe6
  2142 081c 23       		.uleb128 0x23
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 47
-
-
  2143 081d 51000000 		.4byte	.LASF54
  2144 0821 01       		.byte	0x1
  2145 0822 13       		.byte	0x13
@@ -2784,8 +2787,8 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2163 0849 28       		.byte	0x28
  2164 084a BA000000 		.4byte	0xba
  2165 084e 25       		.uleb128 0x25
- 2166 084f 3C040000 		.4byte	.LASF57
- 2167 0853 3C040000 		.4byte	.LASF57
+ 2166 084f 25040000 		.4byte	.LASF57
+ 2167 0853 25040000 		.4byte	.LASF57
  2168 0857 08       		.byte	0x8
  2169 0858 76       		.byte	0x76
  2170 0859 25       		.uleb128 0x25
@@ -2807,25 +2810,25 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2186 087b 00000000 		.4byte	.LASF61
  2187 087f 00000000 		.4byte	.LASF61
  2188 0883 0A       		.byte	0xa
- 2189 0884 57       		.byte	0x57
+ 2189 0884 5D       		.byte	0x5d
  2190 0885 25       		.uleb128 0x25
  2191 0886 86000000 		.4byte	.LASF62
  2192 088a 86000000 		.4byte	.LASF62
  2193 088e 0A       		.byte	0xa
- 2194 088f 50       		.byte	0x50
+ 2194 088f 56       		.byte	0x56
  2195 0890 25       		.uleb128 0x25
- 2196 0891 9C030000 		.4byte	.LASF63
- 2197 0895 9C030000 		.4byte	.LASF63
+ 2196 0891 85030000 		.4byte	.LASF63
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 48
+
+
+ 2197 0895 85030000 		.4byte	.LASF63
  2198 0899 0A       		.byte	0xa
- 2199 089a 51       		.byte	0x51
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 48
-
-
+ 2199 089a 57       		.byte	0x57
  2200 089b 25       		.uleb128 0x25
  2201 089c 5D030000 		.4byte	.LASF64
  2202 08a0 5D030000 		.4byte	.LASF64
  2203 08a4 0A       		.byte	0xa
- 2204 08a5 56       		.byte	0x56
+ 2204 08a5 5C       		.byte	0x5c
  2205 08a6 25       		.uleb128 0x25
  2206 08a7 2B010000 		.4byte	.LASF65
  2207 08ab 2B010000 		.4byte	.LASF65
@@ -2837,15 +2840,15 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2213 08ba 0B       		.byte	0xb
  2214 08bb 33       		.byte	0x33
  2215 08bc 25       		.uleb128 0x25
- 2216 08bd 92030000 		.4byte	.LASF67
- 2217 08c1 92030000 		.4byte	.LASF67
+ 2216 08bd 7B030000 		.4byte	.LASF67
+ 2217 08c1 7B030000 		.4byte	.LASF67
  2218 08c5 0A       		.byte	0xa
- 2219 08c6 53       		.byte	0x53
+ 2219 08c6 59       		.byte	0x59
  2220 08c7 25       		.uleb128 0x25
  2221 08c8 62040000 		.4byte	.LASF68
  2222 08cc 62040000 		.4byte	.LASF68
  2223 08d0 0A       		.byte	0xa
- 2224 08d1 55       		.byte	0x55
+ 2224 08d1 5B       		.byte	0x5b
  2225 08d2 25       		.uleb128 0x25
  2226 08d3 18010000 		.4byte	.LASF69
  2227 08d7 18010000 		.4byte	.LASF69
@@ -2872,18 +2875,18 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2248 0907 0D       		.byte	0xd
  2249 0908 5A       		.byte	0x5a
  2250 0909 25       		.uleb128 0x25
- 2251 090a 75030000 		.4byte	.LASF74
- 2252 090e 75030000 		.4byte	.LASF74
+ 2251 090a 35040000 		.4byte	.LASF74
+ 2252 090e 35040000 		.4byte	.LASF74
  2253 0912 07       		.byte	0x7
- 2254 0913 3B       		.byte	0x3b
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 49
+
+
+ 2254 0913 3E       		.byte	0x3e
  2255 0914 25       		.uleb128 0x25
  2256 0915 3D010000 		.4byte	.LASF75
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 49
-
-
  2257 0919 3D010000 		.4byte	.LASF75
  2258 091d 0A       		.byte	0xa
- 2259 091e 52       		.byte	0x52
+ 2259 091e 58       		.byte	0x58
  2260 091f 00       		.byte	0
  2261              		.section	.debug_abbrev,"",%progbits
  2262              	.Ldebug_abbrev0:
@@ -2935,12 +2938,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2308 002d 00       		.byte	0
  2309 002e 0B       		.uleb128 0xb
  2310 002f 0B       		.uleb128 0xb
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 50
+
+
  2311 0030 3E       		.uleb128 0x3e
  2312 0031 0B       		.uleb128 0xb
  2313 0032 03       		.uleb128 0x3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 50
-
-
  2314 0033 08       		.uleb128 0x8
  2315 0034 00       		.byte	0
  2316 0035 00       		.byte	0
@@ -2995,12 +2998,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2365 0066 0E       		.uleb128 0xe
  2366 0067 3A       		.uleb128 0x3a
  2367 0068 0B       		.uleb128 0xb
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 51
+
+
  2368 0069 3B       		.uleb128 0x3b
  2369 006a 0B       		.uleb128 0xb
  2370 006b 27       		.uleb128 0x27
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 51
-
-
  2371 006c 19       		.uleb128 0x19
  2372 006d 49       		.uleb128 0x49
  2373 006e 13       		.uleb128 0x13
@@ -3055,12 +3058,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2422 00a2 13       		.uleb128 0x13
  2423 00a3 01       		.uleb128 0x1
  2424 00a4 13       		.uleb128 0x13
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 52
+
+
  2425 00a5 00       		.byte	0
  2426 00a6 00       		.byte	0
  2427 00a7 0D       		.uleb128 0xd
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 52
-
-
  2428 00a8 8A8201   		.uleb128 0x410a
  2429 00ab 00       		.byte	0
  2430 00ac 02       		.uleb128 0x2
@@ -3115,12 +3118,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2479 00e1 02       		.uleb128 0x2
  2480 00e2 17       		.uleb128 0x17
  2481 00e3 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 53
+
+
  2482 00e4 00       		.byte	0
  2483 00e5 11       		.uleb128 0x11
  2484 00e6 34       		.uleb128 0x34
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 53
-
-
  2485 00e7 00       		.byte	0
  2486 00e8 03       		.uleb128 0x3
  2487 00e9 08       		.uleb128 0x8
@@ -3175,12 +3178,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2536 011c 01       		.uleb128 0x1
  2537 011d 13       		.uleb128 0x13
  2538 011e 00       		.byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 54
+
+
  2539 011f 00       		.byte	0
  2540 0120 16       		.uleb128 0x16
  2541 0121 21       		.uleb128 0x21
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 54
-
-
  2542 0122 00       		.byte	0
  2543 0123 49       		.uleb128 0x49
  2544 0124 13       		.uleb128 0x13
@@ -3235,12 +3238,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2593 0156 0E       		.uleb128 0xe
  2594 0157 3A       		.uleb128 0x3a
  2595 0158 0B       		.uleb128 0xb
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 55
+
+
  2596 0159 3B       		.uleb128 0x3b
  2597 015a 05       		.uleb128 0x5
  2598 015b 27       		.uleb128 0x27
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 55
-
-
  2599 015c 19       		.uleb128 0x19
  2600 015d 11       		.uleb128 0x11
  2601 015e 01       		.uleb128 0x1
@@ -3295,12 +3298,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2650 0190 05       		.uleb128 0x5
  2651 0191 49       		.uleb128 0x49
  2652 0192 13       		.uleb128 0x13
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 56
+
+
  2653 0193 02       		.uleb128 0x2
  2654 0194 18       		.uleb128 0x18
  2655 0195 00       		.byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 56
-
-
  2656 0196 00       		.byte	0
  2657 0197 1D       		.uleb128 0x1d
  2658 0198 2E       		.uleb128 0x2e
@@ -3355,12 +3358,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2707 01cb 1F       		.uleb128 0x1f
  2708 01cc 0B       		.uleb128 0xb
  2709 01cd 01       		.byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 57
+
+
  2710 01ce 11       		.uleb128 0x11
  2711 01cf 01       		.uleb128 0x1
  2712 01d0 12       		.uleb128 0x12
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 57
-
-
  2713 01d1 06       		.uleb128 0x6
  2714 01d2 01       		.uleb128 0x1
  2715 01d3 13       		.uleb128 0x13
@@ -3415,12 +3418,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2764 0205 19       		.uleb128 0x19
  2765 0206 3C       		.uleb128 0x3c
  2766 0207 19       		.uleb128 0x19
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 58
+
+
  2767 0208 00       		.byte	0
  2768 0209 00       		.byte	0
  2769 020a 23       		.uleb128 0x23
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 58
-
-
  2770 020b 34       		.uleb128 0x34
  2771 020c 00       		.byte	0
  2772 020d 03       		.uleb128 0x3
@@ -3475,12 +3478,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2821              		.section	.debug_loc,"",%progbits
  2822              	.Ldebug_loc0:
  2823              	.LLST0:
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 59
+
+
  2824 0000 00000000 		.4byte	.LVL0
  2825 0004 08000000 		.4byte	.LVL2
  2826 0008 0100     		.2byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 59
-
-
  2827 000a 50       		.byte	0x50
  2828 000b 08000000 		.4byte	.LVL2
  2829 000f 26000000 		.4byte	.LFE64
@@ -3535,12 +3538,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2878 008f 0100     		.2byte	0x1
  2879 0091 54       		.byte	0x54
  2880 0092 34000000 		.4byte	.LVL21
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 60
+
+
  2881 0096 42000000 		.4byte	.LVL23
  2882 009a 0100     		.2byte	0x1
  2883 009c 54       		.byte	0x54
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 60
-
-
  2884 009d 44000000 		.4byte	.LVL24
  2885 00a1 80000000 		.4byte	.LVL30
  2886 00a5 0100     		.2byte	0x1
@@ -3595,12 +3598,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2935 0128 62000000 		.4byte	.LVL54
  2936 012c 0100     		.2byte	0x1
  2937 012e 54       		.byte	0x54
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 61
+
+
  2938 012f 64000000 		.4byte	.LVL55
  2939 0133 82000000 		.4byte	.LVL62
  2940 0137 0100     		.2byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 61
-
-
  2941 0139 54       		.byte	0x54
  2942 013a 96000000 		.4byte	.LVL65
  2943 013e 9A000000 		.4byte	.LVL66
@@ -3655,12 +3658,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  2992 01c2 0100     		.2byte	0x1
  2993 01c4 50       		.byte	0x50
  2994 01c5 00000000 		.4byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 62
+
+
  2995 01c9 00000000 		.4byte	0
  2996              	.LLST10:
  2997 01cd 2C000000 		.4byte	.LVL41
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 62
-
-
  2998 01d1 32000000 		.4byte	.LVL42
  2999 01d5 0100     		.2byte	0x1
  3000 01d7 55       		.byte	0x55
@@ -3715,12 +3718,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3049 024b C8010000 		.4byte	.LFE66
  3050 024f 0300     		.2byte	0x3
  3051 0251 7D       		.byte	0x7d
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 63
+
+
  3052 0252 6C       		.sleb128 -20
  3053 0253 9F       		.byte	0x9f
  3054 0254 00000000 		.4byte	0
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 63
-
-
  3055 0258 00000000 		.4byte	0
  3056              	.LLST14:
  3057 025c 54010000 		.4byte	.LVL76
@@ -3775,12 +3778,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3106 02e1 94       		.byte	0x94
  3107 02e2 01       		.byte	0x1
  3108 02e3 08       		.byte	0x8
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 64
+
+
  3109 02e4 FF       		.byte	0xff
  3110 02e5 1A       		.byte	0x1a
  3111 02e6 71       		.byte	0x71
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 64
-
-
  3112 02e7 00       		.sleb128 0
  3113 02e8 22       		.byte	0x22
  3114 02e9 23       		.byte	0x23
@@ -3835,12 +3838,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3163 035d EE000000 		.4byte	.LVL128
  3164 0361 F0000000 		.4byte	.LVL129
  3165 0365 0100     		.2byte	0x1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 65
+
+
  3166 0367 54       		.byte	0x54
  3167 0368 F4000000 		.4byte	.LVL130
  3168 036c 00010000 		.4byte	.LVL132
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 65
-
-
  3169 0370 0100     		.2byte	0x1
  3170 0372 54       		.byte	0x54
  3171 0373 00000000 		.4byte	0
@@ -3895,12 +3898,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3220 000b 00       		.byte	0
  3221 000c 0000     		.2byte	0
  3222 000e 0000     		.2byte	0
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 66
+
+
  3223 0010 00000000 		.4byte	.LFB64
  3224 0014 26000000 		.4byte	.LFE64-.LFB64
  3225 0018 00000000 		.4byte	.LFB63
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 66
-
-
  3226 001c 08000000 		.4byte	.LFE63-.LFB63
  3227 0020 00000000 		.4byte	.LFB65
  3228 0024 8E000000 		.4byte	.LFE65-.LFB65
@@ -3955,12 +3958,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3271      5F6E756D 
  3271      5F747970 
  3271      6500
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 67
+
+
  3272              	.LASF38:
  3273 0012 6D6F6465 		.ascii	"mode_inner\000"
  3273      5F696E6E 
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 67
-
-
  3273      657200
  3274              	.LASF26:
  3275 001d 74726965 		.ascii	"tries\000"
@@ -4015,12 +4018,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3296              	.LASF31:
  3297 00a2 7873756D 		.ascii	"xsum_calc\000"
  3297      5F63616C 
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 68
+
+
  3297      6300
  3298              	.LASF77:
  3299 00ac 75617274 		.ascii	"uartp_pend.c\000"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 68
-
-
  3299      705F7065 
  3299      6E642E63 
  3299      00
@@ -4075,12 +4078,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3321      6500
  3322              	.LASF75:
  3323 013d 6374726C 		.ascii	"ctrl_start\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 69
+
+
  3323      5F737461 
  3323      727400
  3324              	.LASF49:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 69
-
-
  3325 0148 735F7278 		.ascii	"s_rx_ubuf\000"
  3325      5F756275 
  3325      6600
@@ -4135,12 +4138,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3346      7200
  3347              	.LASF48:
  3348 01fe 735F7278 		.ascii	"s_rx_state\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 70
+
+
  3348      5F737461 
  3348      746500
  3349              	.LASF1:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 70
-
-
  3350 0209 7369676E 		.ascii	"signed char\000"
  3350      65642063 
  3350      68617200 
@@ -4195,12 +4198,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3373              	.LASF30:
  3374 029c 625F6869 		.ascii	"b_hi\000"
  3374      00
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 71
+
+
  3375              	.LASF59:
  3376 02a1 55415254 		.ascii	"UART_1_ReadRxData\000"
  3376      5F315F52 
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 71
-
-
  3376      65616452 
  3376      78446174 
  3376      6100
@@ -4255,12 +4258,12 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3398 033c 54696D65 		.ascii	"Timer_1_Stop\000"
  3398      725F315F 
  3398      53746F70 
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 72
+
+
  3398      00
  3399              	.LASF50:
  3400 0349 735F7278 		.ascii	"s_rx_ucnt\000"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 72
-
-
  3400      5F75636E 
  3400      7400
  3401              	.LASF10:
@@ -4278,50 +4281,50 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 1
  3407              	.LASF29:
  3408 0370 625F6C6F 		.ascii	"b_lo\000"
  3408      00
- 3409              	.LASF74:
- 3410 0375 70656E64 		.ascii	"pendulo_reset_encoders\000"
- 3410      756C6F5F 
- 3410      72657365 
- 3410      745F656E 
- 3410      636F6465 
- 3411              	.LASF12:
- 3412 038c 75696E74 		.ascii	"uint8\000"
- 3412      3800
- 3413              	.LASF67:
- 3414 0392 6374726C 		.ascii	"ctrl_stop\000"
- 3414      5F73746F 
- 3414      7000
- 3415              	.LASF63:
- 3416 039c 6374726C 		.ascii	"ctrl_apply_coeffs\000"
- 3416      5F617070 
- 3416      6C795F63 
- 3416      6F656666 
- 3416      7300
- 3417              	.LASF76:
- 3418 03ae 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
- 3418      43313120 
- 3418      352E342E 
- 3418      31203230 
- 3418      31363036 
- 3419 03e1 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
- 3419      20726576 
- 3419      6973696F 
- 3419      6E203233 
- 3419      37373135 
- 3420 0414 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
- 3420      66756E63 
- 3420      74696F6E 
- 3420      2D736563 
- 3420      74696F6E 
- 3421              	.LASF57:
- 3422 043c 43794465 		.ascii	"CyDelay\000"
- 3422      6C617900 
- 3423              	.LASF51:
- 3424 0444 735F705F 		.ascii	"s_p_buf\000"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6jKEls.s 			page 73
+ 3409              	.LASF12:
+ 3410 0375 75696E74 		.ascii	"uint8\000"
+ 3410      3800
+ 3411              	.LASF67:
+ 3412 037b 6374726C 		.ascii	"ctrl_stop\000"
+ 3412      5F73746F 
+ 3412      7000
+ 3413              	.LASF63:
+ 3414 0385 6374726C 		.ascii	"ctrl_apply_coeffs\000"
+ 3414      5F617070 
+ 3414      6C795F63 
+ 3414      6F656666 
+ 3414      7300
+ 3415              	.LASF76:
+ 3416 0397 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 3416      43313120 
+ 3416      352E342E 
+ 3416      31203230 
+ 3416      31363036 
+ 3417 03ca 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 3417      20726576 
+ 3417      6973696F 
+ 3417      6E203233 
+ 3417      37373135 
+ 3418 03fd 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 3418      66756E63 
+ 3418      74696F6E 
+ 3418      2D736563 
+ 3418      74696F6E 
+ 3419              	.LASF57:
+ 3420 0425 43794465 		.ascii	"CyDelay\000"
+ 3420      6C617900 
+ 3421              	.LASF51:
+ 3422 042d 735F705F 		.ascii	"s_p_buf\000"
+ 3422      62756600 
+ 3423              	.LASF74:
+ 3424 0435 70656E64 		.ascii	"pendulo_calibrate_rest\000"
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccTkiMNg.s 			page 73
 
 
- 3424      62756600 
+ 3424      756C6F5F 
+ 3424      63616C69 
+ 3424      62726174 
+ 3424      655F7265 
  3425              	.LASF44:
  3426 044c 7061796C 		.ascii	"payload\000"
  3426      6F616400 

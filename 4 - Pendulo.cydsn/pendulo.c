@@ -12,6 +12,12 @@ volatile uint8  g_flag_control     = 0u;
 volatile int32  g_prev_motor_count = 0;
 volatile int16  g_last_u_pwm       = 0;
 
+/* Conteo crudo de QuadDec_2 cuando el péndulo está en reposo (180°).
+   Lo escribe pendulo_calibrate_rest() y lo lee pendulo_read() para
+   convertir el conteo crudo a θ relativo a la vertical (θ=0 al estar
+   levantado a la posición de equilibrio). */
+static int32 g_theta_180_count = 0;
+
 /* ============================================================
    ISR del timer de control
    Dispara cada Ts_inner = 1 / Fs_inner.
@@ -59,14 +65,16 @@ void pendulo_init(void)
 }
 
 /* ============================================================
-   pendulo_reset_encoders()
-   Pone QuadDec_2 (péndulo) en 0 y resincroniza g_prev_motor_count
-   con la lectura actual de QuadDec_1 para que el primer pendulo_read
-   tras Start devuelva delta = 0 (no se acumula movimiento previo).
+   pendulo_calibrate_rest()
+   Marca la posición ACTUAL del péndulo (debería estar en reposo,
+   colgando libremente ≈ 180°) como referencia de 180°. Almacena el
+   conteo crudo de QuadDec_2 y resincroniza g_prev_motor_count.
+   pendulo_read() usa esta referencia para calcular θ relativo a la
+   vertical (θ=0 cuando se rota ±π desde el reposo).
    ============================================================ */
-void pendulo_reset_encoders(void)
+void pendulo_calibrate_rest(void)
 {
-    QuadDec_2_SetCounter(0);
+    g_theta_180_count  = (int32)QuadDec_2_GetCounter();
     g_prev_motor_count = (int32)QuadDec_1_GetCounter();
 }
 
@@ -88,21 +96,31 @@ void pendulo_resync_motor(void)
    ============================================================ */
 void pendulo_read(int32 *theta_counts, int16 *delta_omega_counts)
 {
-    int32 curr_motor;
-    int32 delta;
+    int32 raw, delta_th, curr_motor, delta_om;
+    const int32 cpr  = (int32)PENDULO_CPR;
+    const int32 half = cpr / 2;     /* media vuelta = ~5000 cuentas (≈ π rad) */
 
-    /* ángulo del péndulo (QuadDec_2) */
-    *theta_counts = (int32)QuadDec_2_GetCounter();
+    /* --- Ángulo del péndulo (QuadDec_2) ---
+       El reposo (180°) quedó calibrado en g_theta_180_count.
+       theta = (raw - g_theta_180_count) shift +half para que la vertical
+       (rotada ±half desde el reposo) corresponda a 0. Wrap a (-half, +half]
+       para que la dirección en la que se levanta el péndulo no importe:
+       tanto +half como -half de rotación desde el reposo dan theta=0. */
+    raw      = (int32)QuadDec_2_GetCounter();
+    delta_th = raw - g_theta_180_count + half;
+    while (delta_th >  half) delta_th -= cpr;
+    while (delta_th < -half) delta_th += cpr;
+    *theta_counts = delta_th;
 
-    /* velocidad del motor: cuentas por Ts_inner (QuadDec_1) */
-    curr_motor   = (int32)QuadDec_1_GetCounter();
-    delta        = curr_motor - g_prev_motor_count;
+    /* --- Velocidad del motor: cuentas por Ts_inner (QuadDec_1) --- */
+    curr_motor = (int32)QuadDec_1_GetCounter();
+    delta_om   = curr_motor - g_prev_motor_count;
     g_prev_motor_count = curr_motor;
 
     /* saturar a rango int16 (no debería ocurrir a velocidades normales) */
-    if (delta >  32767) delta =  32767;
-    if (delta < -32768) delta = -32768;
-    *delta_omega_counts = (int16)delta;
+    if (delta_om >  32767) delta_om =  32767;
+    if (delta_om < -32768) delta_om = -32768;
+    *delta_omega_counts = (int16)delta_om;
 }
 
 /* ============================================================

@@ -108,15 +108,14 @@ ax_u2 = uiaxes(fig,'Position',[AX_X ax_y(1) AX_W AX_H]);
 ax_y1 = uiaxes(fig,'Position',[AX_X ax_y(2) AX_W AX_H]);
 ax_u1 = uiaxes(fig,'Position',[AX_X ax_y(3) AX_W AX_H]);
 
-setupAx(ax_u1,'u₁ [PWM]  esfuerzo motor + R referencia','u₁');
+setupAx(ax_u1,'u₁ [PWM]  esfuerzo motor','u₁');
 setupAx(ax_y1,'y₁ = ω motor [rad/s]  /  x̂ inner  /  ŷ sim','ω');
-setupAx(ax_u2,'u₂ = R inner  (salida outer → referencia lazo inner)','u₂');
+setupAx(ax_u2,'u₂ [PWM]  esfuerzo controlador péndulo','u₂');
 setupAx(ax_y2,'y₂ = θ péndulo [rad]  /  x̂ outer  /  ŷ sim','θ');
 
 hold(ax_u1,'on');
 hU1sat   = stairs(ax_u1,nan,nan,'b-', 'LineWidth',1.5,'DisplayName','u₁ sat');
 hU1unsat = stairs(ax_u1,nan,nan,'b--','LineWidth',0.8,'DisplayName','u₁ unsat');
-hR1      = stairs(ax_u1,nan,nan,'r-', 'LineWidth',1.2,'DisplayName','R (ref inner)');
 hold(ax_u1,'off');  legend(ax_u1,'show');
 
 hold(ax_y1,'on');
@@ -128,7 +127,7 @@ hR1_y1 = plot(ax_y1,nan,nan,'r-', 'LineWidth',1.2,'DisplayName','R [rad/s]');
 hold(ax_y1,'off');  legend(ax_y1,'show');
 
 hold(ax_u2,'on');
-hU2 = stairs(ax_u2,nan,nan,'r-','LineWidth',1.5,'DisplayName','R inner');
+hU2 = stairs(ax_u2,nan,nan,'r-','LineWidth',1.5,'DisplayName','u₂ péndulo');
 hold(ax_u2,'off');  legend(ax_u2,'show');
 
 hold(ax_y2,'on');
@@ -270,12 +269,13 @@ uilabel(pCtrl,'Text','+offset:','Position',[PP_PX+368 yC2 50 22],...
 edtOffset = uieditfield(pCtrl,'numeric','Value',0,'Limits',[-1e9 1e9],...
             'Position',[PP_PX+420 yC2 72 22],...
             'Tooltip','Offset estático sumado al esfuerzo de control.');
-btnSetZero = uibutton(pCtrl,'Text','📍 Setear 0',...
-             'Position',[PP_PX+498 yC2 82 PP_RH],...
+btnSetZero = uibutton(pCtrl,'Text','📍 Calibrar reposo',...
+             'Position',[PP_PX+498 yC2 110 PP_RH],...
              'BackgroundColor',[0.85 0.65 0.15],'FontColor','w','FontWeight','bold',...
-             'Tooltip',['Calibra el cero del encoder del péndulo (envía comando ''z'').' newline ...
-                        'Posicioná el péndulo en la vertical y presioná este botón ANTES de Start.' newline ...
-                        'Ya no se reinicia automáticamente al iniciar el control.'], ...
+             'Tooltip',['Calibra la referencia de reposo del péndulo (180°, envía ''z'').' newline ...
+                        'Dejá el péndulo colgando libremente, presioná este botón, y luego' newline ...
+                        'levantalo a la vertical antes de Start. El firmware calcula θ=0 ' newline ...
+                        'sumando/restando media vuelta desde la referencia de 180°.'], ...
              'ButtonPushedFcn',@onSetZero);
 
 cbAutoStop = uicheckbox(pCtrl,'Text','Auto-stop en frames:','Value',false,...
@@ -368,6 +368,9 @@ txtLog.Value = strings(0,1);
 % Botón Limpiar (definido después de txtLog para capturarlo en el closure)
 uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
          'ButtonPushedFcn',@(~,~) set(txtLog,'Value',strings(0,1)));
+
+% Restaurar configuración previa (autosave) — Fs, COM, Baud, controladores...
+autoLoadCfg();
 
 %% ═══ HELPERS UI ══════════════════════════════════════════════════════════════
 
@@ -529,10 +532,10 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         % Actualizar título del eje u1 según el dominio de la salida del ctrl
         if exist('ax_u1','var') && isvalid(ax_u1)
             if S.cfg(1).ref_in_volts || S.cfg(1).output_in_volts
-                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor';
                 ax_u1.YLabel.String = 'u₁ [V]';
             else
-                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor + R referencia';
+                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor';
                 ax_u1.YLabel.String = 'u₁';
             end
         end
@@ -588,8 +591,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                     lblCfgStat(pp).Text = sprintf('TF  ord=%d', c.tf_ord);
                 end
             case 'PID'
-                pid_str = sprintf('PID Kp=%.3g Ki=%.3g Kd=%.3g N=%g', ...
-                                  c.pid_Kp, c.pid_Ki, c.pid_Kd, c.pid_N);
+                pid_str = sprintf('PID Kp=%.3g Ti=%.3g Td=%.3g N=%g', ...
+                                  c.pid_Kp, c.pid_Ti, c.pid_Td, c.pid_N);
                 if pp == 2
                     lblCfgStat(pp).Text = sprintf('%s  N=%d', pid_str, c.N);
                 else
@@ -631,13 +634,13 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             ax_u1.Visible='off'; ax_y1.Visible='off';
             ax_u2.Visible='off'; ax_y2.Visible='off';
             % Clear all lines so legends don't persist when axes are shown again
-            hAll = [hU1sat,hU1unsat,hR1,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
+            hAll = [hU1sat,hU1unsat,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
             for h = hAll, set(h,'XData',nan,'YData',nan); end
         end
     end
 
     function updatePlots(~,~)
-        hAll = [hU1sat,hU1unsat,hR1,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
+        hAll = [hU1sat,hU1unsat,hR1_y1,hY1,hY1sim,hX1i,hX2i,hU2,hY2,hY2sim,hX1o,hX2o];
         for h = hAll, set(h,'XData',nan,'YData',nan); end
         if isempty(S.nVec), return; end
 
@@ -663,34 +666,26 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 % ref_in_volts solo: PSoC reporta u1 en PWM → convertir a V para display
                 u1d       = arrayfun(@pwm_to_volts_approx, u1d);
                 u1unsat_d = arrayfun(@pwm_to_volts_approx, u1unsat_d);
-                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor';
                 ax_u1.YLabel.String = 'u₁ [V]';
             elseif S.cfg(1).output_in_volts
                 % output_in_volts: PSoC reporta u1 ya en Voltios (salida directa del ctrl TF)
-                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor + R referencia';
+                ax_u1.Title.String  = 'u₁ [V]  esfuerzo motor';
                 ax_u1.YLabel.String = 'u₁ [V]';
             else
-                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor + R referencia';
+                ax_u1.Title.String  = 'u₁ [PWM]  esfuerzo motor';
                 ax_u1.YLabel.String = 'u₁';
             end
             if cbSigU.Value,     set(hU1sat,  'XData',n,'YData',u1d*su1);       end
             if cbSigUnsat.Value, set(hU1unsat,'XData',n,'YData',u1unsat_d*su1); end
-            if cbSigR.Value
-                if S.cfg(1).output_in_volts && ~S.cfg(1).ref_in_volts
-                    % ref en rad/s, u1 en V → ref va sobre ax_y1, no sobre ax_u1
-                    set(hR1,    'XData',nan,'YData',nan);
-                    set(hR1_y1, 'XData',n,  'YData',S.u2Vec(i0:end)*sr);
-                else
-                    % R va sobre ax_u1: si el eje está en V (ref_in_volts u
-                    % output_in_volts), convertir la ref que el PSoC guarda
-                    % internamente en PWM también a Voltios.
-                    u2d_ref = S.u2Vec(i0:end);
-                    if S.cfg(1).ref_in_volts || S.cfg(1).output_in_volts
-                        u2d_ref = arrayfun(@pwm_to_volts_approx, u2d_ref);
-                    end
-                    set(hR1,    'XData',n,  'YData',u2d_ref*sr);
-                    set(hR1_y1, 'XData',nan,'YData',nan);
-                end
+            % R (referencia inner) se muestra sólo sobre ax_y1 cuando los
+            % units matchean (ref en rad/s). En otros casos (ref en V o PWM)
+            % no se overlay-ea: u₂ ya muestra el mismo dato en su propio eje.
+            ref_in_rads = (strcmp(S.cfg(1).mode,'TF') || ...
+                           strcmp(S.cfg(1).mode,'SS') || ...
+                           strcmp(S.cfg(1).mode,'PID')) && ~S.cfg(1).ref_in_volts;
+            if cbSigR.Value && ref_in_rads
+                set(hR1_y1, 'XData',n,  'YData',S.u2Vec(i0:end)*sr);
             else
                 set(hR1_y1, 'XData',nan,'YData',nan);
             end
@@ -776,7 +771,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
             'ss_A',eye(2),  'ss_B',zeros(2,1),  'ss_C',zeros(1,2),...
             'ss_D',0,  'ss_L',zeros(2,1),  'ss_K',zeros(1,2),...
             'ss_Ki',0,  'ss_Nbar',1,...
-            'pid_Kp',0,  'pid_Ki',0,  'pid_Kd',0,  'pid_N',10,...
+            'pid_Kp',0,  'pid_Ti',0,  'pid_Td',0,  'pid_N',10,...
             'q_scale',1.0,...
             'sim_enabled',false,...
             'sim_Ad',[],'sim_Bd',[],'sim_Cd',[],'sim_Dd',0,'sim_x',[],'sim_cnt',0,...
@@ -1097,18 +1092,19 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         et_pKp = uieditfield(p_PID,'numeric','Value',c.pid_Kp, ...
                   'Limits',[-1e9 1e9], 'Position',[EF_X r1 200 22]);
 
-        % Row 2 — Ki
-        uilabel(p_PID,'Text','Ki:','FontWeight','bold',...
+        % Row 2 — Ti
+        uilabel(p_PID,'Text','Ti:','FontWeight','bold',...
                 'Position',[LBL_X r2 LBL_W 22]);
-        et_pKi = uieditfield(p_PID,'numeric','Value',c.pid_Ki, ...
+        et_pTi = uieditfield(p_PID,'numeric','Value',c.pid_Ti, ...
                   'Limits',[-1e9 1e9], 'Position',[EF_X r2 200 22], ...
-                  'Tooltip','Ganancia integral en convención continua (Ki·∫e dt). Poné 0 para PD puro.');
+                  'Tooltip','Tiempo integral [s]. Ki = Kp/Ti. Poné 0 para PD puro (sin integrador).');
 
-        % Row 3 — Kd
-        uilabel(p_PID,'Text','Kd:','FontWeight','bold',...
+        % Row 3 — Td
+        uilabel(p_PID,'Text','Td:','FontWeight','bold',...
                 'Position',[LBL_X r3 LBL_W 22]);
-        et_pKd = uieditfield(p_PID,'numeric','Value',c.pid_Kd, ...
-                  'Limits',[-1e9 1e9], 'Position',[EF_X r3 200 22]);
+        et_pTd = uieditfield(p_PID,'numeric','Value',c.pid_Td, ...
+                  'Limits',[-1e9 1e9], 'Position',[EF_X r3 200 22], ...
+                  'Tooltip','Tiempo derivativo [s]. Kd = Kp·Td.');
 
         % Row 4 — N (filtro derivativo)
         uilabel(p_PID,'Text','N filt deriv:','FontWeight','bold',...
@@ -1118,7 +1114,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                   'Tooltip','Td = Kd/(Kp·N). Rango típico 5–20.');
 
         % Row 5 — botones de preset + status
-        btn_loadMich = uibutton(p_PID,'Text','📥 Cargar Michigan', ...
+        btn_loadMich = uibutton(p_PID,'Text','📥 Cargar PID', ...
                 'Position',[LBL_X r5 168 22], ...
                 'BackgroundColor',[0.85 0.92 1.0], ...
                 'Tooltip','Toma C_out_michigan del workspace (correr Pend_invert_michigan primero).', ...
@@ -1241,7 +1237,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         end
 
         function pidLoadMichigan()
-            % Toma C_out_michigan del workspace y rellena Kp/Ki/Kd/N.
+            % Toma C_out_michigan del workspace y rellena Kp/Ti/Td/N.
             try
                 Cm = evalin('base','C_out_michigan');
             catch
@@ -1253,18 +1249,21 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 Ki_v = double(Cm.Ki);
                 Kd_v = double(Cm.Kd);
                 Tf_v = double(Cm.Tf);
-                if Kp_v ~= 0 && Tf_v > 0
-                    N_v = Kd_v / (Kp_v * Tf_v);
+                % paralelo → ISA: Ti = Kp/Ki, Td = Kd/Kp, N = Td/Tf
+                if Ki_v ~= 0, Ti_v = Kp_v / Ki_v; else, Ti_v = 0; end
+                if Kp_v ~= 0, Td_v = Kd_v / Kp_v; else, Td_v = 0; end
+                if Td_v ~= 0 && Tf_v > 0
+                    N_v = Td_v / Tf_v;
                 else
                     N_v = 10;
                 end
                 if N_v < 1 || ~isfinite(N_v), N_v = 10; end
                 et_pKp.Value = Kp_v;
-                et_pKi.Value = Ki_v;
-                et_pKd.Value = Kd_v;
+                et_pTi.Value = Ti_v;
+                et_pTd.Value = Td_v;
                 et_pN.Value  = N_v;
-                setStat(sl_pid, sprintf('✓ Michigan cargado (Kp=%.3g Kd=%.3g N=%.2g)', ...
-                                         Kp_v, Kd_v, N_v), true);
+                setStat(sl_pid, sprintf('✓ Michigan cargado (Kp=%.3g Ti=%.3g Td=%.3g N=%.2g)', ...
+                                         Kp_v, Ti_v, Td_v, N_v), true);
             catch e
                 setStat(sl_pid, ['✗ ' e.message], false);
             end
@@ -1325,10 +1324,14 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                 elseif strcmp(c2.mode, 'PID')
                     % ── PID → TF discreta ────────────────────────────────
                     Kp_v = double(et_pKp.Value);
-                    Ki_v = double(et_pKi.Value);
-                    Kd_v = double(et_pKd.Value);
+                    Ti_v = double(et_pTi.Value);
+                    Td_v = double(et_pTd.Value);
                     N_v  = double(et_pN.Value);
                     if N_v < 1, N_v = 10; end
+                    % ISA → paralelo:  Ki = Kp/Ti  (Ti=0 → sin integrador)
+                    %                  Kd = Kp·Td
+                    if Ti_v ~= 0, Ki_v = Kp_v / Ti_v; else, Ki_v = 0; end
+                    Kd_v = Kp_v * Td_v;
 
                     Fs_in_ = max(edtFs(1).Value, 0.1);
                     if pp == 2
@@ -1361,8 +1364,8 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
                     c2.tf_b   = b_p;
                     c2.tf_a   = a_p;
                     c2.tf_ord = N_ord;
-                    c2.pid_Kp = Kp_v;  c2.pid_Ki = Ki_v;
-                    c2.pid_Kd = Kd_v;  c2.pid_N  = N_v;
+                    c2.pid_Kp = Kp_v;  c2.pid_Ti = Ti_v;
+                    c2.pid_Td = Td_v;  c2.pid_N  = N_v;
 
                 elseif strcmp(c2.mode, 'SS')
                     % ── Extraer SS ───────────────────────────────────────
@@ -1750,9 +1753,11 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
     end
 
     function uartp_zero()
-        % Envía 'z' al PSoC: resetea solo el encoder del péndulo (QuadDec_2),
-        % sin tocar los estados del controlador. Para usar con el péndulo
-        % posicionado en la vertical antes de iniciar el control.
+        % Envía 'z' al PSoC: marca la posición actual como reposo (180°).
+        % El operador deja el péndulo colgando libremente y manda este
+        % comando; el firmware almacena el conteo crudo de QuadDec_2 como
+        % referencia de π. pendulo_read luego calcula θ=0 al rotar ±media
+        % vuelta desde el reposo (cualquier dirección, con wrap interno).
         ll_flush();  rsp = ll_cmd_wait('z');
         if rsp ~= uint8('K'), error("zero: rsp=%c",char(rsp)); end
     end
@@ -1828,66 +1833,98 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
         [f,p] = uiputfile('*.mat','Guardar sesión');
         if isequal(f,0), return; end
         try
-            sess.cfg1     = S.cfg(1);  sess.cfg1.sim_x = [];
-            sess.cfg2     = S.cfg(2);  sess.cfg2.sim_x = [];
-            sess.Fs       = edtFs(1).Value;
-            sess.SatMin   = edtSatMin.Value;
-            sess.SatMax   = edtSatMax.Value;
-            sess.num_type = ddNumType.Value;
-            sess.scalers  = S.scalers;
-            save(fullfile(p,f),'-struct','sess');
+            doSaveSession(fullfile(p,f));
             logMsg("Sesión guardada: " + string(f));
         catch e, logMsg("Guardar FAIL: " + string(e.message)); end
+    end
+
+    function doSaveSession(fullpath)
+        sess.cfg1     = S.cfg(1);  sess.cfg1.sim_x = [];
+        sess.cfg2     = S.cfg(2);  sess.cfg2.sim_x = [];
+        sess.Fs       = edtFs(1).Value;
+        sess.SatMin   = edtSatMin.Value;
+        sess.SatMax   = edtSatMax.Value;
+        sess.num_type = ddNumType.Value;
+        sess.scalers  = S.scalers;
+        sess.com      = edtCom.Value;
+        sess.baud     = edtBaud.Value;
+        save(fullpath,'-struct','sess');
     end
 
     function onLoadSession(~,~)
         [f,p] = uigetfile('*.mat','Cargar sesión');
         if isequal(f,0), return; end
         try
-            sess = load(fullfile(p,f));
-            if isfield(sess,'cfg1')
-                S.cfg(1) = sess.cfg1;  S.cfg(1).sim_x = [];
-                if ~isfield(S.cfg(1),'q_scale') || S.cfg(1).q_scale <= 0
-                    S.cfg(1).q_scale = 1.0;  % retrocompat con sesiones antiguas
-                end
-                ddMode(1).Value  = S.cfg(1).mode;
-                ddObs(1).Value   = S.cfg(1).obs;
-                cbInt(1).Value   = S.cfg(1).has_int;
-                edtFs(1).Value   = S.cfg(1).Fs;
-                cbSimEn(1).Value = S.cfg(1).sim_enabled;
-            end
-            if isfield(sess,'cfg2')
-                S.cfg(2) = sess.cfg2;  S.cfg(2).sim_x = [];
-                if ~isfield(S.cfg(2),'q_scale') || S.cfg(2).q_scale <= 0
-                    S.cfg(2).q_scale = 1.0;
-                end
-                ddMode(2).Value  = S.cfg(2).mode;
-                ddObs(2).Value   = S.cfg(2).obs;
-                cbInt(2).Value   = S.cfg(2).has_int;
-                edtN(2).Value    = S.cfg(2).N;
-                cbSimEn(2).Value = S.cfg(2).sim_enabled;
-            end
-            if isfield(sess,'Fs'),       edtFs(1).Value   = sess.Fs; end
-            if isfield(sess,'SatMin'),   edtSatMin.Value  = sess.SatMin; end
-            if isfield(sess,'SatMax'),   edtSatMax.Value  = sess.SatMax; end
-            if isfield(sess,'num_type'), ddNumType.Value  = sess.num_type; end
-            if isfield(sess,'scalers')
-                S.scalers = sess.scalers;
-            elseif isfield(sess,'SU1')
-                % compatibilidad con sesiones v4
-                S.scalers.su1 = sess.SU1;  S.scalers.su2 = sess.SU2;
-                S.scalers.sy1 = sess.SY1;  S.scalers.sy2 = sess.SY2;
-            end
-            % retrocompat: campos nuevos no presentes en sesiones antiguas
-            if ~isfield(S.cfg(1),'ref_in_volts'),    S.cfg(1).ref_in_volts    = false; end
-            if ~isfield(S.cfg(1),'output_in_volts'), S.cfg(1).output_in_volts = false; end
-            if ~isfield(S.cfg(1),'sim_in_volts'),    S.cfg(1).sim_in_volts    = false; end
-            if ~isfield(S.cfg(2),'sim_in_volts'),    S.cfg(2).sim_in_volts    = false; end
-            updateRefLimits();
-            for pp2 = 1:2, onModeChange(pp2);  updateCfgStatus(pp2); end
-            for pp2 = 1:2, onSimToggle(pp2); end   % sync ŷ checkbox visibility
+            doLoadSession(fullfile(p,f));
             logMsg("Sesión cargada: " + string(f));
         catch e, logMsg("Cargar FAIL: " + string(e.message)); end
+    end
+
+    function doLoadSession(fullpath)
+        sess = load(fullpath);
+        if isfield(sess,'cfg1')
+            S.cfg(1) = sess.cfg1;  S.cfg(1).sim_x = [];
+            if ~isfield(S.cfg(1),'q_scale') || S.cfg(1).q_scale <= 0
+                S.cfg(1).q_scale = 1.0;  % retrocompat con sesiones antiguas
+            end
+            ddMode(1).Value  = S.cfg(1).mode;
+            ddObs(1).Value   = S.cfg(1).obs;
+            cbInt(1).Value   = S.cfg(1).has_int;
+            edtFs(1).Value   = S.cfg(1).Fs;
+            cbSimEn(1).Value = S.cfg(1).sim_enabled;
+        end
+        if isfield(sess,'cfg2')
+            S.cfg(2) = sess.cfg2;  S.cfg(2).sim_x = [];
+            if ~isfield(S.cfg(2),'q_scale') || S.cfg(2).q_scale <= 0
+                S.cfg(2).q_scale = 1.0;
+            end
+            ddMode(2).Value  = S.cfg(2).mode;
+            ddObs(2).Value   = S.cfg(2).obs;
+            cbInt(2).Value   = S.cfg(2).has_int;
+            edtN(2).Value    = S.cfg(2).N;
+            cbSimEn(2).Value = S.cfg(2).sim_enabled;
+        end
+        if isfield(sess,'Fs'),       edtFs(1).Value   = sess.Fs; end
+        if isfield(sess,'SatMin'),   edtSatMin.Value  = sess.SatMin; end
+        if isfield(sess,'SatMax'),   edtSatMax.Value  = sess.SatMax; end
+        if isfield(sess,'num_type'), ddNumType.Value  = sess.num_type; end
+        if isfield(sess,'com'),      edtCom.Value     = sess.com;     end
+        if isfield(sess,'baud'),     edtBaud.Value    = sess.baud;    end
+        if isfield(sess,'scalers')
+            S.scalers = sess.scalers;
+        elseif isfield(sess,'SU1')
+            % compatibilidad con sesiones v4
+            S.scalers.su1 = sess.SU1;  S.scalers.su2 = sess.SU2;
+            S.scalers.sy1 = sess.SY1;  S.scalers.sy2 = sess.SY2;
+        end
+        % retrocompat: campos nuevos no presentes en sesiones antiguas
+        if ~isfield(S.cfg(1),'ref_in_volts'),    S.cfg(1).ref_in_volts    = false; end
+        if ~isfield(S.cfg(1),'output_in_volts'), S.cfg(1).output_in_volts = false; end
+        if ~isfield(S.cfg(1),'sim_in_volts'),    S.cfg(1).sim_in_volts    = false; end
+        if ~isfield(S.cfg(2),'sim_in_volts'),    S.cfg(2).sim_in_volts    = false; end
+        updateRefLimits();
+        for pp2 = 1:2, onModeChange(pp2);  updateCfgStatus(pp2); end
+        for pp2 = 1:2, onSimToggle(pp2); end   % sync ŷ checkbox visibility
+    end
+
+    function p = autoSavePath()
+        [d,~,~] = fileparts(mfilename('fullpath'));
+        p = fullfile(d, 'pendulo_gui2_autosave.mat');
+    end
+
+    function autoSaveCfg()
+        try, doSaveSession(autoSavePath()); catch, end
+    end
+
+    function autoLoadCfg()
+        p = autoSavePath();
+        if exist(p,'file') ~= 2, return; end
+        try
+            doLoadSession(p);
+            logMsg("⏎ Configuración previa restaurada (" + string(p) + ").");
+        catch e
+            logMsg("Autoload FAIL: " + string(e.message));
+        end
     end
 
     function onStart(~,~)
@@ -1987,18 +2024,20 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
     end
 
     function onSetZero(~,~)
-        % Calibra el cero del encoder del péndulo. El operador posiciona el
-        % péndulo en la vertical y presiona este botón → comando 'z' al PSoC.
+        % Calibra la referencia de REPOSO del péndulo (180°). El operador
+        % deja el péndulo colgando libremente y presiona este botón → 'z'
+        % al PSoC, que almacena el conteo actual como π. θ=0 (vertical) se
+        % obtiene rotando ±media vuelta desde ese punto.
         if ~reqConn(), return; end
         if S.inLoop
-            logMsg("⚠ Detener el control antes de calibrar el cero.");
+            logMsg("⚠ Detener el control antes de calibrar el reposo.");
             return;
         end
         try
             uartp_zero();
-            logMsg("📍 Cero del péndulo calibrado (encoder QuadDec_2 → 0).");
+            logMsg("📍 Reposo (180°) calibrado. Levantá el péndulo a la vertical antes de Start.");
         catch e
-            logMsg("Setear 0 FAIL: " + string(e.message));
+            logMsg("Calibrar reposo FAIL: " + string(e.message));
         end
     end
 
@@ -2496,6 +2535,7 @@ uibutton(fig,'Text','Limpiar','Position',[RX+36 Y_LOG+H_LOG-LOG_HDR_H 80 22],...
 %% ═══ CIERRE ══════════════════════════════════════════════════════════════════
 
     function onClose(~,~)
+        autoSaveCfg();   % persiste Fs/COM/Baud/cfg para la próxima ejecución
         S.streamOn = false;
         for pp2 = 1:2
             try

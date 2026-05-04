@@ -50,13 +50,19 @@
 #define CTRL_COEF_BYTES  100u   /* 25 * sizeof(float) */
 
 /* ---- Detección de stall (choque contra topes mecánicos) ----
-   Si |u_pwm| >= STALL_PWM_THRESH durante STALL_WINDOW_TICKS ticks
-   consecutivos pero |delta_om_cnt| <= STALL_DELTA_THRESH (motor no
-   se mueve), levantamos ctrl_stall_flag y forzamos stop del control.
+   Disparamos ctrl_stall_flag SOLO si se cumplen las TRES condiciones
+   simultáneamente durante STALL_WINDOW_TICKS ticks consecutivos:
+     (1) |u_pwm|       >= STALL_PWM_THRESH    (hay esfuerzo)
+     (2) |delta_om_cnt| <= STALL_DELTA_THRESH (motor no se mueve)
+     (3) |theta_rad|   >= STALL_THETA_THRESH (péndulo caído ~45°)
+   La condición (3) evita falsos positivos durante el balanceo (péndulo
+   centrado): un stall verdadero es el carro contra el tope mecánico,
+   y eso ocurre con el péndulo claramente caído.
    Ajustar thresholds desde aquí (no requiere cambio en MATLAB). */
 #define STALL_PWM_THRESH    800.0f   /* esfuerzo "alto" — ~63% de PWM_MAX */
 #define STALL_DELTA_THRESH  2        /* movimiento "nulo" — cuentas de encoder/Ts */
-#define STALL_WINDOW_TICKS  20u     /* ventana — 100 ticks × 5 ms = 500 ms */
+#define STALL_THETA_THRESH  0.4363f  /* 25° (25·π/180) — péndulo caído */
+#define STALL_WINDOW_TICKS  20u     /* ventana — 20 ticks × 5 ms = 100 ms */
 
 extern volatile uint8 ctrl_stall_flag;  /* 1 = stall detectado, main lo resetea tras notificar */
 

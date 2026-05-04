@@ -192,7 +192,7 @@
 <dep name=".\uartp_pend.h" />
 </file>
 <file name=".\main.c" />
-<file name=".\CortexM3\ARM_GCC_541\Debug\uartp2.o">
+<file name=".\CortexM3\ARM_GCC_541\Debug\pendulo.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <dep name=".\Generated_Source\PSoC5\CyDmac.h" />
 <dep name=".\Generated_Source\PSoC5\CyFlash.h" />
@@ -246,12 +246,11 @@
 <dep name=".\core_cm3.h" />
 <dep name=".\core_cmFunc.h" />
 <dep name=".\core_cmInstr.h" />
-<dep name=".\ctrl_pend.h" />
-<dep name=".\uartp2.c" />
-<dep name=".\uartp2.h" />
+<dep name=".\motor.h" />
+<dep name=".\pendulo.c" />
+<dep name=".\pendulo.h" />
 </file>
-<file name=".\uartp2.c" />
-<file name=".\uartp2.h" />
+<file name=".\pendulo.c" />
 <file name=".\CortexM3\ARM_GCC_541\Debug\uartp_pend.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <dep name=".\Generated_Source\PSoC5\CyDmac.h" />
@@ -313,7 +312,7 @@
 <dep name=".\uartp_pend.h" />
 </file>
 <file name=".\uartp_pend.c" />
-<file name=".\CortexM3\ARM_GCC_541\Debug\pendulo.o">
+<file name=".\CortexM3\ARM_GCC_541\Debug\uartp2.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <dep name=".\Generated_Source\PSoC5\CyDmac.h" />
 <dep name=".\Generated_Source\PSoC5\CyFlash.h" />
@@ -367,11 +366,12 @@
 <dep name=".\core_cm3.h" />
 <dep name=".\core_cmFunc.h" />
 <dep name=".\core_cmInstr.h" />
-<dep name=".\motor.h" />
-<dep name=".\pendulo.c" />
-<dep name=".\pendulo.h" />
+<dep name=".\ctrl_pend.h" />
+<dep name=".\uartp2.c" />
+<dep name=".\uartp2.h" />
 </file>
-<file name=".\pendulo.c" />
+<file name=".\uartp2.c" />
+<file name=".\uartp2.h" />
 <file name=".\CortexM3\ARM_GCC_541\Debug\motor.o">
 <dep name=".\Generated_Source\PSoC5\BUS_CLK.h" />
 <dep name=".\Generated_Source\PSoC5\CyDmac.h" />
@@ -1814,7 +1814,7 @@
 <dataGuid v="769d31ea-68b1-4f0c-b90a-7c10a43ee563">
 <CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563 type_name="CyDesigner.Common.ProjMgmt.Model.CyLinkCustomData" version="1">
 <link_deps_times>
-<name_val_pair name="c9323d49-d323-40b8-9b59-cc008d68a989@Debug@CortexM3" v="134220706098244408" />
+<name_val_pair name="c9323d49-d323-40b8-9b59-cc008d68a989@Debug@CortexM3" v="134222353313649359" />
 </link_deps_times>
 </CyGuid_769d31ea-68b1-4f0c-b90a-7c10a43ee563>
 </dataGuid>

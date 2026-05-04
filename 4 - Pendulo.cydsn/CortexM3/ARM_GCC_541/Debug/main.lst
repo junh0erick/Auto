@@ -1,4 +1,4 @@
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 1
 
 
    1              		.syntax unified
@@ -58,7 +58,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
   28:main.c        ****                   clock = 24 MHz → time_us = elapsed / 24.0
   29:main.c        ****    ============================================================ */
   30:main.c        **** #include "project.h"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 2
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 2
 
 
   31:main.c        **** #include "pendulo.h"
@@ -118,7 +118,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
   57:main.c        ****            ctrl_apply_coeffs() calcula ctrl_period_ticks cuando recibe Fs.
   58:main.c        ****            Aplicar aquí en contexto main (no ISR).                          */
   59:main.c        ****         if (ctrl_period_pending)
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 3
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 3
 
 
   56              		.loc 1 59 0
@@ -178,7 +178,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
   92              		.loc 1 77 0
   93 004c 0025     		movs	r5, #0
   94 004e 744B     		ldr	r3, .L10+12
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 4
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 4
 
 
   95 0050 1D70     		strb	r5, [r3]
@@ -238,7 +238,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  134              	.L6:
   93:main.c        **** 
   94:main.c        ****                 /* 2. Leer telemetría con sección crítica mínima */
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 5
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 5
 
 
   95:main.c        ****                 intr = CyEnterCriticalSection();
@@ -298,7 +298,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  107:main.c        ****                 /* 3. Serializar 8 × float32 LE en trama de 32 bytes */
  108:main.c        ****                 p = (uint8*)&t_y1;
  109:main.c        ****                 frame[0]=p[0];  frame[1]=p[1];  frame[2]=p[2];  frame[3]=p[3];
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 6
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 6
 
 
  177              		.loc 1 109 0 discriminator 4
@@ -358,7 +358,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  223 0150 8DF83630 		strb	r3, [sp, #54]
  224 0154 9DF81330 		ldrb	r3, [sp, #19]	@ zero_extendqisi2
  225 0158 8DF83730 		strb	r3, [sp, #55]
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 7
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 7
 
 
  226              	.LVL25:
@@ -418,7 +418,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  265              	.LVL29:
  266              	.L7:
  133:main.c        ****                     }
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 8
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 8
 
 
  134:main.c        ****                     frame[32]=(uint8)(elapsed_with_flag);
@@ -478,7 +478,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  304 020c 0E4A     		ldr	r2, .L10+52
  305 020e 1370     		strb	r3, [r2]
  306 0210 FFE6     		b	.L2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 9
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 9
 
 
  307              	.L11:
@@ -538,7 +538,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  361 002e 08       		.byte	0x8
  362 002f A4010000 		.4byte	.LASF1
  363 0033 02       		.uleb128 0x2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 10
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 10
 
 
  364 0034 02       		.byte	0x2
@@ -598,7 +598,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  418 009c 03010000 		.4byte	.LASF13
  419 00a0 02       		.uleb128 0x2
  420 00a1 08       		.byte	0x8
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 11
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 11
 
 
  421 00a2 04       		.byte	0x4
@@ -658,7 +658,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  475 0111 0B       		.uleb128 0xb
  476 0112 7000     		.ascii	"p\000"
  477 0114 01       		.byte	0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 12
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 12
 
 
  478 0115 2A       		.byte	0x2a
@@ -718,7 +718,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  532 017b 2C       		.byte	0x2c
  533 017c 99000000 		.4byte	0x99
  534 0180 03       		.uleb128 0x3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 13
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 13
 
 
  535 0181 91       		.byte	0x91
@@ -778,7 +778,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  589 0207 0E       		.uleb128 0xe
  590 0208 26000000 		.4byte	.LVL3
  591 020c AA030000 		.4byte	0x3aa
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 14
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 14
 
 
  592 0210 0E       		.uleb128 0xe
@@ -838,7 +838,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  646 029a AB020000 		.4byte	0x2ab
  647 029e 10       		.uleb128 0x10
  648 029f 01       		.uleb128 0x1
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 15
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 15
 
 
  649 02a0 50       		.byte	0x50
@@ -891,14 +891,14 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  696 0300 15       		.uleb128 0x15
  697 0301 71020000 		.4byte	.LASF38
  698 0305 08       		.byte	0x8
- 699 0306 3D       		.byte	0x3d
+ 699 0306 43       		.byte	0x43
  700 0307 AE000000 		.4byte	0xae
  701 030b 15       		.uleb128 0x15
  702 030c C8000000 		.4byte	.LASF39
  703 0310 08       		.byte	0x8
- 704 0311 40       		.byte	0x40
+ 704 0311 46       		.byte	0x46
  705 0312 16030000 		.4byte	0x316
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 16
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 16
 
 
  706 0316 06       		.uleb128 0x6
@@ -906,59 +906,59 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  708 031b 15       		.uleb128 0x15
  709 031c 35030000 		.4byte	.LASF40
  710 0320 08       		.byte	0x8
- 711 0321 41       		.byte	0x41
+ 711 0321 47       		.byte	0x47
  712 0322 16030000 		.4byte	0x316
  713 0326 15       		.uleb128 0x15
  714 0327 22030000 		.4byte	.LASF41
  715 032b 08       		.byte	0x8
- 716 032c 42       		.byte	0x42
+ 716 032c 48       		.byte	0x48
  717 032d 16030000 		.4byte	0x316
  718 0331 15       		.uleb128 0x15
  719 0332 43030000 		.4byte	.LASF42
  720 0336 08       		.byte	0x8
- 721 0337 43       		.byte	0x43
+ 721 0337 49       		.byte	0x49
  722 0338 16030000 		.4byte	0x316
  723 033c 15       		.uleb128 0x15
  724 033d 58030000 		.4byte	.LASF43
  725 0341 08       		.byte	0x8
- 726 0342 44       		.byte	0x44
+ 726 0342 4A       		.byte	0x4a
  727 0343 16030000 		.4byte	0x316
  728 0347 15       		.uleb128 0x15
  729 0348 E0020000 		.4byte	.LASF44
  730 034c 08       		.byte	0x8
- 731 034d 45       		.byte	0x45
+ 731 034d 4B       		.byte	0x4b
  732 034e 16030000 		.4byte	0x316
  733 0352 15       		.uleb128 0x15
  734 0353 DB010000 		.4byte	.LASF45
  735 0357 08       		.byte	0x8
- 736 0358 46       		.byte	0x46
+ 736 0358 4C       		.byte	0x4c
  737 0359 16030000 		.4byte	0x316
  738 035d 15       		.uleb128 0x15
  739 035e FC020000 		.4byte	.LASF46
  740 0362 08       		.byte	0x8
- 741 0363 47       		.byte	0x47
+ 741 0363 4D       		.byte	0x4d
  742 0364 16030000 		.4byte	0x316
  743 0368 15       		.uleb128 0x15
  744 0369 52000000 		.4byte	.LASF47
  745 036d 08       		.byte	0x8
- 746 036e 48       		.byte	0x48
+ 746 036e 4E       		.byte	0x4e
  747 036f AE000000 		.4byte	0xae
  748 0373 15       		.uleb128 0x15
  749 0374 EF000000 		.4byte	.LASF48
  750 0378 08       		.byte	0x8
- 751 0379 4B       		.byte	0x4b
+ 751 0379 51       		.byte	0x51
  752 037a AE000000 		.4byte	0xae
  753 037e 15       		.uleb128 0x15
  754 037f B2010000 		.4byte	.LASF49
  755 0383 08       		.byte	0x8
- 756 0384 4C       		.byte	0x4c
+ 756 0384 52       		.byte	0x52
  757 0385 B3000000 		.4byte	0xb3
  758 0389 16       		.uleb128 0x16
  759 038a 9A010000 		.4byte	.LASF50
  760 038e 9A010000 		.4byte	.LASF50
  761 0392 08       		.byte	0x8
- 762 0393 4F       		.byte	0x4f
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 17
+ 762 0393 55       		.byte	0x55
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 17
 
 
  763 0394 16       		.uleb128 0x16
@@ -1010,7 +1010,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  809 03f8 D6000000 		.4byte	.LASF60
  810 03fc D6000000 		.4byte	.LASF60
  811 0400 08       		.byte	0x8
- 812 0401 54       		.byte	0x54
+ 812 0401 5A       		.byte	0x5a
  813 0402 16       		.uleb128 0x16
  814 0403 31000000 		.4byte	.LASF61
  815 0407 31000000 		.4byte	.LASF61
@@ -1018,7 +1018,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  817 040c 7D       		.byte	0x7d
  818 040d 16       		.uleb128 0x16
  819 040e 1B000000 		.4byte	.LASF62
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 18
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 18
 
 
  820 0412 1B000000 		.4byte	.LASF62
@@ -1038,7 +1038,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  834 042f 67030000 		.4byte	.LASF65
  835 0433 67030000 		.4byte	.LASF65
  836 0437 08       		.byte	0x8
- 837 0438 53       		.byte	0x53
+ 837 0438 59       		.byte	0x59
  838 0439 00       		.byte	0
  839              		.section	.debug_abbrev,"",%progbits
  840              	.Ldebug_abbrev0:
@@ -1078,7 +1078,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  874 0021 03       		.uleb128 0x3
  875 0022 0E       		.uleb128 0xe
  876 0023 3A       		.uleb128 0x3a
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 19
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 19
 
 
  877 0024 0B       		.uleb128 0xb
@@ -1138,7 +1138,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  931 005a 28       		.uleb128 0x28
  932 005b 00       		.byte	0
  933 005c 03       		.uleb128 0x3
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 20
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 20
 
 
  934 005d 0E       		.uleb128 0xe
@@ -1198,7 +1198,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  988 0095 3A       		.uleb128 0x3a
  989 0096 0B       		.uleb128 0xb
  990 0097 3B       		.uleb128 0x3b
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 21
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 21
 
 
  991 0098 0B       		.uleb128 0xb
@@ -1258,7 +1258,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1045 00d2 8A8201   		.uleb128 0x410a
  1046 00d5 00       		.byte	0
  1047 00d6 02       		.uleb128 0x2
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 22
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 22
 
 
  1048 00d7 18       		.uleb128 0x18
@@ -1318,7 +1318,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1102 010e 3A       		.uleb128 0x3a
  1103 010f 0B       		.uleb128 0xb
  1104 0110 3B       		.uleb128 0x3b
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 23
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 23
 
 
  1105 0111 0B       		.uleb128 0xb
@@ -1378,7 +1378,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1159 0035 3C010000 		.4byte	.LVL24
  1160 0039 5C010000 		.4byte	.LVL25
  1161 003d 0400     		.2byte	0x4
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 24
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 24
 
 
  1162 003f 91       		.byte	0x91
@@ -1438,7 +1438,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1216 00c8 BB000000 		.4byte	.LVL20-1
  1217 00cc 0100     		.2byte	0x1
  1218 00ce 50       		.byte	0x50
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 25
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 25
 
 
  1219 00cf 00000000 		.4byte	0
@@ -1498,7 +1498,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1256      65637469 
  1257              	.LASF2:
  1258 0048 73686F72 		.ascii	"short int\000"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 26
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 26
 
 
  1258      7420696E 
@@ -1558,7 +1558,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1281              	.LASF36:
  1282 00e0 675F666C 		.ascii	"g_flag_control\000"
  1282      61675F63 
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 27
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 27
 
 
  1282      6F6E7472 
@@ -1618,7 +1618,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1303      676E6564 
  1303      20636861 
  1303      7200
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 28
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 28
 
 
  1304              	.LASF49:
@@ -1678,7 +1678,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1327      65642069 
  1327      6E7400
  1328              	.LASF15:
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 29
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 29
 
 
  1329 0256 63686172 		.ascii	"char\000"
@@ -1738,7 +1738,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1357      43617074 
  1358              	.LASF44:
  1359 02e0 6374726C 		.ascii	"ctrl_telem_x2i\000"
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 30
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 30
 
 
  1359      5F74656C 
@@ -1798,7 +1798,7 @@ ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 1
  1385 0371 49544D5F 		.ascii	"ITM_RxBuffer\000"
  1385      52784275 
  1385      66666572 
-ARM GAS  C:\Users\user\AppData\Local\Temp\cc6frK0d.s 			page 31
+ARM GAS  C:\Users\user\AppData\Local\Temp\ccPQB0mU.s 			page 31
 
 
  1385      00

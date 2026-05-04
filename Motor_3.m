@@ -49,8 +49,8 @@ fprintf('========================================\n\n');
 % - Kp=10 da overshoot de 30% (límite)
 % - Kp≥40 es INESTABLE
 
-Kp = 1;         % <-- Valor conservador y estable
-Ti = 0.8;       % <-- Empezar aquí
+Kp = 1.5;         % <-- Valor conservador y estable
+Ti = 10.;       % <-- Empezar aquí
 
 
 % ┌─────────────────────────────────────────┐
